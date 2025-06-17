@@ -15,8 +15,8 @@ export async function middleware(request: NextRequest) {
     
   // Check if the path is an auth route
   const isAuthRoute = 
-    pathname.startsWith("/auth/login") || 
-    pathname.startsWith("/auth/signup")
+    pathname.startsWith("/login") || 
+    pathname.startsWith("/signup")
     
   // Get the session token
   const token = await getToken({ 
@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
   
   // If no token and trying to access protected route, redirect to login
   if (!token && isProtectedRoute) {
-    const loginUrl = new URL("/auth/login", request.url)
+    const loginUrl = new URL("/login", request.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
@@ -55,7 +55,7 @@ export const config = {
     "/profile/:path*", 
     "/messages/:path*",
     // Auth routes
-    "/auth/login",
-    "/auth/signup"
+    "/login",
+    "/signup"
   ],
 }
