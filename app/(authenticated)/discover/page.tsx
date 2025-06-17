@@ -300,7 +300,7 @@ export default function DiscoverPage() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search for users..."
-          className="pl-10 rounded-full border-blue-200 bg-white"
+          className="pl-10 rounded-full border-blue-200 bg-white text-gray-900 placeholder:text-gray-500"
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
           onFocus={handleSearchFocus}
@@ -365,7 +365,7 @@ export default function DiscoverPage() {
                               e.preventDefault()
                               handleViewProfile(user.id)
                             }}
-                            className="rounded-full"
+                            className="rounded-full text-gray-700 hover:text-gray-900 border-gray-300"
                           >
                             <User className="h-3 w-3 mr-1" />
                             View
