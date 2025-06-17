@@ -2054,7 +2054,7 @@ export default function ProfilePage() {
             <Button
               variant="outline"
               onClick={() => setIsAddThoughtDialogOpen(false)}
-              className="rounded-full bg-background/50 w-full sm:w-auto"
+              className="rounded-full bg-background/50 w-full sm:w-auto text-gray-700 hover:text-gray-900"
             >
               Cancel
             </Button>
@@ -2128,7 +2128,7 @@ export default function ProfilePage() {
                 setEditingThought(null)
                 setIsEditThoughtDialogOpen(false)
               }}
-              className="rounded-full bg-background/50 w-full sm:w-auto"
+              className="rounded-full bg-background/50 w-full sm:w-auto text-gray-700 hover:text-gray-900"
             >
               Cancel
             </Button>
