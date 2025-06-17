@@ -41,6 +41,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
+import { HamburgerMenu } from "@/components/hamburger-menu"
 
 const MAX_TOTAL_CHARS = 8000
 const MAX_THOUGHT_CHARS = 1000
@@ -1186,6 +1187,10 @@ export default function ProfilePage() {
       <div className="relative mb-6">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl sm:rounded-3xl"></div>
         <div className="relative p-4 sm:p-6 lg:p-8">
+          {/* Add Hamburger Menu */}
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8">
+            <HamburgerMenu />
+          </div>
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
             <div className="flex flex-col items-center mb-4 sm:mb-0 sm:flex-shrink-0">
               <div className="relative group">
