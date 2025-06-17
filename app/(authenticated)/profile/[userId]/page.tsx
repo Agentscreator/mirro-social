@@ -2017,17 +2017,21 @@ export default function ProfilePage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title" className="text-gray-900">
+                Title
+              </Label>
               <Input
                 id="title"
                 value={newThought.title}
                 onChange={(e) => setNewThought({ ...newThought, title: e.target.value })}
                 placeholder="Give your note a title"
-                className="rounded-full bg-background/50"
+                className="rounded-full bg-background/50 text-gray-900 placeholder:text-gray-500"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="content">Content</Label>
+              <Label htmlFor="content" className="text-gray-900">
+                Content
+              </Label>
               <Textarea
                 id="content"
                 value={newThought.content}
@@ -2036,7 +2040,7 @@ export default function ProfilePage() {
                   setNewThought({ ...newThought, content })
                 }}
                 placeholder="Write your note here..."
-                className="min-h-[150px] rounded-xl bg-background/50"
+                className="min-h-[150px] rounded-xl bg-background/50 text-gray-900 placeholder:text-gray-500"
               />
               <div className="flex flex-col sm:flex-row sm:justify-between text-xs text-muted-foreground">
                 <span className={newThought.content.length >= MAX_THOUGHT_CHARS ? "text-red-500" : ""}>
@@ -2080,16 +2084,20 @@ export default function ProfilePage() {
           {editingThought && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-title">Title</Label>
+                <Label htmlFor="edit-title" className="text-gray-900">
+                  Title
+                </Label>
                 <Input
                   id="edit-title"
                   value={editingThought.title}
                   onChange={(e) => setEditingThought({ ...editingThought, title: e.target.value })}
-                  className="rounded-full bg-background/50"
+                  className="rounded-full bg-background/50 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-content">Content</Label>
+                <Label htmlFor="edit-content" className="text-gray-900">
+                  Content
+                </Label>
                 <Textarea
                   id="edit-content"
                   value={editingThought.content}
@@ -2097,7 +2105,7 @@ export default function ProfilePage() {
                     const content = e.target.value.slice(0, MAX_THOUGHT_CHARS)
                     setEditingThought({ ...editingThought, content })
                   }}
-                  className="min-h-[150px] rounded-xl bg-background/50"
+                  className="min-h-[150px] rounded-xl bg-background/50 text-gray-900 placeholder:text-gray-500"
                 />
                 <div className="flex flex-col sm:flex-row sm:justify-between text-xs text-muted-foreground">
                   <span className={editingThought.content.length >= MAX_THOUGHT_CHARS ? "text-red-500" : ""}>
