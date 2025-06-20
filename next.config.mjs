@@ -9,13 +9,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // This is important for Capacitor to work with Next.js
+  trailingSlash: true,
+  // Skip API routes in static export
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+  // Disable server-side features when running in Capacitor
   experimental: {
-    // Optimize package imports for faster builds
-    optimizePackageImports: [
-      'stream-chat',
-      'stream-chat-react',
-      'lucide-react'
-    ],
+    // runtime: 'edge', // Removed edge runtime
   },
   webpack: (config, { dev, isServer }) => {
     // Optimize webpack for development

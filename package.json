@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "mirro-social",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,13 +14,18 @@
     "seed:tags": "tsx src/db/seedTags.ts",
     "seed:thoughts": "tsx src/db/seedThoughts.ts",
     "seed:user-tags": "tsx src/db/seedUserTags.ts",
-    "seed": "yarn seed:users && yarn seed:tags && yarn seed:thoughts && yarn seed:user-tags"
+    "seed": "yarn seed:users && yarn seed:tags && yarn seed:thoughts && yarn seed:user-tags",
+    "cap": "cap"
   },
   "dependencies": {
-    "@capacitor/android": "^7.3.0",
-    "@capacitor/cli": "^7.3.0",
-    "@capacitor/core": "^7.3.0",
-    "@capacitor/ios": "^7.3.0",
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/cli": "^5.5.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/haptics": "^7.0.1",
+    "@capacitor/ios": "^5.5.0",
+    "@capacitor/keyboard": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.1",
     "@clerk/nextjs": "^6.20.2",
     "@faker-js/faker": "^9.8.0",
     "@hookform/resolvers": "^3.9.1",

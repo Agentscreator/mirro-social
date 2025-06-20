@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mirro</string>
+    <string name="title_activity_main">Mirro</string>
+    <string name="package_name">com.mirro2.app</string>
+    <string name="custom_url_scheme">com.mirro2.app</string>
+</resources>
