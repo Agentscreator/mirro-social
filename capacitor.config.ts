@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
-    url: 'http://localhost:3000',
+    url: 'https://www.mirro2.com',
     cleartext: true
   },
   android: {

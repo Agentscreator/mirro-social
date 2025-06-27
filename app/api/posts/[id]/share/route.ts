@@ -59,7 +59,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     // Generate shareable content
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+    const baseUrl = process.env.NEXTAUTH_URL || "https://www.mirro2.com"
     const shareUrl = `${baseUrl}/post/${postId}`
 
     const shareText = `Check out this post by ${post.user.nickname || post.user.username}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
