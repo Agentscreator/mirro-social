@@ -1,4 +1,3 @@
-// /src/lib/recommendationService.ts
 
 import { db } from "../db"
 import { usersTable, userTagsTable, tagsTable, thoughtsTable } from "../db/schema"
@@ -26,6 +25,7 @@ export type RecommendedUser = {
   proximity?: number | undefined
   score: number
   reason?: string | null
+  tier?: number // Add tier information for debugging
 }
 
 type PaginatedRecommendations = {
@@ -43,65 +43,240 @@ type UserSummary = {
   topThoughts: string[]
 }
 
+type TierResults = {
+  tier1Users: RecommendedUser[]
+  tier2Users: RecommendedUser[]
+  tier3Users: RecommendedUser[]
+}
+
 /**
- * Gets recommendations for a user with pagination
- * Falls back to database-based recommendations if Pinecone is not available
+ * Gets recommendations for a user with pagination, prioritizing tiers
+ * Tier 1: Users with embeddings + current user has embeddings (AI explanation possible)
+ * Tier 2: Users with embeddings only (narrative explanation possible)  
+ * Tier 3: Users without embeddings (database explanation only)
  */
 export async function getRecommendations(userId: string, page = 1, pageSize = 2): Promise<PaginatedRecommendations> {
   try {
-    // Get embedding-based recommendations first
-    const embeddingUsers = await getEmbeddingBasedUsers(userId, pageSize * 4)
+    // Check if current user has embeddings
+    const currentUserHasEmbeddings = await userHasEmbeddings(userId)
     
-    // Calculate pagination indices
+    // Get all tiers of users
+    const tierResults = await getAllTierUsers(userId, currentUserHasEmbeddings)
+    
+    // Calculate pagination
     const startIdx = (page - 1) * pageSize
     const endIdx = startIdx + pageSize
     
-    // If we have enough embedding users for this page, use only those
-    if (embeddingUsers.length > startIdx) {
-      // We have at least some embedding users for this page
-      const remainingNeeded = pageSize - Math.min(embeddingUsers.length - startIdx, pageSize)
-      
-      if (remainingNeeded <= 0) {
-        // We have enough embedding users for the full page
-        return {
-          users: embeddingUsers.slice(startIdx, endIdx),
-          hasMore: endIdx < embeddingUsers.length,
-          nextPage: endIdx < embeddingUsers.length ? page + 1 : null,
-          totalCount: embeddingUsers.length,
-          currentPage: page,
-        }
-      }
-      
-      // We need some database users to fill the page
-      const databaseUsers = await getDatabaseRecommendations(userId, 1, remainingNeeded * 2)
-      
-      // Filter out any database users that are already in embedding results
-      const existingUserIds = new Set(embeddingUsers.map(user => user.id))
-      const filteredDatabaseUsers = databaseUsers.users.filter(dbUser => !existingUserIds.has(dbUser.id))
-      
-      // Take embedding users for this page plus needed database users
-      const pageResults = [
-        ...embeddingUsers.slice(startIdx),
-        ...filteredDatabaseUsers.slice(0, remainingNeeded)
-      ]
-      
-      const totalResults = embeddingUsers.length + filteredDatabaseUsers.length
-      
-      return {
-        users: pageResults,
-        hasMore: pageResults.length === pageSize && (embeddingUsers.length > endIdx || filteredDatabaseUsers.length > remainingNeeded),
-        nextPage: pageResults.length === pageSize ? page + 1 : null,
-        totalCount: totalResults,
-        currentPage: page,
-      }
-    }
+    // Concatenate all users in tier order
+    const allUsers = [
+      ...tierResults.tier1Users.map(u => ({ ...u, tier: 1 })),
+      ...tierResults.tier2Users.map(u => ({ ...u, tier: 2 })),
+      ...tierResults.tier3Users.map(u => ({ ...u, tier: 3 }))
+    ]
     
-    // If we have no embedding users for this page, use database recommendations
-    return await getDatabaseRecommendations(userId, page, pageSize)
+    // Apply pagination to the combined, prioritized list
+    const paginatedUsers = allUsers.slice(startIdx, endIdx)
+    
+    const hasMore = endIdx < allUsers.length
+    
+    console.log(`Page ${page}: Showing ${paginatedUsers.length} users from tiers: ${[...new Set(paginatedUsers.map(u => u.tier))].join(', ')}`)
+    
+    return {
+      users: paginatedUsers,
+      hasMore,
+      nextPage: hasMore ? page + 1 : null,
+      totalCount: allUsers.length,
+      currentPage: page,
+    }
   } catch (error) {
     console.error("Error getting recommendations:", error)
     // Fallback to database-only recommendations
     return await getDatabaseRecommendations(userId, page, pageSize)
+  }
+}
+
+/**
+ * Check if a user has any thought embeddings
+ */
+async function userHasEmbeddings(userId: string): Promise<boolean> {
+  try {
+    const thoughtWithEmbedding = await db
+      .select()
+      .from(thoughtsTable)
+      .where(
+        and(
+          eq(thoughtsTable.userId, userId),
+          isNotNull(thoughtsTable.embedding),
+          isNotNull(thoughtsTable.content)
+        )
+      )
+      .limit(1)
+    
+    return thoughtWithEmbedding.length > 0
+  } catch (error) {
+    console.error("Error checking user embeddings:", error)
+    return false
+  }
+}
+
+/**
+ * Get users separated by tiers based on embedding availability
+ */
+async function getAllTierUsers(userId: string, currentUserHasEmbeddings: boolean): Promise<TierResults> {
+  const results: TierResults = {
+    tier1Users: [],
+    tier2Users: [],
+    tier3Users: []
+  }
+  
+  try {
+    // Get embedding-based users if Pinecone is available
+    if (process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_NAME) {
+      const embeddingUsers = await getEmbeddingBasedUsers(userId, 50) // Get more results
+      
+      // Separate embedding users by tier
+      if (currentUserHasEmbeddings) {
+        // If current user has embeddings, these are Tier 1 (AI explanation possible)
+        results.tier1Users = embeddingUsers
+      } else {
+        // If current user has no embeddings, these are Tier 2 (narrative only)
+        results.tier2Users = embeddingUsers
+      }
+    }
+    
+    // Get database users (Tier 3)
+    const databaseUsers = await getDatabaseUsers(userId, 50)
+    
+    // Filter out users already in higher tiers
+    const existingUserIds = new Set([
+      ...results.tier1Users.map(u => u.id),
+      ...results.tier2Users.map(u => u.id)
+    ])
+    
+    results.tier3Users = databaseUsers.filter(user => !existingUserIds.has(user.id))
+    
+    console.log(`Tier distribution - T1: ${results.tier1Users.length}, T2: ${results.tier2Users.length}, T3: ${results.tier3Users.length}`)
+    
+    return results
+  } catch (error) {
+    console.error("Error getting tier users:", error)
+    return results
+  }
+}
+
+/**
+ * Get database users without embedding requirements (for Tier 3)
+ */
+async function getDatabaseUsers(userId: string, maxResults: number): Promise<RecommendedUser[]> {
+  try {
+    // Get current user's data for matching preferences
+    const currentUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)
+    
+    if (currentUser.length === 0) {
+      return []
+    }
+    
+    const user = currentUser[0]
+    
+    // Get current user's tags for similarity scoring
+    const userTags = await db
+      .select({
+        tagId: userTagsTable.tagId,
+        tagName: tagsTable.name,
+        category: tagsTable.category,
+      })
+      .from(userTagsTable)
+      .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
+      .where(eq(userTagsTable.userId, userId))
+    
+    const userTagIds = userTags.map((tag) => tag.tagId)
+    
+    // Build gender preference filter
+    let genderFilter = sql`1=1` // Default to no filter
+    
+    if (user.genderPreference === "men") {
+      genderFilter = eq(usersTable.gender, "male")
+    } else if (user.genderPreference === "women") {
+      genderFilter = eq(usersTable.gender, "female")
+    }
+    
+    // Calculate age range from preferences
+    const currentDate = new Date()
+    const minBirthYear = currentDate.getFullYear() - (user.preferredAgeMax || 50)
+    const maxBirthYear = currentDate.getFullYear() - (user.preferredAgeMin || 18)
+    
+    // Build proximity filter
+    let proximityFilter = sql`1=1`
+    if (user.proximity === "local" && user.metro_area) {
+      proximityFilter = eq(usersTable.metro_area, user.metro_area)
+    }
+    
+    // Get potential matches
+    const potentialMatches = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        image: usersTable.image,
+        profileImage: usersTable.profileImage,
+        dob: usersTable.dob,
+        gender: usersTable.gender,
+        metro_area: usersTable.metro_area,
+      })
+      .from(usersTable)
+      .where(
+        and(
+          ne(usersTable.id, userId),
+          genderFilter,
+          proximityFilter,
+          sql`EXTRACT(YEAR FROM ${usersTable.dob}) BETWEEN ${minBirthYear} AND ${maxBirthYear}`,
+        ),
+      )
+      .limit(maxResults)
+    
+    // Score matches based on common tags
+    const scoredMatches: RecommendedUser[] = []
+    
+    for (const match of potentialMatches) {
+      // Get tags for this potential match
+      const matchTags = await db
+        .select({
+          tagId: userTagsTable.tagId,
+          tagName: tagsTable.name,
+          category: tagsTable.category,
+        })
+        .from(userTagsTable)
+        .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
+        .where(eq(userTagsTable.userId, match.id))
+      
+      const matchTagIds = matchTags.map((tag) => tag.tagId)
+      
+      // Calculate compatibility score
+      const commonTagIds = userTagIds.filter((tagId) => matchTagIds.includes(tagId))
+      const score = commonTagIds.length
+      
+      const recommendedUser: RecommendedUser = {
+        id: match.id,
+        username: match.username,
+        nickname: match.nickname,
+        image: match.image,
+        profileImage: match.profileImage,
+        tags: matchTags.map((tag) => tag.tagName).slice(0, 5),
+        score,
+        similarity: score / Math.max(userTagIds.length, matchTagIds.length),
+        reason: null,
+      }
+      
+      scoredMatches.push(recommendedUser)
+    }
+    
+    // Sort by score (highest compatibility first)
+    scoredMatches.sort((a, b) => b.score - a.score)
+    
+    return scoredMatches
+  } catch (error) {
+    console.error("Error getting database users:", error)
+    return []
   }
 }
 
