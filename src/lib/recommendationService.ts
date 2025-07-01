@@ -911,7 +911,7 @@ async function generateDatabaseExplanation(userA: RecommendedUser, currentUserId
       commonIntentions.length === 1 ? commonIntentions[0] : `${commonIntentions[0]} and other shared goals`
 
     if (explanation) {
-      explanation += ` Plus, you both are looking for ${intentionText.toLowerCase()}.`
+      explanation += ` Plus, you both are looking to ${intentionText.toLowerCase()}.`
     } else {
       explanation = `You both are seeking ${intentionText.toLowerCase()}.`
     }
