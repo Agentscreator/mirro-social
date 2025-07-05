@@ -22,9 +22,10 @@ interface UserCardProps {
   onMessage?: (userId: string | number) => void
   onViewProfile?: () => void
   isMessaging?: boolean
+  isLarge?: boolean
 }
 
-export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }: UserCardProps) {
+export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, isLarge = false }: UserCardProps) {
   const [imageError, setImageError] = useState(false)
   const [gifError, setGifError] = useState(false)
   const router = useRouter()
@@ -39,10 +40,10 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }
   // Function to get the best available image URL
   const getBestImageUrl = (user: { image?: string | null; profileImage?: string | null }): string | null => {
     // Priority: profileImage > image > null
-    if (user.profileImage && user.profileImage.trim() && !user.profileImage.includes('placeholder')) {
+    if (user.profileImage && user.profileImage.trim() && !user.profileImage.includes("placeholder")) {
       return user.profileImage
     }
-    if (user.image && user.image.trim() && !user.image.includes('placeholder')) {
+    if (user.image && user.image.trim() && !user.image.includes("placeholder")) {
       return user.image
     }
     return null
@@ -50,7 +51,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }
 
   const handleMessage = () => {
     console.log("Message button clicked for user:", user.id, user.username)
-    
+
     if (onMessage) {
       // Call the provided onMessage callback with the user ID
       onMessage(user.id)
@@ -96,24 +97,52 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }
     gifError,
     shouldShowPrimaryImage,
     shouldShowGifFallback,
-    shouldShowStaticFallback
+    shouldShowStaticFallback,
   })
 
+  // Dynamic sizing based on isLarge prop
+  const cardClasses = cn(
+    "border-2 border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white rounded-2xl",
+    isLarge && "shadow-xl hover:shadow-2xl max-w-4xl mx-auto",
+  )
+
+  const contentClasses = cn("p-4 sm:p-6", isLarge && "p-6 sm:p-8 md:p-10 lg:p-12")
+
+  const imageSize = isLarge ? "h-24 w-24 sm:h-32 sm:w-32 md:h-40 md:w-40 lg:h-48 lg:w-48" : "h-16 w-16 sm:h-20 sm:w-20"
+
+  const titleSize = isLarge ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl" : "text-lg sm:text-xl"
+
+  const reasonTextSize = isLarge ? "text-sm sm:text-base md:text-lg" : "text-sm"
+
   return (
-    <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
-          <div className="relative mx-auto mb-4 h-20 w-20 flex-shrink-0 overflow-hidden rounded-full shadow-md border-2 border-blue-200 sm:mx-0 sm:mb-0 sm:h-16 sm:w-16">
+    <Card className={cardClasses}>
+      <CardContent className={contentClasses}>
+        <div
+          className={cn(
+            "flex flex-col items-center gap-4",
+            isLarge ? "sm:gap-6 md:gap-8" : "sm:flex-row sm:items-start sm:gap-4",
+          )}
+        >
+          <div
+            className={cn(
+              "relative flex-shrink-0 overflow-hidden rounded-full shadow-lg border-3 border-blue-200",
+              imageSize,
+            )}
+          >
             {shouldShowPrimaryImage ? (
               <Image
-                src={imageUrl!}
+                src={imageUrl! || "/placeholder.svg"}
                 alt={user.username}
                 fill
                 className="object-cover"
-                sizes="(max-width: 640px) 80px, 64px"
+                sizes={
+                  isLarge
+                    ? "(max-width: 640px) 128px, (max-width: 1024px) 160px, 192px"
+                    : "(max-width: 640px) 80px, 64px"
+                }
                 onError={handleImageError}
                 priority={false}
-                unoptimized={imageUrl?.startsWith('http') && !imageUrl.includes('localhost')} // Handle external URLs
+                unoptimized={imageUrl?.startsWith("http") && !imageUrl.includes("localhost")}
               />
             ) : shouldShowGifFallback ? (
               <div className="relative w-full h-full">
@@ -128,37 +157,48 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }
                 />
                 {/* Initial overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white text-xl font-bold drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  <span
+                    className={cn(
+                      "text-white font-bold drop-shadow-lg",
+                      isLarge ? "text-4xl sm:text-5xl lg:text-6xl" : "text-xl",
+                    )}
+                    style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.8)" }}
+                  >
                     {usernameInitial}
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-xl font-semibold">
-                {usernameInitial}
+              <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                <span className={cn(isLarge ? "text-4xl sm:text-5xl lg:text-6xl" : "text-xl")}>{usernameInitial}</span>
               </div>
             )}
           </div>
-          <div className="flex-1">
-            <h3 className="mb-2 text-center text-xl font-semibold text-blue-600 sm:mb-0 sm:text-left">
-              @{user.username}
-            </h3>
+
+          <div className={cn("flex-1 text-center w-full", !isLarge && "sm:text-left")}>
+            <h3 className={cn("mb-3 font-bold text-blue-600", titleSize)}>@{user.username}</h3>
+
             {user.reason && (
-              <div className="mt-2">
-                <h4 className="font-medium text-blue-600 text-center sm:text-left">The Thread Between You:</h4>
-                <div className="mt-1">
+              <div className={cn("mt-4", isLarge && "mt-6")}>
+                <div className={cn("leading-relaxed text-gray-700 max-w-2xl mx-auto", reasonTextSize)}>
                   <AnimatedText text={user.reason} delay={500} speed={20} />
                 </div>
               </div>
             )}
+
             {user.tags.length > 0 && (
-              <div className="mt-4">
-                <h4 className="mb-2 text-sm font-medium text-blue-600 text-center sm:text-left">Tags:</h4>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+              <div className={cn("mt-4", isLarge && "mt-6")}>
+                <h4 className={cn("mb-3 font-semibold text-blue-600", isLarge ? "text-base sm:text-lg" : "text-sm")}>
+                  Tags:
+                </h4>
+                <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
                   {user.tags.map((tag, index) => (
-                    <Badge 
-                      key={index} 
-                      className="rounded-full font-medium text-xs px-2 py-0.5 tag-hover bg-blue-50 text-blue-600 border-blue-200"
+                    <Badge
+                      key={index}
+                      className={cn(
+                        "rounded-full font-medium tag-hover bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 transition-colors",
+                        isLarge ? "text-sm px-4 py-2" : "text-xs px-3 py-1",
+                      )}
                     >
                       {tag}
                     </Badge>
@@ -166,25 +206,38 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false }
                 </div>
               </div>
             )}
-            <div className="mt-4 flex justify-center sm:justify-end items-center gap-2">
-              <Button 
+
+            <div
+              className={cn(
+                "flex flex-col sm:flex-row justify-center items-center gap-3",
+                "mt-6",
+                isLarge && "mt-8 gap-4",
+              )}
+            >
+              <Button
                 onClick={handleMessage}
                 disabled={isMessaging}
-                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 disabled:opacity-50"
+                className={cn(
+                  "rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 disabled:opacity-50 min-w-[120px] shadow-md hover:shadow-lg transition-all",
+                  isLarge && "px-8 py-4 text-lg min-w-[140px]",
+                )}
               >
                 {isMessaging ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
-                  <MessageSquare className="h-4 w-4" />
+                  <MessageSquare className={cn("h-4 w-4", isLarge && "h-5 w-5")} />
                 )}
                 <span>Message</span>
               </Button>
               <Button
                 onClick={handleViewProfile}
                 variant="outline"
-                className="rounded-full border-blue-200 hover:bg-blue-50 flex items-center gap-1"
+                className={cn(
+                  "rounded-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 flex items-center gap-2 min-w-[120px] shadow-md hover:shadow-lg transition-all",
+                  isLarge && "px-8 py-4 text-lg min-w-[140px]",
+                )}
               >
-                <User className="h-4 w-4" />
+                <User className={cn("h-4 w-4", isLarge && "h-5 w-5")} />
                 <span>Profile</span>
               </Button>
             </div>

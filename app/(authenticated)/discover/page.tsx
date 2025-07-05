@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useCallback } from "react"
-import { Search, MessageCircle, User } from "lucide-react"
+import { Search, MessageCircle, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserCard } from "@/components/user-card"
@@ -31,14 +30,6 @@ interface ExtendedRecommendedUser extends RecommendedUser {
   profileImage?: string
 }
 
-// Gender options for the user's own gender
-const GENDER_OPTIONS = [
-  { id: "male", label: "Male" },
-  { id: "female", label: "Female" },
-  { id: "non-binary", label: "Non-binary" },
-  { id: "prefer-not-to-say", label: "Prefer not to say" },
-]
-
 export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState<ExtendedRecommendedUser[]>([])
@@ -51,12 +42,12 @@ export default function DiscoverPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [messagingUser, setMessagingUser] = useState<string | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
 
   // Helper function to get the best available image URL
   const getBestImageUrl = (user: { image?: string | null; profileImage?: string | null }): string | null => {
-    // Priority: profileImage > image > null
     if (user.profileImage && user.profileImage.trim() && !user.profileImage.includes("placeholder")) {
       return user.profileImage
     }
@@ -69,13 +60,11 @@ export default function DiscoverPage() {
   // Helper function to convert API user to local user type
   const convertApiUserToLocalUser = (apiUser: ApiRecommendedUser): ExtendedRecommendedUser => {
     console.log("Converting API user:", apiUser)
-
     const bestImageUrl = getBestImageUrl(apiUser as any)
-
     return {
       id: apiUser.id,
       username: apiUser.username,
-      image: bestImageUrl || "", // Use best image or empty string
+      image: bestImageUrl || "",
       profileImage: (apiUser as any).profileImage,
       reason: apiUser.reason,
       tags: apiUser.tags ?? [],
@@ -90,24 +79,19 @@ export default function DiscoverPage() {
       setShowSearchResults(false)
       return
     }
-
     setSearchLoading(true)
     try {
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}&limit=10`, {
         method: "GET",
         credentials: "include",
       })
-
       if (response.ok) {
         const { users } = await response.json()
-        console.log("Search results:", users) // Debug log
-
-        // Process search results to ensure consistent image handling
+        console.log("Search results:", users)
         const processedUsers = users.map((user: any) => ({
           ...user,
-          image: getBestImageUrl(user) || "", // Ensure we get the best available image
+          image: getBestImageUrl(user) || "",
         }))
-
         setSearchResults(processedUsers)
         setShowSearchResults(true)
       } else {
@@ -149,10 +133,9 @@ export default function DiscoverPage() {
   }
 
   const handleSearchBlur = (e: React.FocusEvent) => {
-    // Check if the blur is happening because user clicked inside the dropdown
     const relatedTarget = e.relatedTarget as HTMLElement
     if (relatedTarget && relatedTarget.closest("[data-search-dropdown]")) {
-      return // Don't hide if clicking inside dropdown
+      return
     }
     setTimeout(() => setShowSearchResults(false), 200)
   }
@@ -173,22 +156,18 @@ export default function DiscoverPage() {
       })
       return
     }
-
     setMessagingUser(userId)
     setShowSearchResults(false)
-
     try {
       const response = await fetch("/api/stream/channel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recipientId: userId }),
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to create channel")
       }
-
       router.push(`/messages/${userId}`)
     } catch (error) {
       console.error("Error creating channel:", error)
@@ -202,47 +181,35 @@ export default function DiscoverPage() {
     }
   }
 
-  // Initial load of recommendations
-  useEffect(() => {
-    async function loadInitialRecommendations() {
-      try {
-        setLoading(true)
-        const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(1, 2)
-        const usersWithReasons: ExtendedRecommendedUser[] = []
-        for (const user of recommendedUsers) {
-          const convertedUser = convertApiUserToLocalUser(user)
-          convertedUser.reason = await generateExplanation(user)
-          usersWithReasons.push(convertedUser)
-        }
-        setUsers(usersWithReasons)
-        setHasMore(moreAvailable)
-        setCurrentPage(nextPage ?? 1)
-        setExplanationLoading(-1)
-      } catch (error) {
-        console.error("Failed to load recommendations:", error)
-      } finally {
-        setLoading(false)
+  // Navigation functions
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
+  }
+
+  const goToNext = async () => {
+    if (currentIndex < filteredUsers.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+    } else if (hasMore && !loadingMore) {
+      // Load more users when reaching the end
+      await loadMore()
+      if (currentIndex < users.length - 1) {
+        setCurrentIndex(currentIndex + 1)
       }
     }
-
-    loadInitialRecommendations()
-  }, [])
-
-  // Filter users based on search query
-  const filteredUsers = users.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  }
 
   // Load more recommendations
   const loadMore = async () => {
     if (!hasMore || loadingMore) return
-
     try {
       setLoadingMore(true)
-      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 2)
+      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 5)
       const usersWithReasons = [...users]
       const existingUserIds = new Set(users.map((user) => user.id))
 
       for (const newUser of newUsers) {
-        // Skip if user already exists
         if (existingUserIds.has(newUser.id)) {
           continue
         }
@@ -265,7 +232,7 @@ export default function DiscoverPage() {
         const convertedUser = convertApiUserToLocalUser(newUser)
         convertedUser.reason = explanation
         usersWithReasons.push(convertedUser)
-        existingUserIds.add(newUser.id) // Add to set to track new additions
+        existingUserIds.add(newUser.id)
         setExplanationLoading(-1)
       }
 
@@ -279,6 +246,39 @@ export default function DiscoverPage() {
       setExplanationLoading(-1)
     }
   }
+
+  // Initial load of recommendations
+  useEffect(() => {
+    async function loadInitialRecommendations() {
+      try {
+        setLoading(true)
+        const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(1, 5)
+        const usersWithReasons: ExtendedRecommendedUser[] = []
+
+        for (const user of recommendedUsers) {
+          const convertedUser = convertApiUserToLocalUser(user)
+          convertedUser.reason = await generateExplanation(user)
+          usersWithReasons.push(convertedUser)
+        }
+
+        setUsers(usersWithReasons)
+        setHasMore(moreAvailable)
+        setCurrentPage(nextPage ?? 1)
+        setExplanationLoading(-1)
+      } catch (error) {
+        console.error("Failed to load recommendations:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadInitialRecommendations()
+  }, [])
+
+  // Filter users based on search query
+  const filteredUsers = users.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+
+  // Get current user to display
+  const currentUser = filteredUsers[currentIndex]
 
   if (loading) {
     return (
@@ -321,8 +321,6 @@ export default function DiscoverPage() {
               <div className="py-2">
                 {searchResults.map((user) => {
                   const imageUrl = getBestImageUrl(user)
-                  console.log("Search result image URL:", imageUrl, "for user:", user.username)
-
                   return (
                     <div
                       key={user.id}
@@ -338,7 +336,6 @@ export default function DiscoverPage() {
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   console.log("Image failed to load:", imageUrl)
-                                  // Fallback to initials if image fails to load
                                   e.currentTarget.style.display = "none"
                                   const fallback = e.currentTarget.nextElementSibling as HTMLElement
                                   if (fallback) fallback.style.display = "flex"
@@ -399,52 +396,69 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      <div className="space-y-6">
-        {!showSearchResults && (
-          <>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => {
-                console.log("Rendering user card for:", user.username, "image:", user.image)
-                return (
-                  <UserCard
-                    key={user.id}
-                    user={{
-                      id: user.id,
-                      username: user.username,
-                      image: user.image || "", // This should now contain the best available image
-                      profileImage: user.profileImage,
-                      reason: user.reason || "Calculating why you'd be a good match...",
-                      tags: user.tags || [],
-                    }}
-                    onMessage={() => handleMessage(user.id.toString())}
-                    onViewProfile={() => handleViewProfile(user.id.toString())}
-                    isMessaging={messagingUser === user.id.toString()}
-                  />
-                )
-              })
-            ) : (
-              <div className="text-center py-8 text-gray-500">No matching users found</div>
-            )}
-
-            {hasMore && (
-              <div className="flex justify-center pt-2">
+      {/* Main Content */}
+      {!showSearchResults && (
+        <>
+          {filteredUsers.length > 0 ? (
+            <div className="relative">
+              <div className="flex items-center justify-center gap-6 mb-8">
                 <Button
-                  onClick={loadMore}
-                  variant="secondary"
-                  className="rounded-full border-2 border-blue-200 bg-white text-blue-600 hover:bg-blue-50"
-                  disabled={loadingMore}
+                  onClick={goToPrevious}
+                  disabled={currentIndex === 0}
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full w-14 h-14 p-0 border-2 border-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:border-gray-300 bg-white shadow-md"
                 >
-                  {loadingMore ? <TypingAnimation /> : "Load more"}
+                  <ChevronLeft className="h-6 w-6 text-gray-800" />
+                </Button>
+
+                <div className="text-xl font-bold text-gray-800 min-w-[140px] text-center">Discover People</div>
+
+                <Button
+                  onClick={goToNext}
+                  disabled={currentIndex === filteredUsers.length - 1 && !hasMore}
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full w-14 h-14 p-0 border-2 border-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:border-gray-300 bg-white shadow-md"
+                >
+                  {loadingMore ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-800 border-t-transparent" />
+                  ) : (
+                    <ChevronRight className="h-6 w-6 text-gray-800" />
+                  )}
                 </Button>
               </div>
-            )}
 
-            {explanationLoading !== -1 && (
-              <div className="text-center text-sm text-gray-500">Generating connection explanation...</div>
-            )}
-          </>
-        )}
-      </div>
+              {/* Current User Card */}
+              {currentUser && (
+                <div className="max-w-4xl mx-auto">
+                  <UserCard
+                    key={currentUser.id}
+                    user={{
+                      id: currentUser.id,
+                      username: currentUser.username,
+                      image: currentUser.image || "",
+                      profileImage: currentUser.profileImage,
+                      reason: currentUser.reason || "Calculating why you'd be a good match...",
+                      tags: currentUser.tags || [],
+                    }}
+                    onMessage={() => handleMessage(currentUser.id.toString())}
+                    onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                    isMessaging={messagingUser === currentUser.id.toString()}
+                    isLarge={true}
+                  />
+                </div>
+              )}
+
+              {explanationLoading !== -1 && (
+                <div className="text-center text-sm text-gray-500 mt-4">Generating connection explanation...</div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No matching users found</div>
+          )}
+        </>
+      )}
     </div>
   )
 }
