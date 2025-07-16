@@ -25,7 +25,7 @@ const config: CapacitorConfig = {
       spinnerColor: "#999999",
     },
     App: {
-      initialPath: "/auth/login"
+      initialPath: "/login"
     }
   }
 };
