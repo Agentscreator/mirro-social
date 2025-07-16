@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
           </CardContent>
           <CardFooter className="flex justify-center">
             <Link
-              href="/auth/login"
+              href="/login"
               className="flex items-center gap-2 text-sm premium-link"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -153,7 +153,7 @@ export default function ResetPasswordPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <Link
-            href="/auth/login"
+            href="/login"
             className="flex items-center gap-2 text-sm premium-link"
           >
             <ArrowLeft className="h-4 w-4" />
