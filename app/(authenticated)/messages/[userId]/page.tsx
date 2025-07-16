@@ -1,3 +1,5 @@
+//app/(authenticated)/messages/[userId]/page.tsx
+
 "use client"
 
 import type React from "react"
