@@ -18,7 +18,6 @@ import {
   Heart,
   Users,
   Settings,
-  CreditCard,
   Bug,
   Lightbulb,
 } from "lucide-react"
@@ -118,28 +117,6 @@ const FAQ_CATEGORIES = [
         question: "How do I change my location?",
         answer:
           "Your location is automatically detected, but you can manually set it in Settings > Location. This affects who you see in your recommendations.",
-      },
-    ],
-  },
-  {
-    id: "billing",
-    name: "Billing & Subscriptions",
-    icon: CreditCard,
-    questions: [
-      {
-        question: "What's included in Premium?",
-        answer:
-          "Premium includes unlimited connections, advanced matching, priority messaging, see who liked you, advanced filters, and more features to enhance your experience.",
-      },
-      {
-        question: "How do I cancel my subscription?",
-        answer:
-          "You can cancel your subscription from Settings > Plan & Billing > Cancel Subscription. You'll retain access until the end of your billing period.",
-      },
-      {
-        question: "Can I get a refund?",
-        answer:
-          "Refunds are handled on a case-by-case basis. Please contact our support team with your request and we'll review it promptly.",
       },
     ],
   },
@@ -364,7 +341,6 @@ export default function HelpPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="account">Account Issues</SelectItem>
-                      <SelectItem value="billing">Billing & Payments</SelectItem>
                       <SelectItem value="technical">Technical Problems</SelectItem>
                       <SelectItem value="safety">Safety & Privacy</SelectItem>
                       <SelectItem value="feature">Feature Request</SelectItem>

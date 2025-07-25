@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { Menu, Settings, CreditCard, HelpCircle, LogOut } from "lucide-react"
+import { Menu, Settings, HelpCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,11 +24,6 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
 
   const handleAccountSettings = () => {
     router.push("/settings")
-    setIsOpen(false)
-  }
-
-  const handlePlanBilling = () => {
-    router.push("/billing")
     setIsOpen(false)
   }
 
@@ -65,14 +60,6 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
         >
           <Settings className="h-4 w-4" />
           <span className="font-medium">Account Settings</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={handlePlanBilling}
-          className="flex items-center gap-3 px-4 py-3 text-blue-700 hover:bg-blue-50 cursor-pointer rounded-lg mx-1 my-1"
-        >
-          <CreditCard className="h-4 w-4" />
-          <span className="font-medium">Plan & Billing</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
