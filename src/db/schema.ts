@@ -2,6 +2,7 @@ import { pgTable, pgEnum, varchar, integer, uuid, date, text, timestamp, real } 
 
 /* ENUMS */
 export const tagCategoryEnum = pgEnum("tag_category", ["interest", "context", "intention"])
+export const storyTypeEnum = pgEnum("story_type", ["personal", "community"])
 
 /* TABLES */
 
@@ -27,6 +28,58 @@ export const usersTable = pgTable("users", {
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   image: varchar("image", { length: 500 }),
+})
+
+// Communities
+export const communitiesTable = pgTable("communities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  image: varchar("image", { length: 500 }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => usersTable.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Community Members
+export const communityMembersTable = pgTable("community_members", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  communityId: uuid("community_id")
+    .notNull()
+    .references(() => communitiesTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+})
+
+// Stories (UPDATED TABLE)
+export const storiesTable = pgTable("stories", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => usersTable.id),
+  type: storyTypeEnum("type").notNull().default("personal"),
+  communityId: uuid("community_id").references(() => communitiesTable.id), // Only for community stories
+  content: text("content"), // Optional text content
+  image: varchar("image", { length: 500 }), // Optional image URL
+  video: varchar("video", { length: 500 }), // Optional video URL
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // Stories expire after 24 hours
+})
+
+// Story Views (NEW TABLE)
+export const storyViewsTable = pgTable("story_views", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  storyId: integer("story_id")
+    .notNull()
+    .references(() => storiesTable.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => usersTable.id),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
 })
 
 // Tags
@@ -98,16 +151,6 @@ export const postCommentsTable = pgTable("post_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
-
-// Add the self-reference using relations (recommended approach)
-// This should be added to your relations file
-// export const postCommentsRelations = relations(postCommentsTable, ({ one, many }) => ({
-//   parentComment: one(postCommentsTable, {
-//     fields: [postCommentsTable.parentCommentId],
-//     references: [postCommentsTable.id],
-//   }),
-//   replies: many(postCommentsTable),
-// }))
 
 // Followers/Following
 export const followersTable = pgTable("followers", {

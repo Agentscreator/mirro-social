@@ -1,7 +1,8 @@
 import { MessageAttachment } from "./message-attachment"
+import type { StreamAttachment } from '@/types/stream-chat'
 
 interface MessageAttachmentsListProps {
-  attachments: any[]
+  attachments: StreamAttachment[]
 }
 
 export function MessageAttachmentsList({ attachments }: MessageAttachmentsListProps) {

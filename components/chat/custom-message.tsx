@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageAttachmentsList } from "./message-attachments-list"
 import { useMessageContext } from "stream-chat-react"
+import type { TypedMessage } from '@/types/stream-chat'
 
 export function CustomMessage() {
   const {
@@ -27,8 +28,11 @@ export function CustomMessage() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
+  // Type the message properly
+  const typedMessage = message as unknown as TypedMessage
+  
   // Check if message has attachments
-  const hasAttachments = message.attachments && message.attachments.length > 0
+  const hasAttachments = typedMessage.attachments && typedMessage.attachments.length > 0
 
   return (
     <div
@@ -53,17 +57,17 @@ export function CustomMessage() {
               : "bg-white border border-sky-100 shadow-sm"
           }`}
         >
-          {message.text && <p className="text-sm">{message.text}</p>}
+          {typedMessage.text && <p className="text-sm">{typedMessage.text}</p>}
 
           {/* Render attachments if present */}
-          {hasAttachments && <MessageAttachmentsList attachments={message.attachments || []} />}
+          {hasAttachments && <MessageAttachmentsList attachments={typedMessage.attachments || []} />}
         </div>
 
         <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-          <span>{formatTime(new Date(message.created_at || Date.now()))}</span>
+          <span>{formatTime(new Date(typedMessage.created_at || Date.now()))}</span>
 
           {/* Show read status for my messages */}
-          {isMyMessage() && <span className="text-sky-500">{message.status === "read" ? "✓✓" : "✓"}</span>}
+          {isMyMessage() && <span className="text-sky-500">{typedMessage.status === "read" ? "✓✓" : "✓"}</span>}
         </div>
       </div>
     </div>

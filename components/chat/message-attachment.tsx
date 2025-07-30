@@ -3,9 +3,10 @@
 import { useState } from "react"
 import { X, Download, Eye, FileText, ImageIcon, Film, Music, File } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import type { StreamAttachment } from '@/types/stream-chat'
 
 interface MessageAttachmentProps {
-  attachment: any
+  attachment: StreamAttachment
 }
 
 export function MessageAttachment({ attachment }: MessageAttachmentProps) {

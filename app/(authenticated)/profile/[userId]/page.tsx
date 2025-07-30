@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -29,6 +28,9 @@ import {
   Reply,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -45,6 +47,7 @@ import { HamburgerMenu } from "@/components/hamburger-menu"
 
 const MAX_TOTAL_CHARS = 8000
 const MAX_THOUGHT_CHARS = 1000
+const STORY_DURATION = 5000 // 5 seconds per story
 
 interface Post {
   id: number
@@ -55,6 +58,24 @@ interface Post {
   likes: number
   comments: number
   isLiked?: boolean
+}
+
+interface Story {
+  id: number
+  userId: string
+  content?: string
+  image?: string | null
+  video?: string | null
+  createdAt: string
+  expiresAt: string
+  views: number
+  isViewed?: boolean
+  user: {
+    id: string
+    username: string
+    nickname?: string
+    profileImage?: string
+  }
 }
 
 interface ProfileUser {
@@ -127,6 +148,23 @@ export default function ProfilePage() {
   const [isFollowingDialogOpen, setIsFollowingDialogOpen] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
 
+  // Stories states
+  const [stories, setStories] = useState<Story[]>([])
+  const [storiesLoading, setStoriesLoading] = useState(false)
+  const [isCreateStoryDialogOpen, setIsCreateStoryDialogOpen] = useState(false)
+  const [isStoryViewOpen, setIsStoryViewOpen] = useState(false)
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
+  const [currentUserStories, setCurrentUserStories] = useState<Story[]>([])
+  const [storyProgress, setStoryProgress] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [storyContent, setStoryContent] = useState("")
+  const [storyMedia, setStoryMedia] = useState<File | null>(null)
+  const [storyMediaPreview, setStoryMediaPreview] = useState<string | null>(null)
+  const [storyMediaType, setStoryMediaType] = useState<"image" | "video" | null>(null)
+
+  const storyTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
+
   // Post creation states
   const [isCreatePostDialogOpen, setIsCreatePostDialogOpen] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null)
@@ -167,6 +205,219 @@ export default function ProfilePage() {
 
   const cacheKey = `posts-${userId || session?.user?.id}`
 
+  // Stories functions
+  const fetchStories = useCallback(async () => {
+    try {
+      setStoriesLoading(true)
+      const response = await fetch("/api/stories")
+      if (response.ok) {
+        const data = await response.json()
+        setStories(data.stories || [])
+      }
+    } catch (error) {
+      console.error("Error fetching stories:", error)
+    } finally {
+      setStoriesLoading(false)
+    }
+  }, [])
+
+  const handleStoryMediaSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      toast({
+        title: "Error",
+        description: "Please select an image or video file.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const maxSize = file.type.startsWith("video/") ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast({
+        title: "Error",
+        description: `File too large. Max size: ${file.type.startsWith("video/") ? "50MB for videos" : "10MB for images"}`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setStoryMedia(file)
+    setStoryMediaType(file.type.startsWith("video/") ? "video" : "image")
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setStoryMediaPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    setIsCreateStoryDialogOpen(true)
+  }
+
+  const handleCreateStory = async () => {
+    if (!storyMedia && !storyContent.trim()) return
+
+    try {
+      const formData = new FormData()
+      if (storyContent.trim()) {
+        formData.append("content", storyContent.trim())
+      }
+      if (storyMedia) {
+        formData.append("media", storyMedia)
+      }
+
+      const response = await fetch("/api/stories", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        const newStory = await response.json()
+        setStories((prev) => [newStory, ...prev])
+
+        // Reset form
+        setStoryMedia(null)
+        setStoryMediaPreview(null)
+        setStoryMediaType(null)
+        setStoryContent("")
+        setIsCreateStoryDialogOpen(false)
+
+        toast({
+          title: "Success",
+          description: "Story created successfully!",
+        })
+      } else {
+        throw new Error("Failed to create story")
+      }
+    } catch (error) {
+      console.error("Error creating story:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create story. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const startStoryTimer = useCallback(() => {
+    if (storyTimerRef.current) {
+      clearTimeout(storyTimerRef.current)
+    }
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current)
+    }
+
+    setStoryProgress(0)
+    let progress = 0
+
+    progressTimerRef.current = setInterval(() => {
+      if (!isPaused) {
+        progress += 100 / (STORY_DURATION / 100)
+        setStoryProgress(progress)
+
+        if (progress >= 100) {
+          nextStory()
+        }
+      }
+    }, 100)
+  }, [isPaused])
+
+  const nextStory = useCallback(() => {
+    if (currentStoryIndex < currentUserStories.length - 1) {
+      setCurrentStoryIndex((prev) => prev + 1)
+    } else {
+      // Find next user with stories
+      const currentUserId = currentUserStories[0]?.userId
+      const currentUserIndex = stories.findIndex((story) => story.userId === currentUserId)
+      const nextUserStory = stories.find((story, index) => index > currentUserIndex && story.userId !== currentUserId)
+
+      if (nextUserStory) {
+        const nextUserStories = stories.filter((story) => story.userId === nextUserStory.userId)
+        setCurrentUserStories(nextUserStories)
+        setCurrentStoryIndex(0)
+      } else {
+        setIsStoryViewOpen(false)
+      }
+    }
+  }, [currentStoryIndex, currentUserStories, stories])
+
+  const prevStory = useCallback(() => {
+    if (currentStoryIndex > 0) {
+      setCurrentStoryIndex((prev) => prev - 1)
+    } else {
+      // Find previous user with stories
+      const currentUserId = currentUserStories[0]?.userId
+      const currentUserIndex = stories.findIndex((story) => story.userId === currentUserId)
+      const prevUserStory = [...stories]
+        .reverse()
+        .find((story, index) => stories.length - 1 - index < currentUserIndex && story.userId !== currentUserId)
+
+      if (prevUserStory) {
+        const prevUserStories = stories.filter((story) => story.userId === prevUserStory.userId)
+        setCurrentUserStories(prevUserStories)
+        setCurrentStoryIndex(prevUserStories.length - 1)
+      }
+    }
+  }, [currentStoryIndex, currentUserStories, stories])
+
+  const handleStoryClick = (story: Story) => {
+    const userStories = stories.filter((s) => s.userId === story.userId)
+    setCurrentUserStories(userStories)
+    setCurrentStoryIndex(userStories.findIndex((s) => s.id === story.id))
+    setIsStoryViewOpen(true)
+    setIsPaused(false)
+  }
+
+  const handleStoryTap = (event: React.MouseEvent, side: "left" | "right") => {
+    event.preventDefault()
+    if (side === "left") {
+      prevStory()
+    } else {
+      nextStory()
+    }
+  }
+
+  // Group stories by user
+  const groupedStories = stories.reduce(
+    (acc, story) => {
+      const userId = story.userId
+      if (!acc[userId]) {
+        acc[userId] = []
+      }
+      acc[userId].push(story)
+      return acc
+    },
+    {} as Record<string, Story[]>,
+  )
+
+  // Get unique users with stories
+  const usersWithStories = Object.keys(groupedStories).map((userId) => {
+    const userStories = groupedStories[userId]
+    const latestStory = userStories[0] // Assuming stories are sorted by creation date
+    return {
+      userId,
+      user: latestStory.user,
+      stories: userStories,
+      hasUnviewed: userStories.some((story) => !story.isViewed),
+    }
+  })
+
+  useEffect(() => {
+    if (isStoryViewOpen && currentUserStories.length > 0) {
+      startStoryTimer()
+    }
+
+    return () => {
+      if (storyTimerRef.current) {
+        clearTimeout(storyTimerRef.current)
+      }
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+      }
+    }
+  }, [isStoryViewOpen, currentStoryIndex, currentUserStories, startStoryTimer])
+
   const fetchPosts = useCallback(
     async (targetUserId: string, forceRefresh = false) => {
       try {
@@ -191,7 +442,6 @@ export default function ProfilePage() {
 
         const apiUrl = `/api/posts?userId=${targetUserId}&t=${Date.now()}`
         const postsResponse = await fetch(apiUrl)
-
         if (postsResponse.ok) {
           const postsData = await postsResponse.json()
           const newPosts = postsData.posts || []
@@ -282,7 +532,6 @@ export default function ProfilePage() {
     // Second pass: organize into hierarchy
     comments.forEach((comment) => {
       const commentWithReplies = commentMap.get(comment.id)!
-
       if (comment.parentCommentId) {
         // This is a reply
         const parentComment = commentMap.get(comment.parentCommentId)
@@ -322,7 +571,6 @@ export default function ProfilePage() {
       try {
         setLoading(true)
         const targetUserId = userId || session?.user?.id
-
         if (!targetUserId) return
 
         // Fetch profile
@@ -333,8 +581,8 @@ export default function ProfilePage() {
           setEditedAbout(data.user.about || "")
         }
 
-        // Fetch posts and thoughts
-        await Promise.all([fetchPosts(targetUserId), fetchThoughts(targetUserId)])
+        // Fetch posts, thoughts, and stories
+        await Promise.all([fetchPosts(targetUserId), fetchThoughts(targetUserId), fetchStories()])
 
         // Fetch follow status if not own profile
         if (!isOwnProfile) {
@@ -362,7 +610,7 @@ export default function ProfilePage() {
     if (session) {
       fetchProfile()
     }
-  }, [userId, session, isOwnProfile, fetchPosts, fetchThoughts])
+  }, [userId, session, isOwnProfile, fetchPosts, fetchThoughts, fetchStories])
 
   // Media handling for post creation
   const handleMediaTypeSelect = (type: "image" | "video") => {
@@ -414,7 +662,6 @@ export default function ProfilePage() {
       setMediaPreview(reader.result as string)
     }
     reader.readAsDataURL(file)
-
     setIsCreatePostDialogOpen(true)
   }
 
@@ -436,10 +683,8 @@ export default function ProfilePage() {
       if (response.ok) {
         const newPostData = await response.json()
         sessionStorage.removeItem(cacheKey)
-
         const updatedPosts = [newPostData, ...posts]
         setPosts(updatedPosts)
-
         sessionStorage.setItem(
           cacheKey,
           JSON.stringify({
@@ -532,7 +777,6 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const newCommentData = await response.json()
-
         // Refresh comments to get updated nested structure
         await fetchComments(selectedPost.id)
 
@@ -582,7 +826,6 @@ export default function ProfilePage() {
       if (response.ok) {
         // Refresh comments to get updated nested structure
         await fetchComments(selectedPost!.id)
-
         const updatedPosts = posts.map((post) =>
           post.id === selectedPost?.id ? { ...post, comments: Math.max(0, post.comments - 1) } : post,
         )
@@ -627,7 +870,6 @@ export default function ProfilePage() {
       if (response.ok) {
         const updatedPosts = posts.filter((post) => post.id !== postId)
         setPosts(updatedPosts)
-
         sessionStorage.setItem(
           cacheKey,
           JSON.stringify({
@@ -669,7 +911,6 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const shareData = await response.json()
-
         // Create the public share URL
         const shareUrl = `${window.location.origin}/post/${postId}`
 
@@ -1003,6 +1244,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         setThoughts(thoughts.filter((t) => t.id !== id))
+
         toast({
           title: "Success",
           description: "Thought deleted successfully!",
@@ -1068,7 +1310,6 @@ export default function ProfilePage() {
                   <span className="text-xs text-gray-500 flex-shrink-0">{formatDate(comment.createdAt)}</span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-800 leading-relaxed break-words">{comment.content}</p>
-
                 {/* Reply button */}
                 <div className="flex items-center gap-2 mt-1">
                   {depth < maxDepth && (
@@ -1082,7 +1323,6 @@ export default function ProfilePage() {
                       Reply
                     </Button>
                   )}
-
                   {hasReplies && (
                     <Button
                       variant="ghost"
@@ -1105,7 +1345,6 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-
               {comment.userId === session?.user?.id && (
                 <Button
                   variant="ghost"
@@ -1118,7 +1357,6 @@ export default function ProfilePage() {
                 </Button>
               )}
             </div>
-
             {/* Reply input */}
             {replyingTo === comment.id && (
               <div className="mt-2 sm:mt-3 space-y-2">
@@ -1154,7 +1392,6 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
-
         {/* Nested replies */}
         {hasReplies && isExpanded && (
           <div className="space-y-2 sm:space-y-3">
@@ -1183,6 +1420,71 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Stories Row */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {/* Add Story Button (for own profile) */}
+          {isOwnProfile && (
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => {
+                  const input = document.createElement("input")
+                  input.type = "file"
+                  input.accept = "image/*,video/*"
+                  input.onchange = (event) => {
+                    const syntheticEvent = {
+                      target: event.target,
+                      currentTarget: event.target,
+                    } as React.ChangeEvent<HTMLInputElement>
+                    handleStoryMediaSelect(syntheticEvent)
+                  }
+                  input.click()
+                }}
+                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg"
+              >
+                <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              </button>
+              <span className="text-xs text-gray-600 text-center">Your Story</span>
+            </div>
+          )}
+
+          {/* Stories from users */}
+          {usersWithStories.map((userWithStories) => (
+            <div key={userWithStories.userId} className="flex flex-col items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => handleStoryClick(userWithStories.stories[0])}
+                className={cn(
+                  "relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 transition-all",
+                  userWithStories.hasUnviewed
+                    ? "bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500"
+                    : "bg-gray-300",
+                )}
+              >
+                <div className="w-full h-full rounded-full overflow-hidden bg-white p-0.5">
+                  <Image
+                    src={userWithStories.user.profileImage || "/placeholder.svg?height=80&width=80"}
+                    alt={userWithStories.user.username}
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+              </button>
+              <span className="text-xs text-gray-600 text-center max-w-[4rem] truncate">
+                {userWithStories.user.nickname || userWithStories.user.username}
+              </span>
+            </div>
+          ))}
+
+          {/* Loading indicator */}
+          {storiesLoading && (
+            <div className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Profile Header */}
       <div className="relative mb-6">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl sm:rounded-3xl"></div>
@@ -1191,6 +1493,7 @@ export default function ProfilePage() {
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8">
             <HamburgerMenu />
           </div>
+
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
             <div className="flex flex-col items-center mb-4 sm:mb-0 sm:flex-shrink-0">
               <div className="relative group">
@@ -1288,7 +1591,7 @@ export default function ProfilePage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1 sm:flex-none rounded-full border-blue-200 hover:bg-blue-50 text-blue-600 px-4 sm:px-6 text-sm"
+                      className="flex-1 sm:flex-none rounded-full border-blue-200 hover:bg-blue-50 text-blue-600 px-4 sm:px-6 text-sm bg-transparent"
                       onClick={handleMessage}
                     >
                       <MessageCircle className="h-4 w-4 mr-1 sm:mr-2" />
@@ -1645,6 +1948,223 @@ export default function ProfilePage() {
         </TabsContent>
       </Tabs>
 
+      {/* Story Creation Dialog */}
+      <Dialog open={isCreateStoryDialogOpen} onOpenChange={setIsCreateStoryDialogOpen}>
+        <DialogContent className="mx-2 sm:mx-auto sm:max-w-[500px] w-[calc(100%-1rem)] sm:w-[95vw] rounded-2xl max-h-[95vh] overflow-hidden p-0">
+          {/* Header */}
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-white">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setStoryMedia(null)
+                setStoryMediaPreview(null)
+                setStoryMediaType(null)
+                setStoryContent("")
+                setIsCreateStoryDialogOpen(false)
+              }}
+              className="text-gray-600 hover:bg-gray-100 rounded-full px-3 text-sm sm:text-base"
+            >
+              Cancel
+            </Button>
+            <h2 className="text-base sm:text-lg font-semibold">Your Story</h2>
+            <Button
+              onClick={handleCreateStory}
+              disabled={!storyMedia && !storyContent.trim()}
+              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 disabled:opacity-50 text-sm sm:text-base"
+            >
+              Share
+            </Button>
+          </div>
+
+          <div className="max-h-[calc(95vh-60px)] overflow-y-auto">
+            {/* Media Preview */}
+            {storyMediaPreview && (
+              <div className="relative bg-black">
+                <div className="aspect-[9/16] flex items-center justify-center">
+                  {storyMediaType === "video" ? (
+                    <video
+                      src={storyMediaPreview}
+                      className="max-h-full max-w-full object-contain"
+                      controls
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <Image
+                      src={storyMediaPreview || "/placeholder.svg"}
+                      alt="Story preview"
+                      width={500}
+                      height={889}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  )}
+                </div>
+                {/* Text overlay */}
+                {storyContent && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 max-w-[80%]">
+                      <p className="text-white text-center text-lg font-medium">{storyContent}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Text Input */}
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="relative h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full flex-shrink-0">
+                  <Image
+                    src={session?.user?.image || "/placeholder.svg?height=40&width=40"}
+                    alt="Your avatar"
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                </div>
+                <div className="flex-1 space-y-2 sm:space-y-3">
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">{session?.user?.name || "You"}</p>
+                    <Textarea
+                      value={storyContent}
+                      onChange={(e) => setStoryContent(e.target.value.slice(0, 500))}
+                      className="mt-2 min-h-[80px] sm:min-h-[100px] rounded-lg border-gray-200 resize-none text-sm sm:text-base placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400 text-gray-900"
+                      placeholder="Add text to your story..."
+                    />
+                    <div className="text-xs text-gray-500 mt-1">{storyContent.length}/500 characters</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Story Viewer Dialog */}
+      <Dialog open={isStoryViewOpen} onOpenChange={setIsStoryViewOpen}>
+        <DialogContent className="max-w-none w-screen h-screen p-0 bg-black border-none rounded-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Story Viewer</DialogTitle>
+          </DialogHeader>
+          {currentUserStories.length > 0 && currentUserStories[currentStoryIndex] && (
+            <div className="relative w-full h-full flex flex-col">
+              {/* Progress bars */}
+              <div className="absolute top-4 left-4 right-4 z-50 flex gap-1">
+                {currentUserStories.map((_, index) => (
+                  <div key={index} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white transition-all duration-100 ease-linear"
+                      style={{
+                        width:
+                          index < currentStoryIndex ? "100%" : index === currentStoryIndex ? `${storyProgress}%` : "0%",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* User info */}
+              <div className="absolute top-12 left-4 right-4 z-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                    <Image
+                      src={
+                        currentUserStories[currentStoryIndex].user.profileImage || "/placeholder.svg?height=40&width=40"
+                      }
+                      alt={currentUserStories[currentStoryIndex].user.username}
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">
+                      {currentUserStories[currentStoryIndex].user.nickname ||
+                        currentUserStories[currentStoryIndex].user.username}
+                    </p>
+                    <p className="text-white/70 text-xs">
+                      {formatDate(currentUserStories[currentStoryIndex].createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsPaused(!isPaused)}
+                    className="h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none"
+                  >
+                    {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsStoryViewOpen(false)}
+                    className="h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white border-none"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Story content */}
+              <div className="flex-1 relative flex items-center justify-center">
+                {/* Navigation areas */}
+                <button
+                  className="absolute left-0 top-0 w-1/3 h-full z-40 flex items-center justify-start pl-4"
+                  onClick={(e) => handleStoryTap(e, "left")}
+                >
+                  <ChevronLeft className="h-8 w-8 text-white/50" />
+                </button>
+                <button
+                  className="absolute right-0 top-0 w-1/3 h-full z-40 flex items-center justify-end pr-4"
+                  onClick={(e) => handleStoryTap(e, "right")}
+                >
+                  <ChevronRight className="h-8 w-8 text-white/50" />
+                </button>
+
+                {/* Story media/content */}
+                {currentUserStories[currentStoryIndex].video ? (
+                  <video
+                    src={currentUserStories[currentStoryIndex].video!}
+                    className="max-h-full max-w-full object-contain"
+                    autoPlay
+                    muted
+                    playsInline
+                  />
+                ) : currentUserStories[currentStoryIndex].image ? (
+                  <Image
+                    src={currentUserStories[currentStoryIndex].image! || "/placeholder.svg"}
+                    alt="Story content"
+                    width={400}
+                    height={711}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-8 max-w-md mx-4">
+                    <p className="text-white text-xl font-medium text-center leading-relaxed">
+                      {currentUserStories[currentStoryIndex].content}
+                    </p>
+                  </div>
+                )}
+
+                {/* Text overlay for media stories */}
+                {(currentUserStories[currentStoryIndex].image || currentUserStories[currentStoryIndex].video) &&
+                  currentUserStories[currentStoryIndex].content && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 max-w-[80%]">
+                        <p className="text-white text-center text-lg font-medium">
+                          {currentUserStories[currentStoryIndex].content}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Enhanced Single Media Button Dialog */}
       <Dialog open={isMediaTypeDialogOpen} onOpenChange={setIsMediaTypeDialogOpen}>
         <DialogContent className="mx-4 sm:mx-auto sm:max-w-[400px] w-[calc(100%-2rem)] rounded-2xl">
@@ -1654,7 +2174,6 @@ export default function ProfilePage() {
               Select an image or video to share
             </DialogDescription>
           </DialogHeader>
-
           <div className="flex justify-center py-8 sm:py-12">
             <Button
               onClick={() => {
@@ -1684,7 +2203,6 @@ export default function ProfilePage() {
               </div>
             </Button>
           </div>
-
           <DialogFooter>
             <Button
               variant="ghost"
@@ -1748,7 +2266,6 @@ export default function ProfilePage() {
                     />
                   )}
                 </div>
-
                 {/* Media controls overlay */}
                 <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
                   <Button
