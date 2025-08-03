@@ -106,13 +106,13 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
     isLarge && "shadow-xl hover:shadow-2xl max-w-4xl mx-auto",
   )
 
-  const contentClasses = cn("p-4 sm:p-6", isLarge && "p-6 sm:p-8 md:p-10 lg:p-12")
+  const contentClasses = cn("p-4 sm:p-6", isLarge && "p-6")
 
-  const imageSize = isLarge ? "h-24 w-24 sm:h-32 sm:w-32 md:h-40 md:w-40 lg:h-48 lg:w-48" : "h-16 w-16 sm:h-20 sm:w-20"
+  const imageSize = isLarge ? "h-16 w-16 sm:h-20 sm:w-20" : "h-16 w-16 sm:h-20 sm:w-20"
 
-  const titleSize = isLarge ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl" : "text-lg sm:text-xl"
+  const titleSize = isLarge ? "text-lg sm:text-xl" : "text-lg sm:text-xl"
 
-  const reasonTextSize = isLarge ? "text-sm sm:text-base md:text-lg" : "text-sm"
+  const reasonTextSize = isLarge ? "text-sm sm:text-base" : "text-sm"
 
   return (
     <Card className={cardClasses}>
@@ -120,7 +120,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
         <div
           className={cn(
             "flex flex-col items-center gap-4",
-            isLarge ? "sm:gap-6 md:gap-8" : "sm:flex-row sm:items-start sm:gap-4",
+            isLarge ? "sm:gap-4" : "sm:flex-row sm:items-start sm:gap-4",
           )}
         >
           <div
@@ -160,7 +160,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
                   <span
                     className={cn(
                       "text-white font-bold drop-shadow-lg",
-                      isLarge ? "text-4xl sm:text-5xl lg:text-6xl" : "text-xl",
+                      isLarge ? "text-lg sm:text-xl" : "text-xl",
                     )}
                     style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.8)" }}
                   >
@@ -170,7 +170,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
               </div>
             ) : (
               <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                <span className={cn(isLarge ? "text-4xl sm:text-5xl lg:text-6xl" : "text-xl")}>{usernameInitial}</span>
+                <span className={cn(isLarge ? "text-lg sm:text-xl" : "text-xl")}>{usernameInitial}</span>
               </div>
             )}
           </div>
@@ -179,7 +179,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             <h3 className={cn("mb-3 font-bold text-blue-600", titleSize)}>@{user.username}</h3>
 
             {user.reason && (
-              <div className={cn("mt-4", isLarge && "mt-6")}>
+              <div className="mt-4">
                 <div className={cn("leading-relaxed text-gray-700 max-w-2xl mx-auto", reasonTextSize)}>
                   <AnimatedText text={user.reason} delay={500} speed={20} />
                 </div>
@@ -187,8 +187,8 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             )}
 
             {user.tags.length > 0 && (
-              <div className={cn("mt-4", isLarge && "mt-6")}>
-                <h4 className={cn("mb-3 font-semibold text-blue-600", isLarge ? "text-base sm:text-lg" : "text-sm")}>
+              <div className="mt-4">
+                <h4 className={cn("mb-2 font-semibold text-blue-600", isLarge ? "text-sm" : "text-sm")}>
                   Tags:
                 </h4>
                 <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
@@ -197,7 +197,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
                       key={index}
                       className={cn(
                         "rounded-full font-medium tag-hover bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 transition-colors",
-                        isLarge ? "text-sm px-4 py-2" : "text-xs px-3 py-1",
+                        isLarge ? "text-xs px-3 py-1" : "text-xs px-3 py-1",
                       )}
                     >
                       {tag}
@@ -210,34 +210,27 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             <div
               className={cn(
                 "flex flex-col sm:flex-row justify-center items-center gap-3",
-                "mt-6",
-                isLarge && "mt-8 gap-4",
+                "mt-5",
               )}
             >
               <Button
                 onClick={handleMessage}
                 disabled={isMessaging}
-                className={cn(
-                  "rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 disabled:opacity-50 min-w-[120px] shadow-md hover:shadow-lg transition-all",
-                  isLarge && "px-8 py-4 text-lg min-w-[140px]",
-                )}
+                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 disabled:opacity-50 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
               >
                 {isMessaging ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
-                  <MessageSquare className={cn("h-4 w-4", isLarge && "h-5 w-5")} />
+                  <MessageSquare className="h-4 w-4" />
                 )}
                 <span>Message</span>
               </Button>
               <Button
                 onClick={handleViewProfile}
                 variant="outline"
-                className={cn(
-                  "rounded-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 flex items-center gap-2 min-w-[120px] shadow-md hover:shadow-lg transition-all",
-                  isLarge && "px-8 py-4 text-lg min-w-[140px]",
-                )}
+                className="rounded-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 flex items-center gap-2 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
               >
-                <User className={cn("h-4 w-4", isLarge && "h-5 w-5")} />
+                <User className="h-4 w-4" />
                 <span>Profile</span>
               </Button>
             </div>
