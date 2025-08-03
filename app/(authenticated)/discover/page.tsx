@@ -635,19 +635,6 @@ export default function DiscoverPage() {
 
                 {/* Mobile Layout - Reimagined */}
                 <div className="lg:hidden">
-                  {/* Progress Indicator */}
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span>{currentIndex + 1}</span>
-                      <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 transition-all duration-300"
-                          style={{ width: `${((currentIndex + 1) / filteredUsers.length) * 100}%` }}
-                        />
-                      </div>
-                      <span>{filteredUsers.length}</span>
-                    </div>
-                  </div>
 
                   {/* Main User Card */}
                   {currentUser && (
@@ -701,11 +688,11 @@ export default function DiscoverPage() {
                     </Button>
                   </div>
 
-                  {/* Contextual Thoughts - Mobile */}
+                  {/* Tell Mirro About You - Mobile */}
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                     <div className="text-center mb-3">
-                      <h4 className="text-sm font-semibold text-blue-900">Quick Preference</h4>
-                      <p className="text-xs text-blue-700">Help us find better matches</p>
+                      <h4 className="text-sm font-semibold text-blue-900">Tell Mirro About You</h4>
+                      <p className="text-xs text-blue-700">Share your thoughts to help us find your perfect connections</p>
                     </div>
                     
                     <div className="space-y-3">
@@ -713,28 +700,33 @@ export default function DiscoverPage() {
                         <textarea
                           value={newThought}
                           onChange={(e) => setNewThought(e.target.value)}
-                          placeholder="What type of person are you looking for?"
+                          placeholder="What kind of person would you like to meet? Share your thoughts..."
                           className="w-full h-20 p-3 rounded-lg border border-blue-200 bg-white text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
-                          maxLength={200}
+                          maxLength={1000}
                         />
                         <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                          {newThought.length}/200
+                          {newThought.length}/1000
                         </div>
                       </div>
 
                       <Button
                         onClick={addThought}
-                        disabled={!newThought.trim() || newThought.length > 200}
+                        disabled={
+                          !newThought.trim() || 
+                          newThought.length > 1000 || 
+                          getTotalCharacters() + newThought.length > 8000
+                        }
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 px-4 disabled:opacity-50 text-sm"
                       >
-                        Save Preference
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Thought
                       </Button>
                     </div>
 
                     {/* Recent thoughts preview */}
                     {thoughts.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-blue-200">
-                        <p className="text-xs text-blue-700 mb-2">Your preferences ({thoughts.length}):</p>
+                        <p className="text-xs text-blue-700 mb-2">Your thoughts ({thoughts.length}):</p>
                         <div className="space-y-1 max-h-16 overflow-y-auto">
                           {thoughts.slice(0, 2).map((thought) => (
                             <div key={thought.id} className="text-xs text-gray-600 bg-white rounded p-2 truncate">
@@ -748,7 +740,7 @@ export default function DiscoverPage() {
                           className="w-full mt-2 text-xs text-blue-600 hover:bg-blue-100"
                           onClick={() => router.push('/discover?section=thoughts')}
                         >
-                          View all preferences
+                          View all thoughts
                         </Button>
                       </div>
                     )}
