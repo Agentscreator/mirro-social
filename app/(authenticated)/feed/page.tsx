@@ -784,40 +784,9 @@ export default function FeedPage() {
                 {/* Mobile Layout - Optimized */}
                 <div className="lg:hidden">
                   {/* Mobile Discover People Header */}
-                  <div className="text-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Discover People</h2>
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <span>{currentIndex + 1}</span>
-                      <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 transition-all duration-300"
-                          style={{ width: `${((currentIndex + 1) / filteredUsers.length) * 100}%` }}
-                        />
-                      </div>
-                      <span>{filteredUsers.length}</span>
-                    </div>
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">Discover People</h2>
                   </div>
-
-                  {/* Current User Card */}
-                  {currentUser && (
-                    <div className="mb-6">
-                      <UserCard
-                        key={currentUser.id}
-                        user={{
-                          id: currentUser.id,
-                          username: currentUser.username,
-                          image: currentUser.image || "",
-                          profileImage: currentUser.profileImage,
-                          reason: currentUser.reason || "Calculating why you'd be a good match...",
-                          tags: currentUser.tags || [],
-                        }}
-                        onMessage={() => handleMessage(currentUser.id.toString())}
-                        onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                        isMessaging={messagingUser === currentUser.id.toString()}
-                        isLarge={true}
-                      />
-                    </div>
-                  )}
 
                   {/* Mobile Navigation - Thumb Friendly */}
                   <div className="flex items-center justify-between px-4 mb-6">
@@ -849,6 +818,27 @@ export default function FeedPage() {
                       )}
                     </Button>
                   </div>
+
+                  {/* Current User Card */}
+                  {currentUser && (
+                    <div className="mb-6">
+                      <UserCard
+                        key={currentUser.id}
+                        user={{
+                          id: currentUser.id,
+                          username: currentUser.username,
+                          image: currentUser.image || "",
+                          profileImage: currentUser.profileImage,
+                          reason: currentUser.reason || "Calculating why you'd be a good match...",
+                          tags: currentUser.tags || [],
+                        }}
+                        onMessage={() => handleMessage(currentUser.id.toString())}
+                        onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                        isMessaging={messagingUser === currentUser.id.toString()}
+                        isLarge={true}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {explanationLoading !== -1 && (
