@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Upload, Heart, MessageCircle, Share, MoreVertical, Users } from "lucide-react";
+import { ArrowLeft, Plus, Upload, Heart, MessageCircle, Share, MoreVertical, Users, Link, Copy, Check } from "lucide-react";
 import { HamburgerMenu } from "@/components/hamburger-menu";
 
 interface AlbumImage {
@@ -49,9 +49,36 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [imageCaption, setImageCaption] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  // Mock album data - in real app, this would be fetched based on params.albumId
-  const [album, setAlbum] = useState<AlbumDetails>({
+  const [album, setAlbum] = useState<AlbumDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch album data from API
+  const fetchAlbum = async () => {
+    try {
+      const response = await fetch(`/api/albums/${params.albumId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAlbum(data.album);
+      } else {
+        console.error('Failed to fetch album');
+      }
+    } catch (error) {
+      console.error('Error fetching album:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAlbum();
+  }, [params.albumId]);
+
+  // Mock album data for fallback
+  const mockAlbum: AlbumDetails = {
     id: params.albumId,
     title: "Travel Adventures 2024",
     description: "Collecting amazing travel photos from around the world. Share your best travel moments and discover new destinations through the eyes of fellow travelers.",
@@ -120,7 +147,7 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
         createdAt: "2024-01-16"
       }
     ]
-  });
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -129,31 +156,78 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
     }
   };
 
-  const handleContribute = () => {
-    if (selectedFile && imageCaption) {
-      // In a real app, you would upload the file and create the image entry
-      const newImage: AlbumImage = {
-        id: Date.now().toString(),
-        url: URL.createObjectURL(selectedFile), // Temporary URL for demo
-        caption: imageCaption,
-        contributor: {
-          name: "John Doe",
-          username: "johndoe",
-          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
+  const handleContribute = async () => {
+    if (!selectedFile || !imageCaption || !album) return;
+
+    try {
+      // In a real app, you would upload the file to storage first
+      // For now, we'll use a placeholder URL
+      const imageUrl = `https://example.com/album-images/${Date.now()}.jpg`;
+
+      const response = await fetch(`/api/albums/${params.albumId}/images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        likes: 0,
-        comments: 0,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
+        body: JSON.stringify({
+          imageUrl,
+          caption: imageCaption,
+        }),
+      });
 
-      setAlbum(prev => ({
-        ...prev,
-        images: [newImage, ...prev.images]
-      }));
+      if (response.ok) {
+        setImageCaption("");
+        setSelectedFile(null);
+        setIsContributeOpen(false);
+        // Refresh album data
+        fetchAlbum();
+      } else {
+        console.error('Failed to add image to album');
+      }
+    } catch (error) {
+      console.error('Error adding image to album:', error);
+    }
+  };
 
-      setImageCaption("");
-      setSelectedFile(null);
-      setIsContributeOpen(false);
+  const handleGenerateShareLink = async () => {
+    try {
+      const response = await fetch(`/api/albums/${params.albumId}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessLevel: 'contribute',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShareUrl(data.shareUrl);
+      } else {
+        console.error('Failed to generate share link');
+      }
+    } catch (error) {
+      console.error('Error generating share link:', error);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (shareUrl) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+      }
+    }
+  };
+
+  const handleOpenShare = () => {
+    setIsShareOpen(true);
+    if (!shareUrl) {
+      handleGenerateShareLink();
     }
   };
 
@@ -171,13 +245,27 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-gray-900">{album.title}</h1>
+            <h1 className="text-xl font-bold text-gray-900">{album?.title || 'Loading...'}</h1>
           </div>
           <HamburgerMenu />
         </div>
       </div>
 
       <div className="p-6">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : !album ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Album not found or you don't have access to it.</p>
+            <Button onClick={() => router.back()} className="mt-4">
+              Go Back
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Album content */}
         {/* Album Info */}
         <div className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
           <div className="flex items-start justify-between mb-4">
@@ -204,6 +292,9 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
                   Private
                 </div>
               )}
+              <Button variant="ghost" size="icon" onClick={handleOpenShare}>
+                <Share className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon">
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -286,6 +377,62 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Share Album Dialog */}
+          <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+            <DialogContent className="bg-white border-gray-200">
+              <DialogHeader>
+                <DialogTitle className="text-gray-900">Share Album</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Anyone with this link can view and contribute to your album.
+                </p>
+                
+                {shareUrl ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                      <Link className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={shareUrl}
+                        readOnly
+                        className="flex-1 bg-transparent text-sm text-gray-700 outline-none"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={handleCopyShareLink}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {copySuccess ? (
+                        <div className="flex items-center gap-2">
+                          <Check className="w-4 h-4" />
+                          Copied!
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Copy className="w-4 h-4" />
+                          Copy Link
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
+                
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <p className="text-xs text-blue-700">
+                    <strong>Note:</strong> Contributors will be able to add photos to this album. 
+                    Make sure you trust the people you share this with.
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Images Grid */}
@@ -334,7 +481,15 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
                     <Button size="sm" variant="ghost" className="p-1 h-7 w-7">
                       <MessageCircle className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="p-1 h-7 w-7">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="p-1 h-7 w-7"
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        // You could add a toast notification here
+                      }}
+                    >
                       <Share className="w-3 h-3" />
                     </Button>
                   </div>
@@ -351,6 +506,8 @@ export default function AlbumDetailPage({ params }: { params: { albumId: string 
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Photos Yet</h3>
             <p className="text-gray-600 mb-4">Be the first to contribute to this album!</p>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

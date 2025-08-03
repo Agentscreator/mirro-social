@@ -4,9 +4,29 @@ import { useState, useEffect, useRef } from "react";
 import VideoFeedItem from "@/components/VideoFeedItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "@/hooks/use-toast";
+
+interface Post {
+  id: number;
+  content: string;
+  image?: string;
+  video?: string;
+  duration?: number;
+  createdAt: string;
+  user: {
+    id: string;
+    username: string;
+    nickname?: string;
+    profileImage?: string;
+    image?: string;
+  };
+  likes: number;
+  isLiked: boolean;
+  comments: number;
+}
 
 export default function FeedPage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -15,99 +35,81 @@ export default function FeedPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { data: session } = useSession();
+  
+  // Real feed data
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [excludeIds, setExcludeIds] = useState<number[]>([]);
 
-  const mockVideos = [
-    {
-      video: {
-        id: "1",
-        thumbnail: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=1200&fit=crop",
-        duration: "0:45",
-        title: "Amazing React Animation Tutorial 🚀"
-      },
-      author: {
-        name: "Alex Chen",
-        username: "alexchen",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
-      },
-      description: "Learn how to create smooth animations in React with Framer Motion! This technique will make your apps feel more engaging and professional. Perfect for beginners! #ReactJS #Animation #WebDev",
-      likes: 12400,
-      comments: 234,
-      shares: 89,
-      isLiked: true,
-      showInviteButton: true
-    },
-    {
-      video: {
-        id: "2", 
-        thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=1200&fit=crop",
-        duration: "1:20",
-        title: "Join Our Startup Team! 💼"
-      },
-      author: {
-        name: "Sarah Martinez",
-        username: "sarahmartinez",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612c4c0?w=100&h=100&fit=crop&crop=face"
-      },
-      description: "We're hiring talented developers and designers! Come build the future of collaborative software with us. Remote-first company with amazing benefits. Apply now! 🌟",
-      likes: 8900,
-      comments: 156,
-      shares: 245,
-      isLiked: false,
-      showInviteButton: true
-    },
-    {
-      video: {
-        id: "3",
-        thumbnail: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=1200&fit=crop",
-        duration: "2:15",
-        title: "Epic Code Review Session 👨‍💻"
-      },
-      author: {
-        name: "Mike Johnson",
-        username: "mikejohnson",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-      },
-      description: "Breaking down complex algorithms step by step! Today we're optimizing a React component that was causing performance issues. Watch how small changes make huge impacts!",
-      likes: 15600,
-      comments: 312,
-      shares: 178,
-      isLiked: false,
-      showInviteButton: true
-    },
-    {
-      video: {
-        id: "4",
-        thumbnail: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&h=1200&fit=crop",
-        duration: "0:58",
-        title: "Design System Magic ✨"
-      },
-      author: {
-        name: "Emma Davis",
-        username: "emmadavis",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
-      },
-      description: "Showing how a consistent design system transforms your entire product experience. From buttons to layouts, everything just works together perfectly! 🎨",
-      likes: 9800,
-      comments: 189,
-      shares: 134,
-      isLiked: true,
-      showInviteButton: true
+  // Fetch feed posts
+  const fetchPosts = async (cursor?: string, excludePostIds: number[] = []) => {
+    try {
+      const params = new URLSearchParams();
+      if (cursor) params.append('cursor', cursor);
+      params.append('limit', '10');
+      if (excludePostIds.length > 0) {
+        params.append('excludeIds', excludePostIds.join(','));
+      }
+      
+      const response = await fetch(`/api/feed?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load posts",
+        variant: "destructive",
+      });
+      return { posts: [], hasMore: false, nextCursor: null };
     }
-  ];
+  };
+  
+  // Load initial posts
+  useEffect(() => {
+    const loadInitialPosts = async () => {
+      setLoading(true);
+      const data = await fetchPosts();
+      setPosts(data.posts || []);
+      setHasMore(data.hasMore || false);
+      setNextCursor(data.nextCursor || null);
+      setLoading(false);
+    };
+    
+    if (session?.user?.id) {
+      loadInitialPosts();
+    }
+  }, [session?.user?.id]);
+  
+  // Load more posts when needed
+  const loadMorePosts = async () => {
+    if (!hasMore || !nextCursor) return;
+    
+    const data = await fetchPosts(nextCursor, excludeIds);
+    setPosts(prev => [...prev, ...(data.posts || [])]);
+    setHasMore(data.hasMore || false);
+    setNextCursor(data.nextCursor || null);
+  };
 
-  // Filter videos based on search query only
-  const filteredVideos = mockVideos.filter(video => {
+  // Filter posts based on search query
+  const filteredPosts = posts.filter(post => {
     const matchesSearch = searchQuery === "" || 
-      video.video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.author.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase());
+      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (post.user.nickname && post.user.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
     
     return matchesSearch;
   });
 
   // Navigation functions for desktop up/down buttons
-  const goToNextVideo = () => {
-    if (currentVideoIndex < filteredVideos.length - 1) {
+  const goToNextVideo = async () => {
+    if (currentVideoIndex < filteredPosts.length - 1) {
       const nextIndex = currentVideoIndex + 1;
       setCurrentVideoIndex(nextIndex);
       const container = containerRef.current;
@@ -117,6 +119,9 @@ export default function FeedPage() {
           behavior: 'smooth'
         });
       }
+    } else if (hasMore) {
+      // Load more posts when reaching the end
+      await loadMorePosts();
     }
   };
 
@@ -142,17 +147,46 @@ export default function FeedPage() {
       const { scrollTop, clientHeight } = container;
       const videoIndex = Math.round(scrollTop / clientHeight);
       setCurrentVideoIndex(videoIndex);
+      
+      // Load more when near the end
+      if (videoIndex >= filteredPosts.length - 2 && hasMore && !loading) {
+        loadMorePosts();
+      }
     };
 
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [filteredPosts.length, hasMore, loading]);
 
   // Show loading if no session
   if (!session) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+  
+  // Show loading for initial load
+  if (loading && posts.length === 0) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <p className="text-white text-sm">Loading feed...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show empty state if no posts
+  if (!loading && filteredPosts.length === 0) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="text-center text-white">
+          <p className="text-lg mb-2">No posts found</p>
+          <p className="text-sm text-white/70">Check back later for new content!</p>
+        </div>
       </div>
     );
   }
@@ -254,7 +288,7 @@ export default function FeedPage() {
           size="icon"
           className="w-12 h-12 rounded-full bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm"
           onClick={goToNextVideo}
-          disabled={currentVideoIndex >= filteredVideos.length - 1}
+          disabled={currentVideoIndex >= filteredPosts.length - 1 && !hasMore}
         >
           <ChevronDown className="h-6 w-6" />
         </Button>
@@ -272,20 +306,21 @@ export default function FeedPage() {
           }
         `}</style>
         <div className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-6xl">
-          {filteredVideos.map((item, index) => (
-            <div key={item.video.id} className="h-screen w-full snap-start relative">
+          {filteredPosts.map((post, index) => (
+            <div key={post.id} className="h-screen w-full snap-start relative">
               <VideoFeedItem
-                video={item.video}
-                author={item.author}
-                description={item.description}
-                likes={item.likes}
-                comments={item.comments}
-                shares={item.shares}
-                isLiked={item.isLiked}
-                showInviteButton={item.showInviteButton}
+                post={post}
+                showInviteButton={true}
               />
             </div>
           ))}
+          
+          {/* Loading indicator at bottom */}
+          {hasMore && (
+            <div className="h-32 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-white" />
+            </div>
+          )}
         </div>
       </div>
 

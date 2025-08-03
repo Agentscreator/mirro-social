@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     console.log("Limit:", limit)
     console.log("Exclude IDs:", excludeIds)
 
-    // Build the query
+    // Build the query - handle transition period where both image and video columns exist
     const query = db
       .select({
         id: postsTable.id,
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
       .leftJoin(usersTable, eq(postsTable.userId, usersTable.id))
       .where(
         and(
-          // Only posts with media (images or videos) for feed
-          sql`(${postsTable.image} IS NOT NULL OR ${postsTable.video} IS NOT NULL)`,
+          // Only posts with videos - allow both image and video posts for now during transition
+          sql`(${postsTable.video} IS NOT NULL OR ${postsTable.image} IS NOT NULL)`,
           // Exclude already seen posts
           excludeIds.length > 0 ? notInArray(postsTable.id, excludeIds) : undefined,
           // Cursor-based pagination

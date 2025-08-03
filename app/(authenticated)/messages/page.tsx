@@ -28,61 +28,28 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
 
-  // Mock data for now - replace with actual API calls
-  const mockConversations: Conversation[] = [
-    {
-      id: "1",
-      userId: "user1",
-      username: "alexchen",
-      nickname: "Alex Chen",
-      profileImage: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-      lastMessage: "Hey! Thanks for connecting. Looking forward to working together!",
-      lastMessageTime: "2 min ago",
-      unreadCount: 2,
-      isOnline: true
-    },
-    {
-      id: "2", 
-      userId: "user2",
-      username: "sarahmartinez",
-      nickname: "Sarah Martinez",
-      profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612c4c0?w=100&h=100&fit=crop&crop=face",
-      lastMessage: "The project proposal looks great! When can we schedule a call?",
-      lastMessageTime: "1 hour ago",
-      unreadCount: 0,
-      isOnline: false
-    },
-    {
-      id: "3",
-      userId: "user3", 
-      username: "mikejohnson",
-      nickname: "Mike Johnson",
-      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      lastMessage: "Just pushed the latest updates to the repo. Check it out!",
-      lastMessageTime: "3 hours ago",
-      unreadCount: 1,
-      isOnline: true
-    },
-    {
-      id: "4",
-      userId: "user4",
-      username: "emmadavis", 
-      nickname: "Emma Davis",
-      profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      lastMessage: "Love the design system work! The components look amazing.",
-      lastMessageTime: "1 day ago",
-      unreadCount: 0,
-      isOnline: false
+  // Fetch conversations from API
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch('/api/messages');
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations);
+      } else {
+        console.error('Failed to fetch conversations');
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setLoading(false);
     }
-  ]
+  };
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setConversations(mockConversations)
-      setLoading(false)
-    }, 1000)
-  }, [])
+    if (session?.user?.id) {
+      fetchConversations();
+    }
+  }, [session?.user?.id])
 
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||

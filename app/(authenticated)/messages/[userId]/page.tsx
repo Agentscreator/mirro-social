@@ -38,132 +38,37 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Mock user data based on userId
-  const mockUsers: { [key: string]: ChatUser } = {
-    user1: {
-      id: "user1",
-      username: "alexchen",
-      nickname: "Alex Chen",
-      profileImage: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-      isOnline: true
-    },
-    user2: {
-      id: "user2",
-      username: "sarahmartinez", 
-      nickname: "Sarah Martinez",
-      profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612c4c0?w=100&h=100&fit=crop&crop=face",
-      isOnline: false,
-      lastSeen: new Date(Date.now() - 60000 * 30) // 30 minutes ago
-    },
-    user3: {
-      id: "user3",
-      username: "mikejohnson",
-      nickname: "Mike Johnson", 
-      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      isOnline: true
-    },
-    user4: {
-      id: "user4",
-      username: "emmadavis",
-      nickname: "Emma Davis",
-      profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      isOnline: false,
-      lastSeen: new Date(Date.now() - 60000 * 60 * 24) // 1 day ago
+  // Fetch messages and user data from API
+  const fetchMessages = async () => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch(`/api/messages/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setChatUser(data.user);
+        setMessages(data.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.createdAt),
+          isRead: msg.isRead === 1
+        })));
+      } else {
+        console.error('Failed to fetch messages');
+        setChatUser(null);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setChatUser(null);
+    } finally {
+      setLoading(false);
     }
-  }
-
-  // Mock messages based on userId
-  const mockMessages: { [key: string]: Message[] } = {
-    user1: [
-      {
-        id: "1",
-        content: "Hey! Thanks for connecting.",
-        senderId: "user1",
-        timestamp: new Date(Date.now() - 60000 * 10),
-        isRead: true
-      },
-      {
-        id: "2", 
-        content: "Hi Alex! Great to connect with you too.",
-        senderId: session?.user?.id || "me",
-        timestamp: new Date(Date.now() - 60000 * 8),
-        isRead: true
-      },
-      {
-        id: "3",
-        content: "Looking forward to working together!",
-        senderId: "user1",
-        timestamp: new Date(Date.now() - 60000 * 2),
-        isRead: false
-      }
-    ],
-    user2: [
-      {
-        id: "4",
-        content: "The project proposal looks great!",
-        senderId: "user2",
-        timestamp: new Date(Date.now() - 60000 * 60),
-        isRead: true
-      },
-      {
-        id: "5",
-        content: "Thanks! I put a lot of work into it.",
-        senderId: session?.user?.id || "me", 
-        timestamp: new Date(Date.now() - 60000 * 55),
-        isRead: true
-      },
-      {
-        id: "6",
-        content: "When can we schedule a call?",
-        senderId: "user2",
-        timestamp: new Date(Date.now() - 60000 * 50),
-        isRead: true
-      }
-    ],
-    user3: [
-      {
-        id: "7",
-        content: "Just pushed the latest updates to the repo.",
-        senderId: "user3",
-        timestamp: new Date(Date.now() - 60000 * 180),
-        isRead: true
-      },
-      {
-        id: "8",
-        content: "Check it out!",
-        senderId: "user3", 
-        timestamp: new Date(Date.now() - 60000 * 179),
-        isRead: false
-      }
-    ],
-    user4: [
-      {
-        id: "9",
-        content: "Love the design system work!",
-        senderId: "user4",
-        timestamp: new Date(Date.now() - 60000 * 60 * 24),
-        isRead: true
-      },
-      {
-        id: "10",
-        content: "The components look amazing.",
-        senderId: "user4",
-        timestamp: new Date(Date.now() - 60000 * 60 * 24 + 30000),
-        isRead: true
-      }
-    ]
-  }
+  };
 
   useEffect(() => {
-    if (userId) {
-      // Simulate loading
-      setTimeout(() => {
-        setChatUser(mockUsers[userId] || null)
-        setMessages(mockMessages[userId] || [])
-        setLoading(false)
-      }, 500)
+    if (userId && session?.user?.id) {
+      fetchMessages();
     }
-  }, [userId])
+  }, [userId, session?.user?.id])
 
   useEffect(() => {
     scrollToBottom()
@@ -174,25 +79,43 @@ export default function ChatPage() {
   }
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return
+    if (!newMessage.trim() || sending || !userId) return
 
     setSending(true)
+    const messageContent = newMessage.trim()
+    setNewMessage("") // Clear input immediately for better UX
     
-    const message: Message = {
-      id: Date.now().toString(),
-      content: newMessage.trim(),
-      senderId: session?.user?.id || "me",
-      timestamp: new Date(),
-      isRead: false
+    try {
+      const response = await fetch(`/api/messages/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: messageContent,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newMessage: Message = {
+          id: data.message.id.toString(),
+          content: data.message.content,
+          senderId: data.message.senderId,
+          timestamp: new Date(data.message.createdAt),
+          isRead: false
+        };
+        setMessages(prev => [...prev, newMessage]);
+      } else {
+        console.error('Failed to send message');
+        setNewMessage(messageContent); // Restore message on error
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setNewMessage(messageContent); // Restore message on error
+    } finally {
+      setSending(false);
     }
-
-    setMessages(prev => [...prev, message])
-    setNewMessage("")
-
-    // Simulate sending delay
-    setTimeout(() => {
-      setSending(false)
-    }, 500)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
