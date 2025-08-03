@@ -48,6 +48,10 @@ export default function DiscoverPage() {
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
 
+  // Touch/swipe state
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
   // Helper functions for thoughts management
   const loadThoughts = async () => {
     try {
@@ -363,6 +367,31 @@ export default function DiscoverPage() {
     localStorage.setItem('discover-current-index', currentIndex.toString())
   }, [currentIndex])
 
+  // Swipe gesture handling
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null) // otherwise the swipe is fired even with usual touch events
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe) {
+      // Swipe left - go to next user
+      goToNext()
+    } else if (isRightSwipe) {
+      // Swipe right - go to previous user
+      goToPrevious()
+    }
+  }
+
   // Get current user to display
   const currentUser = filteredUsers[currentIndex]
 
@@ -670,7 +699,7 @@ export default function DiscoverPage() {
                     </Button>
 
                     <div className="text-center">
-                      <p className="text-sm text-gray-600">Swipe or tap to explore</p>
+                      <p className="text-sm text-gray-600">← Swipe or tap to explore →</p>
                     </div>
 
                     <Button
