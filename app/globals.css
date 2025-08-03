@@ -523,3 +523,79 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* Mobile App Specific Styles */
+.mobile-app {
+  /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Disable touch callouts */
+  -webkit-touch-callout: none;
+  
+  /* Disable tap highlight */
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Remove scroll bounce on iOS */
+  -webkit-overflow-scrolling: touch;
+  
+  /* Handle safe area insets */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Custom scrollbar for mobile apps */
+.mobile-app::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-app {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area utility classes */
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.px-safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.px-safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile app button styles */
+.mobile-app button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent zoom on inputs for iOS */
+.mobile-app input[type="text"],
+.mobile-app input[type="email"],
+.mobile-app input[type="password"],
+.mobile-app textarea {
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+/* Mobile app status bar spacing */
+.mobile-app .status-bar-spacing {
+  height: env(safe-area-inset-top);
+  min-height: 20px; /* Fallback for devices without safe area */
+}
+
+/* Mobile app navigation adjustments */
+.mobile-app .navigation-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}

@@ -49,33 +49,25 @@ export default function LoginPage() {
 
     try {
       const trimmedIdentifier = formData.identifier.trim()
+      const isEmail = trimmedIdentifier.includes("@")
+      
+      // Use NextAuth for both web and mobile for consistency
+      const result = await signIn("credentials", {
+        email: isEmail ? trimmedIdentifier : "",
+        username: isEmail ? "" : trimmedIdentifier,
+        password: formData.password,
+        redirect: false,
+      })
 
-      if (isMobile) {
-        // Mobile authentication
-        try {
-          const response = await mobileLogin(trimmedIdentifier, formData.password)
-          await setMobileAuthToken(response.token)
-          router.push("/feed")
-          router.refresh()
-        } catch (error) {
-          setError("Invalid email/username or password")
+      if (result?.error) {
+        setError("Invalid email/username or password")
+      } else if (result?.ok) {
+        // Store session info for mobile apps if needed
+        if (isMobile) {
+          setMobileAuthToken(result.url || 'authenticated')
         }
-      } else {
-        // Web authentication
-        const isEmail = trimmedIdentifier.includes("@")
-        const result = await signIn("credentials", {
-          email: isEmail ? trimmedIdentifier : "",
-          username: isEmail ? "" : trimmedIdentifier,
-          password: formData.password,
-          redirect: false,
-        })
-
-        if (result?.error) {
-          setError("Invalid email/username or password")
-        } else if (result?.ok) {
-          router.push("/feed")
-          router.refresh()
-        }
+        router.push("/feed")
+        router.refresh()
       }
     } catch (error) {
       console.error("Login error:", error)

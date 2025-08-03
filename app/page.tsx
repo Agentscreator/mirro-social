@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Particles } from "@/components/particles"
 import { Logo } from "@/components/logo"
 import { MobileNav } from "@/components/mobile-nav"
+import { MobileAppRedirect } from "@/components/mobile-app-redirect"
+import { WebAuthRedirect } from "@/components/web-auth-redirect"
+import { LandingNav } from "@/components/landing-nav"
 
 export default function Home() {
   return (
-    <main className="min-h-screen relative overflow-hidden font-sans">
+    <>
+      <MobileAppRedirect />
+      <WebAuthRedirect />
+      <main className="min-h-screen relative overflow-hidden font-sans">
       {/* Desktop Background Image - hidden on mobile */}
       <div className="absolute inset-0 z-0 hidden md:block">
         <Image
@@ -48,18 +54,7 @@ export default function Home() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" className="px-6 py-2 text-cyan-300 border border-cyan-300/30 rounded-full hover:bg-cyan-900/20 transition-all">
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full text-white font-medium hover:shadow-lg hover:shadow-cyan-500/30 transition-all transform hover:translate-y-[-2px]">
-                Sign Up
-              </Button>
-            </Link>
-          </div>
+          <LandingNav />
 
           {/* Mobile Navigation */}
           <MobileNav />
@@ -139,5 +134,6 @@ export default function Home() {
         </footer>
       </div>
     </main>
+    </>
   )
 }
