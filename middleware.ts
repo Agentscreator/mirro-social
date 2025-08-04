@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   
   console.log('🔍 Mobile app detected:', isMobileApp)
 
-  // Handle mobile app routing - bypass landing page
+  // Handle mobile app routing - allow first-time users to see landing page
   if (request.nextUrl.pathname === '/' && isMobileApp) {
     try {
       console.log('🔐 Checking mobile app authentication...')
@@ -53,8 +53,9 @@ export async function middleware(request: NextRequest) {
         console.log('✅ Mobile user authenticated, redirecting to feed')
         return NextResponse.redirect(new URL('/feed', request.url))
       } else {
-        console.log('❌ Mobile user not authenticated, redirecting to login')
-        return NextResponse.redirect(new URL('/login', request.url))
+        // For unauthenticated mobile users, let the client-side handle first-time vs returning user logic
+        console.log('❌ Mobile user not authenticated, allowing landing page (client will handle redirect)')
+        // Don't redirect here - let MobileAppRedirect component handle it
       }
     } catch (error) {
       console.error('❌ Middleware mobile auth check failed:', error)
@@ -109,35 +110,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Auth routes - redirect if already authenticated (MOBILE ONLY)
+  // Auth routes - redirect if already authenticated
   const authPaths = ['/login', '/signup', '/reset-password']
   const isAuthPath = authPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
 
-  if (isAuthPath && isMobileApp) {
+  if (isAuthPath) {
     try {
-      console.log('🔐 Checking mobile auth route for authenticated user')
-      
       const token = await getToken({ 
         req: request, 
         secret: process.env.NEXTAUTH_SECRET 
       })
       
       if (token) {
-        console.log('✅ Mobile user already authenticated, redirecting to feed')
-        // Already authenticated mobile user, redirect to feed
+        // Already authenticated, redirect to feed
         return NextResponse.redirect(new URL('/feed', request.url))
-      } else {
-        console.log('❌ Mobile user not authenticated, allowing access to auth page')
       }
     } catch (error) {
-      console.error('❌ Middleware mobile auth route check failed:', error)
+      console.error('Middleware auth check failed:', error)
       // On error, continue to auth page
     }
-  } else if (isAuthPath && !isMobileApp) {
-    // Web users: always allow access to auth pages regardless of authentication status
-    console.log('🌐 Web user accessing auth page - allowing access (will clear session if needed)')
   }
 
   return NextResponse.next()

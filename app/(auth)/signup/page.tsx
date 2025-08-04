@@ -6,7 +6,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn, signOut, useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +22,6 @@ import { isMobileApp } from "@/src/lib/mobile-auth"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { data: session } = useSession()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -56,32 +55,6 @@ export default function SignupPage() {
     longitude: 0,
     timezone: "",
   })
-
-  // Clear web user sessions for fresh signup
-  useEffect(() => {
-    const clearWebSession = async () => {
-      try {
-        const mobile = await isMobileApp()
-        
-        // For web users: clear any existing session to force fresh signup
-        if (!mobile && session) {
-          console.log('🌐 Web user with existing session on signup page, clearing session')
-          await signOut({ 
-            redirect: false,
-            callbackUrl: '/signup' 
-          })
-          // Clear local storage tokens
-          localStorage.removeItem('mirro_auth_token')
-          localStorage.removeItem('next-auth.session-token')
-          localStorage.removeItem('__Secure-next-auth.session-token')
-          console.log('✅ Web session cleared on signup page')
-        }
-      } catch (error) {
-        console.error('❌ Error clearing web session on signup page:', error)
-      }
-    }
-    clearWebSession()
-  }, [session])
 
   // Get user's location and timezone on component mount
   useEffect(() => {

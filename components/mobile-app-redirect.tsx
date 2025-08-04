@@ -66,8 +66,17 @@ export function MobileAppRedirect() {
         // User is authenticated, redirect to main app
         router.replace('/feed')
       } else {
-        // User is not authenticated, redirect to login
-        router.replace('/login')
+        // User is not authenticated - check if they've seen the app before
+        const hasSeenApp = localStorage.getItem('mirro_app_visited')
+        
+        if (hasSeenApp) {
+          // Returning user without session, go to login
+          router.replace('/login')
+        } else {
+          // First-time user, go directly to signup
+          localStorage.setItem('mirro_app_visited', 'true')
+          router.replace('/signup')
+        }
       }
     }
     // For web users: do nothing, let them see the landing page normally
