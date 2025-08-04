@@ -6,7 +6,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: development  # Change to 'app_store' for App Store builds
-        bundle_identifier: com.gravity.mirro
+        bundle_identifier: com.mirro2.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"

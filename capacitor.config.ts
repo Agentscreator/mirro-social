@@ -6,8 +6,9 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
-    url: 'https://www.mirro2.com',
-    cleartext: true
+    // Use environment variable for URL, fallback to production
+    url: process.env.CAPACITOR_SERVER_URL || 'https://www.mirro2.com',
+    cleartext: process.env.NODE_ENV === 'development'
   },
   android: {
     buildOptions: {
@@ -23,6 +24,9 @@ const config: CapacitorConfig = {
       showSpinner: false,
       androidSpinnerStyle: "large",
       spinnerColor: "#999999",
+      androidScaleType: "CENTER_CROP",
+      splashFullScreen: true,
+      splashImmersive: true
     },
     App: {
       initialPath: "/login"

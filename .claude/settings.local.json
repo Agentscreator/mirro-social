@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pkill:*)",
       "Bash(npx tsc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx cap:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
