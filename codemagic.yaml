@@ -5,8 +5,10 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       ios_signing:
-        distribution_type: development  # Change to 'app_store' for App Store builds
-        bundle_identifier: com.mirro2.app
+        distribution_type: development
+        bundle_identifier: com.gravity.mirro
+        # Enable automatic code signing - remove empty arrays to use automatic signing
+        # provisioning_profiles and certificates will be managed automatically
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
