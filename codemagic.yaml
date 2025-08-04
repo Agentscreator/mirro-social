@@ -6,9 +6,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: development
-        bundle_identifier: com.gravity.mirro
-         Enable automatic code signing - remove empty arrays to use automatic signing
-         provisioning_profiles and certificates will be managed automatically
+        bundle_identifier: com.mirro2.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
