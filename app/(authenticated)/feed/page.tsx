@@ -32,6 +32,7 @@ export default function FeedPage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { data: session } = useSession();
@@ -44,10 +45,11 @@ export default function FeedPage() {
   const [excludeIds, setExcludeIds] = useState<number[]>([]);
 
   // Fetch feed posts
-  const fetchPosts = async (cursor?: string, excludePostIds: number[] = []) => {
+  const fetchPosts = async (cursor?: string, excludePostIds: number[] = [], searchTerm?: string) => {
     try {
       const params = new URLSearchParams();
       if (cursor) params.append('cursor', cursor);
+      if (searchTerm) params.append('search', searchTerm);
       params.append('limit', '10');
       if (excludePostIds.length > 0) {
         params.append('excludeIds', excludePostIds.join(','));
@@ -71,11 +73,21 @@ export default function FeedPage() {
     }
   };
   
-  // Load initial posts
+  // Debounce search query
   useEffect(() => {
-    const loadInitialPosts = async () => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Load initial posts or search results
+  useEffect(() => {
+    const loadPosts = async () => {
       setLoading(true);
-      const data = await fetchPosts();
+      setCurrentVideoIndex(0); // Reset video index when searching
+      const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
       setPosts(data.posts || []);
       setHasMore(data.hasMore || false);
       setNextCursor(data.nextCursor || null);
@@ -83,29 +95,22 @@ export default function FeedPage() {
     };
     
     if (session?.user?.id) {
-      loadInitialPosts();
+      loadPosts();
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, debouncedSearchQuery]);
   
   // Load more posts when needed
   const loadMorePosts = async () => {
     if (!hasMore || !nextCursor) return;
     
-    const data = await fetchPosts(nextCursor, excludeIds);
+    const data = await fetchPosts(nextCursor, excludeIds, debouncedSearchQuery || undefined);
     setPosts(prev => [...prev, ...(data.posts || [])]);
     setHasMore(data.hasMore || false);
     setNextCursor(data.nextCursor || null);
   };
 
-  // Filter posts based on search query
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = searchQuery === "" || 
-      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.user.nickname && post.user.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    return matchesSearch;
-  });
+  // Use posts directly since we're doing server-side search
+  const filteredPosts = posts;
 
   // Navigation functions for desktop up/down buttons
   const goToNextVideo = async () => {
@@ -143,20 +148,35 @@ export default function FeedPage() {
     const container = containerRef.current;
     if (!container) return;
 
+    let ticking = false;
+    
     const handleScroll = () => {
-      const { scrollTop, clientHeight } = container;
-      const videoIndex = Math.round(scrollTop / clientHeight);
-      setCurrentVideoIndex(videoIndex);
-      
-      // Load more when near the end
-      if (videoIndex >= filteredPosts.length - 2 && hasMore && !loading) {
-        loadMorePosts();
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const { scrollTop, clientHeight } = container;
+          const videoIndex = Math.round(scrollTop / clientHeight);
+          
+          // Only update if index actually changed
+          if (videoIndex !== currentVideoIndex) {
+            setCurrentVideoIndex(videoIndex);
+            console.log('📱 Current video index:', videoIndex);
+          }
+          
+          // Load more when near the end
+          if (videoIndex >= filteredPosts.length - 2 && hasMore && !loading) {
+            console.log('🔄 Loading more posts...');
+            loadMorePosts();
+          }
+          
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [filteredPosts.length, hasMore, loading]);
+  }, [filteredPosts.length, hasMore, loading, currentVideoIndex]);
 
   // Show loading if no session
   if (!session) {
@@ -184,8 +204,24 @@ export default function FeedPage() {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
         <div className="text-center text-white">
-          <p className="text-lg mb-2">No posts found</p>
-          <p className="text-sm text-white/70">Check back later for new content!</p>
+          <p className="text-lg mb-2">
+            {searchQuery ? `No posts found for "${searchQuery}"` : "No posts found"}
+          </p>
+          <p className="text-sm text-white/70">
+            {searchQuery ? "Try a different search term" : "Check back later for new content!"}
+          </p>
+          {searchQuery && (
+            <Button
+              variant="outline"
+              className="mt-4 text-white border-white/20 hover:bg-white/10"
+              onClick={() => {
+                setSearchQuery("");
+                setShowSearchBar(false);
+              }}
+            >
+              Clear Search
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -200,7 +236,11 @@ export default function FeedPage() {
           {/* Mobile Search */}
           {showSearchBar ? (
             <div className="flex-1 relative mr-3">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+              {loading && searchQuery ? (
+                <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+              )}
               <Input
                 placeholder="Search videos..."
                 className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 rounded-full"
@@ -240,7 +280,11 @@ export default function FeedPage() {
       <div className="hidden md:block absolute top-6 right-6 z-50">
         {showSearchBar ? (
           <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+            {loading && searchQuery ? (
+              <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+            )}
             <Input
               placeholder="Search videos..."
               className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 rounded-full"
@@ -311,6 +355,7 @@ export default function FeedPage() {
               <VideoFeedItem
                 post={post}
                 showInviteButton={true}
+                isActive={index === currentVideoIndex}
               />
             </div>
           ))}

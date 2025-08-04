@@ -109,27 +109,35 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Auth routes - redirect if already authenticated
+  // Auth routes - redirect if already authenticated (MOBILE ONLY)
   const authPaths = ['/login', '/signup', '/reset-password']
   const isAuthPath = authPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
 
-  if (isAuthPath) {
+  if (isAuthPath && isMobileApp) {
     try {
+      console.log('🔐 Checking mobile auth route for authenticated user')
+      
       const token = await getToken({ 
         req: request, 
         secret: process.env.NEXTAUTH_SECRET 
       })
       
       if (token) {
-        // Already authenticated, redirect to feed
+        console.log('✅ Mobile user already authenticated, redirecting to feed')
+        // Already authenticated mobile user, redirect to feed
         return NextResponse.redirect(new URL('/feed', request.url))
+      } else {
+        console.log('❌ Mobile user not authenticated, allowing access to auth page')
       }
     } catch (error) {
-      console.error('Middleware auth check failed:', error)
+      console.error('❌ Middleware mobile auth route check failed:', error)
       // On error, continue to auth page
     }
+  } else if (isAuthPath && !isMobileApp) {
+    // Web users: always allow access to auth pages regardless of authentication status
+    console.log('🌐 Web user accessing auth page - allowing access (will clear session if needed)')
   }
 
   return NextResponse.next()

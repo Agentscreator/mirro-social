@@ -2,7 +2,7 @@ import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share, UserPlus, M
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InviteButton } from "@/components/invite-button";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface VideoFeedItemProps {
   post: {
@@ -24,17 +24,102 @@ interface VideoFeedItemProps {
     comments: number;
   };
   showInviteButton?: boolean;
+  isActive?: boolean; // New prop to control autoplay
 }
 
 const VideoFeedItem = ({ 
   post,
-  showInviteButton = false 
+  showInviteButton = false,
+  isActive = false
 }: VideoFeedItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Autoplay effect when component becomes active
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo()) return;
+
+    const handleAutoplay = async () => {
+      try {
+        if (isActive) {
+          // Start playing when active
+          await video.play();
+          setIsPlaying(true);
+          console.log('🎥 Video autoplay started for post:', post.id);
+        } else {
+          // Pause when not active
+          video.pause();
+          setIsPlaying(false);
+          console.log('⏸️ Video paused for post:', post.id);
+        }
+      } catch (error) {
+        console.error('Error handling video autoplay:', error);
+        // Fallback: if autoplay fails, just set playing state
+        setIsPlaying(false);
+      }
+    };
+
+    handleAutoplay();
+  }, [isActive, post.id]);
+
+  // Intersection Observer for better autoplay control and performance
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo()) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const ratio = entry.intersectionRatio;
+            
+            if (ratio > 0.7) {
+              // Video is mostly visible - play if active
+              if (isActive && video.paused) {
+                video.play().then(() => {
+                  setIsPlaying(true);
+                  console.log('🎥 Video started playing (intersection):', post.id);
+                }).catch(console.error);
+              }
+            } else if (ratio > 0.3) {
+              // Video is partially visible - preload but don't play
+              if (video.readyState < 2) {
+                video.load(); // Preload video
+                console.log('📱 Video preloading:', post.id);
+              }
+            } else {
+              // Video is barely visible - pause if playing
+              if (!video.paused) {
+                video.pause();
+                setIsPlaying(false);
+                console.log('⏸️ Video paused (not visible enough):', post.id);
+              }
+            }
+          } else {
+            // Video is not visible - pause and reset
+            if (!video.paused) {
+              video.pause();
+              setIsPlaying(false);
+              console.log('⏸️ Video paused (not intersecting):', post.id);
+            }
+          }
+        });
+      },
+      { 
+        threshold: [0, 0.3, 0.7, 1.0],
+        rootMargin: '20px' 
+      }
+    );
+
+    observer.observe(video);
+    
+    return () => observer.disconnect();
+  }, [isActive, post.id]);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -109,12 +194,31 @@ const VideoFeedItem = ({
       <div className="absolute inset-0">
         {isVideo() ? (
           <video
+            ref={videoRef}
             className="w-full h-full object-cover"
             src={getMediaUrl()}
             muted={isMuted}
             loop
             playsInline
+            preload="metadata"
             poster={getMediaUrl()}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onLoadedData={() => {
+              // Attempt autoplay when video is loaded and active
+              if (isActive && videoRef.current) {
+                videoRef.current.play().catch(console.error);
+              }
+            }}
+            onError={(e) => {
+              console.error('Video error for post:', post.id, e);
+            }}
+            onCanPlayThrough={() => {
+              console.log('📹 Video can play through:', post.id);
+            }}
+            onWaiting={() => {
+              console.log('⏳ Video buffering:', post.id);
+            }}
           />
         ) : (
           <img
@@ -135,14 +239,13 @@ const VideoFeedItem = ({
             variant="ghost"
             size="icon"
             onClick={() => {
-              const video = document.querySelector(`video[src="${getMediaUrl()}"]`) as HTMLVideoElement;
+              const video = videoRef.current;
               if (video) {
                 if (isPlaying) {
                   video.pause();
                 } else {
-                  video.play();
+                  video.play().catch(console.error);
                 }
-                setIsPlaying(!isPlaying);
               }
             }}
             className="w-16 h-16 rounded-full bg-black/30 hover:bg-black/50 text-white hover:text-white backdrop-blur-sm transition-all duration-300"
@@ -210,10 +313,11 @@ const VideoFeedItem = ({
             variant="ghost"
             size="icon"
             onClick={() => {
-              const video = document.querySelector(`video[src="${getMediaUrl()}"]`) as HTMLVideoElement;
+              const video = videoRef.current;
               if (video) {
                 video.muted = !isMuted;
                 setIsMuted(!isMuted);
+                console.log('🔊 Video mute toggled:', !isMuted ? 'muted' : 'unmuted');
               }
             }}
             className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"

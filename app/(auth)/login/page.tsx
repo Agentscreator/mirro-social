@@ -6,7 +6,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, signOut, useSession } from "next-auth/react"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { isMobileApp, mobileLogin, setMobileAuthToken } from "@/src/lib/mobile-a
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [formData, setFormData] = useState({
     identifier: "", // Can be either email or username
     password: "",
@@ -30,6 +31,24 @@ export default function LoginPage() {
       const mobile = await isMobileApp()
       setIsMobile(mobile)
       console.log('📱 Mobile app detected on login page:', mobile)
+      
+      // For web users: clear any existing session to force fresh login
+      if (!mobile && session) {
+        console.log('🌐 Web user with existing session on login page, clearing session')
+        try {
+          await signOut({ 
+            redirect: false,
+            callbackUrl: '/login' 
+          })
+          // Clear local storage tokens
+          localStorage.removeItem('mirro_auth_token')
+          localStorage.removeItem('next-auth.session-token')
+          localStorage.removeItem('__Secure-next-auth.session-token')
+          console.log('✅ Web session cleared on login page')
+        } catch (error) {
+          console.error('❌ Error clearing web session on login page:', error)
+        }
+      }
     }
     checkMobile()
     
@@ -48,7 +67,7 @@ export default function LoginPage() {
           setError('An authentication error occurred.')
       }
     }
-  }, [])
+  }, [session])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

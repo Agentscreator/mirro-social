@@ -1,60 +1,61 @@
 "use client"
 
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useSession, signOut } from "next-auth/react"
+import { useEffect } from "react"
 
 export function WebAuthRedirect() {
   const { data: session, status } = useSession()
-  const router = useRouter()
 
-  // Don't show anything if loading or not authenticated
-  if (status === 'loading' || !session) {
-    return null
-  }
+  useEffect(() => {
+    // Check if mobile app (don't interfere with mobile apps)
+    const isMobileApp = () => {
+      if (typeof window === 'undefined') return false
+      
+      const userAgent = window.navigator.userAgent
+      const mobileAppIndicators = [
+        'wv', // WebView indicator
+        'ReactNative',
+        'Expo',
+        'CapacitorWebView', 
+        'Cordova',
+        'PhoneGap',
+        'Flutter',
+        'MirroApp',
+        'MirroMobile',
+        'Mobile/',
+        /Android.*wv/i // Android WebView regex
+      ]
+      
+      return mobileAppIndicators.some(indicator => 
+        typeof indicator === 'string' 
+          ? userAgent.includes(indicator)
+          : indicator.test(userAgent)
+      ) ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      new URLSearchParams(window.location.search).get('app') === 'mobile'
+    }
 
-  // Check if mobile app (don't show for mobile apps)
-  const isMobileApp = () => {
-    if (typeof window === 'undefined') return false
-    
-    const userAgent = window.navigator.userAgent
-    const mobileAppIndicators = [
-      'ReactNative',
-      'Expo',
-      'CapacitorWebView', 
-      'Cordova',
-      'PhoneGap',
-      'Flutter',
-      'MirroApp',
-      'MirroMobile'
-    ]
-    
-    return mobileAppIndicators.some(indicator => userAgent.includes(indicator)) ||
-           window.matchMedia('(display-mode: standalone)').matches ||
-           new URLSearchParams(window.location.search).get('app') === 'mobile'
-  }
+    // For web users only: clear session if they're on the landing page
+    // This ensures web users always go through fresh login
+    if (!isMobileApp() && session && window.location.pathname === '/') {
+      console.log('🌐 Web user detected on landing page, clearing session for fresh login')
+      signOut({ 
+        redirect: false,
+        callbackUrl: '/' 
+      }).then(() => {
+        // Clear any local storage tokens as well
+        try {
+          localStorage.removeItem('mirro_auth_token')
+          localStorage.removeItem('next-auth.session-token')
+          localStorage.removeItem('__Secure-next-auth.session-token')
+          console.log('✅ Web session cleared successfully')
+        } catch (error) {
+          console.error('Error clearing local storage:', error)
+        }
+      })
+    }
+  }, [session])
 
-  if (isMobileApp()) {
-    return null
-  }
-
-  // Show "Go to App" banner for authenticated web users
-  return (
-    <div className="fixed top-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg">
-      <div className="flex items-center gap-3">
-        <div>
-          <p className="font-medium">Welcome back!</p>
-          <p className="text-sm text-blue-100">You're already signed in</p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => router.push('/feed')}
-          className="bg-white text-blue-600 hover:bg-blue-50"
-        >
-          Go to App
-        </Button>
-      </div>
-    </div>
-  )
+  // Don't render anything - this component just handles session logic
+  return null
 }

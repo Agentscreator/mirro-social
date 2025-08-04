@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { postsTable, usersTable, postLikesTable } from "@/src/db/schema"
-import { desc, eq, sql, and, notInArray } from "drizzle-orm"
+import { desc, eq, sql, and, notInArray, or, ilike } from "drizzle-orm"
 
 // GET - Fetch feed posts with pagination
 export async function GET(request: NextRequest) {
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const cursor = searchParams.get("cursor")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const searchQuery = searchParams.get("search")?.trim()
     const excludeIds =
       searchParams
         .get("excludeIds")
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
     console.log("User ID:", session.user.id)
     console.log("Cursor:", cursor)
     console.log("Limit:", limit)
+    console.log("Search Query:", searchQuery)
     console.log("Exclude IDs:", excludeIds)
 
     // Build the query - handle transition period where both image and video columns exist
@@ -67,6 +69,12 @@ export async function GET(request: NextRequest) {
           excludeIds.length > 0 ? notInArray(postsTable.id, excludeIds) : undefined,
           // Cursor-based pagination
           cursor ? sql`${postsTable.id} < ${Number.parseInt(cursor)}` : undefined,
+          // Search functionality
+          searchQuery ? or(
+            ilike(postsTable.content, `%${searchQuery}%`),
+            ilike(usersTable.username, `%${searchQuery}%`),
+            ilike(usersTable.nickname, `%${searchQuery}%`)
+          ) : undefined,
         ),
       )
       .orderBy(desc(postsTable.id))
