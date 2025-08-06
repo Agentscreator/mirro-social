@@ -104,11 +104,7 @@ export default function ProfilePage() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isInviteMode, setIsInviteMode] = useState(false)
   
-  // Simple post creation states
-  const [isSimplePostOpen, setIsSimplePostOpen] = useState(false)
-  const [isCreatingPost, setIsCreatingPost] = useState(false)
-  const [simplePostInviteMode, setSimplePostInviteMode] = useState(true)
-  const [simplePostInviteLimit, setSimplePostInviteLimit] = useState(5)
+  // Removed simple post creation states - using video creation only
   const [inviteLimit, setInviteLimit] = useState(5)
   const [videoDescription, setVideoDescription] = useState("")
   const [selectedSound, setSelectedSound] = useState<string | null>(null)
@@ -311,7 +307,7 @@ export default function ProfilePage() {
     }
   }, [userId, session, isOwnProfile, fetchPosts])
 
-  // Media handling for post creation - removed duplicate function
+  // Media handling for post creation
 
   const handleMediaSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -414,93 +410,9 @@ export default function ProfilePage() {
     }
   }
 
-  // Simple post creation handler
-  const handleCreateSimplePost = async () => {
-    if (!postContent.trim() && !selectedMedia) {
-      toast({
-        title: "Error",
-        description: "Please add some content or media for your post.",
-        variant: "destructive",
-      })
-      return
-    }
+  // Removed simple post creation handler - using video creation only
 
-    try {
-      setIsCreatingPost(true)
-      const formData = new FormData()
-      formData.append("content", postContent.trim())
-      
-      if (selectedMedia) {
-        formData.append("media", selectedMedia)
-      }
-
-      // Add invite data 
-      if (simplePostInviteMode) {
-        formData.append("isInvite", "true")
-        formData.append("inviteLimit", simplePostInviteLimit.toString())
-      }
-
-      const response = await fetch("/api/posts", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (response.ok) {
-        const newPostData = await response.json()
-        sessionStorage.removeItem(cacheKey)
-        const updatedPosts = [newPostData, ...posts]
-        setPosts(updatedPosts)
-        sessionStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            data: updatedPosts,
-            timestamp: Date.now(),
-          }),
-        )
-
-        // Reset form
-        setPostContent("")
-        setSelectedMedia(null)
-        setMediaPreview(null)
-        setMediaType(null)
-        setSimplePostInviteMode(true)
-        setSimplePostInviteLimit(5)
-        setIsSimplePostOpen(false)
-
-        toast({
-          title: "Success",
-          description: "Post created successfully!",
-        })
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create post")
-      }
-    } catch (error: any) {
-      console.error("Error creating simple post:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create post. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsCreatingPost(false)
-    }
-  }
-
-  // Handle media type selection for simple posts
-  const handleMediaTypeSelect = (type: "image" | "video") => {
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = type === "image" ? "image/*" : "video/*"
-    input.onchange = (event) => {
-      const syntheticEvent = {
-        target: event.target,
-        currentTarget: event.target,
-      } as React.ChangeEvent<HTMLInputElement>
-      handleMediaSelect(syntheticEvent)
-    }
-    input.click()
-  }
+  // Removed media selection handler - using video creation only
 
   const handlePostClick = async (post: Post) => {
     setSelectedPost(post)
@@ -1360,25 +1272,14 @@ export default function ProfilePage() {
               {isOwnProfile ? "Your Posts" : `${user.username}'s Posts`}
             </h2>
             {isOwnProfile && (
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsSimplePostOpen(true)}
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">New Post</span>
-                  <span className="sm:hidden">Post</span>
-                </Button>
-                <Button
-                  onClick={() => setIsVideoCreationOpen(true)}
-                  variant="outline"
-                  className="rounded-full border-blue-600 text-blue-600 hover:bg-blue-50"
-                >
-                  <Video className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Video</span>
-                  <span className="sm:hidden">Vid</span>
-                </Button>
-              </div>
+              <Button
+                onClick={() => setIsVideoCreationOpen(true)}
+                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">New Post</span>
+                <span className="sm:hidden">Post</span>
+              </Button>
             )}
           </div>
 
@@ -1444,163 +1345,6 @@ export default function ProfilePage() {
         onCreatePost={handleCreatePost}
       />
 
-      {/* Simple Post Creation Dialog */}
-      <Dialog open={isSimplePostOpen} onOpenChange={setIsSimplePostOpen}>
-        <DialogContent className="max-w-md mx-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Post</DialogTitle>
-            <DialogDescription>
-              Share your thoughts with text and optional media.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="postContent" className="text-sm font-medium">
-                What's on your mind?
-              </Label>
-              <Textarea
-                id="postContent"
-                value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                placeholder="Share your thoughts..."
-                className="min-h-[100px] resize-none"
-                maxLength={500}
-              />
-              <div className="text-right text-xs text-gray-500 mt-1">
-                {postContent.length}/500
-              </div>
-            </div>
-            
-            {/* Media Upload */}
-            <div>
-              <Label className="text-sm font-medium">Add Media (Optional)</Label>
-              <div className="mt-2">
-                {!selectedMedia ? (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleMediaTypeSelect("image")}
-                      className="flex-1"
-                    >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Photo
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleMediaTypeSelect("video")}
-                      className="flex-1"
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Video
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <div className="border rounded-lg p-2 bg-gray-50">
-                      {mediaType === "image" && mediaPreview && (
-                        <img
-                          src={mediaPreview}
-                          alt="Preview"
-                          className="max-h-32 rounded mx-auto"
-                        />
-                      )}
-                      {mediaType === "video" && mediaPreview && (
-                        <video
-                          src={mediaPreview}
-                          className="max-h-32 rounded mx-auto"
-                          controls
-                        />
-                      )}
-                      <p className="text-sm text-gray-600 text-center mt-2">
-                        {selectedMedia.name}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedMedia(null)
-                        setMediaPreview(null)
-                        setMediaType(null)
-                      }}
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-100 hover:bg-red-200 text-red-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Invite Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <div className="font-medium text-blue-900">Create Activity Invite</div>
-                    <div className="text-xs text-blue-600">Let others request to join your activity</div>
-                  </div>
-                </div>
-                <Switch
-                  checked={simplePostInviteMode}
-                  onCheckedChange={setSimplePostInviteMode}
-                  className="bg-blue-500 data-[state=checked]:bg-blue-600"
-                />
-              </div>
-
-              {simplePostInviteMode && (
-                <div className="ml-6">
-                  <Label className="text-sm font-medium mb-2 block">
-                    Maximum participants: {simplePostInviteLimit}
-                  </Label>
-                  <Slider
-                    value={[simplePostInviteLimit]}
-                    onValueChange={([value]) => setSimplePostInviteLimit(value)}
-                    min={2}
-                    max={50}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>2</span>
-                    <span>50</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsSimplePostOpen(false)}
-              disabled={isCreatingPost}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateSimplePost}
-              disabled={isCreatingPost || (!postContent.trim() && !selectedMedia)}
-            >
-              {isCreatingPost ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Post"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Post View Dialog */}
       <Dialog open={isPostViewOpen} onOpenChange={setIsPostViewOpen}>
