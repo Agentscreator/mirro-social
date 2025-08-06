@@ -7,9 +7,7 @@ workflows:
     environment:
       groups:
         - APP_STORE_CONNECT  # Your environment variable group
-      ios_signing:
-        distribution_type: ad_hoc  # Changed to 'ad_hoc' for iOS Distribution certificate
-        bundle_identifier: com.mirro2.app  # Correct bundle ID
+      # Remove iOS signing configuration for unsigned build
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -40,27 +38,12 @@ workflows:
         script: |
           keychain initialize
           
-      - name: Fetch signing files
-        script: |
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
-            --type IOS_APP_ADHOC \
-            --platform IOS \
-            --create
-          
-      - name: Add certificates to keychain
-        script: |
-          keychain add-certificates
-          
-      - name: Set up code signing
-        script: |
-          xcode-project use-profiles
-          
-      - name: Build ipa
+      - name: Build unsigned ipa
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --archive-flags="-allowProvisioningUpdates CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO"
     
     artifacts:
       - build/ios/ipa/*.ipa
