@@ -247,7 +247,7 @@ export const messagesTable = pgTable("messages", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
-// Albums (NEW TABLE)
+// Albums (FIXED TABLE)
 export const albumsTable = pgTable("albums", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   title: varchar("title", { length: 200 }).notNull(),
@@ -258,7 +258,7 @@ export const albumsTable = pgTable("albums", {
   isPublic: integer("is_public").notNull().default(1), // 0 = private, 1 = public
   allowContributions: integer("allow_contributions").notNull().default(1), // 0 = no, 1 = yes
   shareToken: varchar("share_token", { length: 64 }).unique(), // For sharing albums via link
-  maxContributors: integer("max_contributors").default(null), // null = unlimited
+  maxContributors: integer("max_contributors"), // null = unlimited (nullable by default)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
