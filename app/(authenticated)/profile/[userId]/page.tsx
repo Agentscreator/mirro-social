@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { HamburgerMenu } from "@/components/hamburger-menu"
+import { VideoCreationDialog } from "@/components/video-creation-dialog"
 
 interface Post {
   id: number
@@ -90,12 +91,25 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false)
 
   // Post creation states
-  const [isCreatePostDialogOpen, setIsCreatePostDialogOpen] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null)
   const [mediaPreview, setMediaPreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null)
   const [postContent, setPostContent] = useState("")
-  const [isMediaTypeDialogOpen, setIsMediaTypeDialogOpen] = useState(false)
+
+  // Video creation states
+  const [isVideoCreationOpen, setIsVideoCreationOpen] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
+  const [videoPreview, setVideoPreview] = useState<string | null>(null)
+  const [isInviteMode, setIsInviteMode] = useState(false)
+  const [inviteLimit, setInviteLimit] = useState(5)
+  const [videoDescription, setVideoDescription] = useState("")
+  const [selectedSound, setSelectedSound] = useState<string | null>(null)
+  const [videoFilters, setVideoFilters] = useState({
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    blur: 0
+  })
 
   // Post viewing states
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -302,7 +316,6 @@ export default function ProfilePage() {
       handleMediaSelect(syntheticEvent)
     }
     input.click()
-    setIsMediaTypeDialogOpen(false)
   }
 
   const handleMediaSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -339,18 +352,37 @@ export default function ProfilePage() {
       setMediaPreview(reader.result as string)
     }
     reader.readAsDataURL(file)
-    setIsCreatePostDialogOpen(true)
   }
 
-  const handleCreatePost = async () => {
-    if (!selectedMedia && !postContent.trim()) return
-
+  const handleCreatePost = async (data: {
+    video: File
+    description: string
+    isInvite: boolean
+    inviteLimit?: number
+    sound?: string
+    filters: {
+      brightness: number
+      contrast: number
+      saturation: number
+      blur: number
+    }
+  }) => {
     try {
       const formData = new FormData()
-      formData.append("content", postContent.trim())
-      if (selectedMedia) {
-        formData.append("media", selectedMedia)
+      formData.append("content", data.description)
+      formData.append("media", data.video)
+
+      // Add invite data if it's an invite
+      if (data.isInvite) {
+        formData.append("isInvite", "true")
+        formData.append("inviteLimit", data.inviteLimit?.toString() || "5")
       }
+
+      // Add sound and filter data
+      if (data.sound) {
+        formData.append("sound", data.sound)
+      }
+      formData.append("filters", JSON.stringify(data.filters))
 
       const response = await fetch("/api/posts", {
         method: "POST",
@@ -370,16 +402,9 @@ export default function ProfilePage() {
           }),
         )
 
-        // Reset form
-        setSelectedMedia(null)
-        setMediaPreview(null)
-        setMediaType(null)
-        setPostContent("")
-        setIsCreatePostDialogOpen(false)
-
         toast({
           title: "Success",
-          description: "Post created successfully!",
+          description: data.isInvite ? "Video invite created successfully!" : "Video posted successfully!",
         })
       } else {
         throw new Error("Failed to create post")
@@ -524,7 +549,6 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "Failed to delete comment. Please try again.",
-        variant: "destructive",
       })
     }
   }
@@ -1254,7 +1278,7 @@ export default function ProfilePage() {
             </h2>
             {isOwnProfile && (
               <Button
-                onClick={() => setIsMediaTypeDialogOpen(true)}
+                onClick={() => setIsVideoCreationOpen(true)}
                 className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -1319,161 +1343,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Enhanced Single Media Button Dialog */}
-      <Dialog open={isMediaTypeDialogOpen} onOpenChange={setIsMediaTypeDialogOpen}>
-        <DialogContent className="mx-4 sm:mx-auto sm:max-w-[400px] w-[calc(100%-2rem)] rounded-2xl">
-          <DialogHeader className="text-center">
-            <DialogTitle className="text-lg sm:text-xl font-semibold text-blue-600">Create New Post</DialogTitle>
-            <DialogDescription className="text-sm sm:text-base text-gray-600">
-              Select an image or video to share
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center py-8 sm:py-12">
-            <Button
-              onClick={() => {
-                const input = document.createElement("input")
-                input.type = "file"
-                input.accept = "image/*,video/*"
-                input.onchange = (event) => {
-                  const syntheticEvent = {
-                    target: event.target,
-                    currentTarget: event.target,
-                  } as React.ChangeEvent<HTMLInputElement>
-                  handleMediaSelect(syntheticEvent)
-                }
-                input.click()
-                setIsMediaTypeDialogOpen(false)
-              }}
-              className="h-32 w-32 sm:h-40 sm:w-40 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all group active:scale-95 p-0 overflow-hidden shadow-xl hover:shadow-2xl"
-            >
-              <div className="relative h-full w-full flex items-center justify-center">
-                <Image
-                  src="/images/media-button.png"
-                  alt="Select media"
-                  width={80}
-                  height={80}
-                  className="opacity-90 group-hover:opacity-100 transition-opacity sm:w-20 sm:h-20"
-                />
-              </div>
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsMediaTypeDialogOpen(false)}
-              className="w-full rounded-full text-sm sm:text-base py-2 sm:py-3"
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Post Dialog */}
-      <Dialog open={isCreatePostDialogOpen} onOpenChange={setIsCreatePostDialogOpen}>
-        <DialogContent className="mx-2 sm:mx-auto sm:max-w-[500px] w-[calc(100%-1rem)] sm:w-[95vw] rounded-2xl max-h-[95vh] overflow-hidden p-0">
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-white">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setSelectedMedia(null)
-                setMediaPreview(null)
-                setMediaType(null)
-                setPostContent("")
-                setIsCreatePostDialogOpen(false)
-              }}
-              className="text-gray-600 hover:bg-gray-100 rounded-full px-3 text-sm sm:text-base"
-            >
-              Cancel
-            </Button>
-            <h2 className="text-base sm:text-lg font-semibold">New Post</h2>
-            <Button
-              onClick={handleCreatePost}
-              disabled={!selectedMedia}
-              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 disabled:opacity-50 text-sm sm:text-base"
-            >
-              Share
-            </Button>
-          </div>
-
-          <div className="max-h-[calc(95vh-60px)] overflow-y-auto">
-            {/* Media Preview */}
-            {mediaPreview && (
-              <div className="relative bg-black">
-                <div className="aspect-square sm:aspect-video flex items-center justify-center">
-                  {mediaType === "video" ? (
-                    <video
-                      src={mediaPreview}
-                      className="max-h-full max-w-full object-contain"
-                      controls
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <Image
-                      src={mediaPreview || "/placeholder.svg"}
-                      alt="Media preview"
-                      width={500}
-                      height={500}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  )}
-                </div>
-                {/* Media controls overlay */}
-                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const input = document.createElement("input")
-                      input.type = "file"
-                      input.accept = mediaType === "video" ? "video/*" : "image/*"
-                      input.onchange = (event) => {
-                        const syntheticEvent = {
-                          target: event.target,
-                          currentTarget: event.target,
-                        } as React.ChangeEvent<HTMLInputElement>
-                        handleMediaSelect(syntheticEvent)
-                      }
-                      input.click()
-                    }}
-                    className="rounded-full bg-black/60 hover:bg-black/80 text-white border-none backdrop-blur-sm h-8 w-8 sm:h-10 sm:w-10 p-0"
-                  >
-                    <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Caption Section */}
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <div className="relative h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full flex-shrink-0">
-                  <Image
-                    src={session?.user?.image || "/placeholder.svg?height=40&width=40"}
-                    alt="Your avatar"
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                  />
-                </div>
-                <div className="flex-1 space-y-2 sm:space-y-3">
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">{session?.user?.name || "You"}</p>
-                    <Textarea
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value.slice(0, 2200))}
-                      className="mt-2 min-h-[80px] sm:min-h-[100px] rounded-lg border-gray-200 resize-none text-sm sm:text-base placeholder:text-gray-400 focus:border-blue-400 focus:ring-blue-400 text-gray-900"
-                      placeholder="Write a caption..."
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Video Creation Dialog */}
+      <VideoCreationDialog
+        open={isVideoCreationOpen}
+        onOpenChange={setIsVideoCreationOpen}
+        onCreatePost={handleCreatePost}
+      />
 
       {/* Post View Dialog */}
       <Dialog open={isPostViewOpen} onOpenChange={setIsPostViewOpen}>
