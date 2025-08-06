@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postInvitesTable, inviteRequestsTable, usersTable, userSettingsTable, postsTable } from "@/src/db/schema"
+import { postInvitesTable, inviteRequestsTable, usersTable, userSettingsTable, postsTable, notificationsTable } from "@/src/db/schema"
 import { eq, and } from "drizzle-orm"
 
 // GET - Get invite status for a post
@@ -185,6 +185,35 @@ export async function POST(
           updatedAt: new Date(),
         })
         .where(eq(postInvitesTable.id, invite.id))
+
+      // Create notification for the post author
+      try {
+        const requesterInfo = await db
+          .select({
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, session.user.id))
+          .limit(1)
+
+        const displayName = requesterInfo[0]?.nickname || requesterInfo[0]?.username || "Someone"
+        
+        await db.insert(notificationsTable).values({
+          userId: post[0].userId, // Post author receives the notification
+          fromUserId: session.user.id, // User who requested the invite
+          type: "invite_accepted",
+          title: "Invite Request Accepted",
+          message: `${displayName} has joined your activity invite!`,
+          postId: postId,
+          inviteRequestId: null, // Will be set after request is created
+        })
+        
+        console.log("✅ Auto-acceptance notification created")
+      } catch (notificationError) {
+        console.error("❌ Failed to create auto-acceptance notification:", notificationError)
+        // Don't fail the entire operation
+      }
     }
 
     // Create the request

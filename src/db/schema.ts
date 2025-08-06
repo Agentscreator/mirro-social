@@ -348,3 +348,22 @@ export const albumImageCommentsTable = pgTable("album_image_comments", {
   content: text().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// Notifications (NEW TABLE)
+export const notificationsTable = pgTable("notifications", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id), // The user who receives the notification
+  fromUserId: uuid("from_user_id")
+    .references(() => usersTable.id), // The user who triggered the notification (optional)
+  type: varchar("type", { length: 50 }).notNull(), // "invite_accepted", "invite_request", etc.
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text().notNull(),
+  postId: integer("post_id")
+    .references(() => postsTable.id), // Related post (optional)
+  inviteRequestId: integer("invite_request_id")
+    .references(() => inviteRequestsTable.id), // Related invite request (optional)
+  isRead: integer("is_read").notNull().default(0), // 0 = unread, 1 = read
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

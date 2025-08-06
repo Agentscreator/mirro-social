@@ -1,6 +1,7 @@
 // app/(authenticated)/layout.tsx
 import type React from "react"
 import { Navigation } from "@/components/navigation"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { StreamProvider } from '@/components/providers/StreamProvider'
 import { ErrorBoundary } from '@/components/providers/ErrorBoundary'
 import { StreamVideoProvider } from "@/components/providers/StreamVideoProvider"
@@ -16,7 +17,11 @@ export default function AuthenticatedLayout({
         <StreamVideoProvider>
           <div className="flex min-h-screen flex-col md:flex-row">
             <Navigation />
-            <main className="flex-1 pb-20 md:ml-16 md:pb-0 pt-safe-top px-safe-left px-safe-right">
+            {/* Top header with notifications */}
+            <div className="fixed top-0 right-0 z-40 p-4 md:ml-16">
+              <NotificationBell />
+            </div>
+            <main className="flex-1 pb-20 md:ml-16 md:pb-0 pt-16 md:pt-safe-top px-safe-left px-safe-right">
               <div className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-8">
                 {children}
               </div>
