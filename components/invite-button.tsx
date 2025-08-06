@@ -58,9 +58,14 @@ export function InviteButton({ postId, className }: InviteButtonProps) {
   const handleInviteRequest = async () => {
     setIsLoading(true)
     try {
+      console.log("=== FRONTEND INVITE REQUEST DEBUG ===")
+      console.log("Sending invite request for post ID:", postId)
+      
       const response = await fetch(`/api/posts/${postId}/invites`, {
         method: "POST",
       })
+
+      console.log("Invite request response status:", response.status)
 
       if (response.ok) {
         const data = await response.json()
@@ -80,10 +85,21 @@ export function InviteButton({ postId, className }: InviteButtonProps) {
         // Refresh invite data
         await fetchInviteData()
       } else {
-        const error = await response.json()
+        const errorText = await response.text()
+        console.error("Invite request failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText
+        })
+        let error
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { error: errorText }
+        }
         toast({
           title: "Error",
-          description: error.error || "Failed to send invite request",
+          description: error.error || `Failed to send invite request: ${response.status}`,
           variant: "destructive",
         })
       }

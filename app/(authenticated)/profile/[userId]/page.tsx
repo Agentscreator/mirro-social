@@ -359,6 +359,17 @@ export default function ProfilePage() {
     }
   }) => {
     try {
+      console.log("=== FRONTEND CREATE POST DEBUG ===")
+      console.log("Creating post with data:", {
+        description: data.description,
+        isInvite: data.isInvite,
+        inviteLimit: data.inviteLimit,
+        hasVideo: !!data.video,
+        videoSize: data.video?.size,
+        sound: data.sound,
+        filters: data.filters
+      })
+
       const formData = new FormData()
       formData.append("content", data.description)
       formData.append("media", data.video)
@@ -375,10 +386,14 @@ export default function ProfilePage() {
       }
       formData.append("filters", JSON.stringify(data.filters))
 
+      console.log("Sending request to /api/posts")
       const response = await fetch("/api/posts", {
         method: "POST",
         body: formData,
       })
+
+      console.log("Response status:", response.status)
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const newPostData = await response.json()
@@ -398,13 +413,19 @@ export default function ProfilePage() {
           description: data.isInvite ? "Video invite created successfully!" : "Video posted successfully!",
         })
       } else {
-        throw new Error("Failed to create post")
+        const errorText = await response.text()
+        console.error("Create post failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText
+        })
+        throw new Error(`Failed to create post: ${response.status} ${response.statusText}`)
       }
     } catch (error: any) {
       console.error("Error creating post:", error)
       toast({
-        title: "Error",
-        description: "Failed to create post. Please try again.",
+        title: "Error", 
+        description: error.message || "Failed to create post. Please try again.",
         variant: "destructive",
       })
     }
@@ -585,9 +606,19 @@ export default function ProfilePage() {
           description: "Post deleted successfully!",
         })
       } else {
-        const errorData = await response.json()
-        console.error("Delete error response:", errorData)
-        throw new Error(errorData.error || "Failed to delete post")
+        const errorText = await response.text()
+        console.error("Delete post failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText
+        })
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
+        }
+        throw new Error(errorData.error || `Failed to delete post: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
       console.error("Error deleting post:", error)

@@ -139,7 +139,7 @@ export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoC
       // Reset form
       setSelectedVideo(null)
       setVideoPreview(null)
-      setIsInviteMode(false)
+      setIsInviteMode(true)
       setInviteLimit(5)
       setVideoDescription("")
       setSelectedSound(null)
