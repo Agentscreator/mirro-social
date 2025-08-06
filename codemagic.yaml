@@ -5,19 +5,17 @@ workflows:
     instance_type: mac_mini_m1
     
     integrations:
-      app_store_connect: codemagic  # This enables App Store Connect API integration
+      app_store_connect: APP_STORE_CONNECT  # Reference your API key
     
     environment:
+      groups:
+        - APP_STORE_CONNECT  # This references your environment variable group
       ios_signing:
         distribution_type: development
         bundle_identifier: com.mirro2.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        # Add your App Store Connect API credentials as environment variables
-        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...) # Add as secure variable
-        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...) # Add as secure variable
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...) # Add as secure variable
       node: 18
       xcode: latest
       cocoapods: default
@@ -50,6 +48,7 @@ workflows:
           app-store-connect fetch-signing-files \
             "com.mirro2.app" \
             --type IOS_APP_DEVELOPMENT \
+            --platform IOS \
             --create
           
       - name: Add certificates to keychain
