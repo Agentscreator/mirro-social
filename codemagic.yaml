@@ -8,7 +8,7 @@ workflows:
       groups:
         - APP_STORE_CONNECT  # Your environment variable group
       ios_signing:
-        distribution_type: app_store  # Changed from 'development' to 'app_store'
+        distribution_type: ad_hoc  # Changed to 'ad_hoc' for iOS Distribution certificate
         bundle_identifier: com.mirro2.app  # Correct bundle ID
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -44,7 +44,7 @@ workflows:
         script: |
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
+            --type IOS_APP_ADHOC \
             --platform IOS \
             --create
           
