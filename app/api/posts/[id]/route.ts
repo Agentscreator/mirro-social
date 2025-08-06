@@ -2,10 +2,88 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable } from "@/src/db/schema"
-import { eq, and } from "drizzle-orm"
+import { postsTable, usersTable } from "@/src/db/schema"
+import { eq, and, sql } from "drizzle-orm"
 import { postCommentsTable, postLikesTable } from "@/src/db/schema"
 import { put } from "@vercel/blob"
+
+// GET - Fetch a single post
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params
+    const postId = Number.parseInt(id)
+
+    if (isNaN(postId)) {
+      return NextResponse.json({ error: "Invalid post ID" }, { status: 400 })
+    }
+
+    // Get the post with user information and stats
+    const post = await db
+      .select({
+        id: postsTable.id,
+        content: postsTable.content,
+        image: postsTable.image,
+        video: postsTable.video,
+        duration: postsTable.duration,
+        createdAt: postsTable.createdAt,
+        updatedAt: postsTable.updatedAt,
+        userId: postsTable.userId,
+        likes: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM ${postLikesTable} 
+          WHERE ${postLikesTable.postId} = ${postsTable.id}
+        )`,
+        comments: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM ${postCommentsTable} 
+          WHERE ${postCommentsTable.postId} = ${postsTable.id}
+        )`,
+      })
+      .from(postsTable)
+      .where(eq(postsTable.id, postId))
+      .limit(1)
+
+    if (post.length === 0) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    // Get user information for the post
+    const user = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        profileImage: usersTable.profileImage,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, post[0].userId))
+      .limit(1)
+
+    // Check if current user liked this post (if authenticated)
+    const session = await getServerSession(authOptions)
+    let isLiked = false
+    if (session?.user?.id) {
+      const likeCheck = await db
+        .select()
+        .from(postLikesTable)
+        .where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, session.user.id)))
+        .limit(1)
+      isLiked = likeCheck.length > 0
+    }
+
+    const postWithUser = {
+      ...post[0],
+      user: user[0] || null,
+      isLiked,
+    }
+
+    return NextResponse.json(postWithUser)
+  } catch (error) {
+    console.error("Error fetching post:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
 
 async function uploadToStorage(options: {
   buffer: Buffer

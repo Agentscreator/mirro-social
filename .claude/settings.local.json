@@ -5,7 +5,14 @@
       "Bash(npx tsc:*)",
       "Bash(find:*)",
       "Bash(npx cap:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git restore:*)",
+      "Bash(git clean:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
