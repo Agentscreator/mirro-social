@@ -51,7 +51,7 @@ const FILTER_PRESETS = [
 export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoCreationDialogProps) {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [isInviteMode, setIsInviteMode] = useState(false)
+  const [isInviteMode, setIsInviteMode] = useState(true)
   const [inviteLimit, setInviteLimit] = useState(5)
   const [videoDescription, setVideoDescription] = useState("")
   const [selectedSound, setSelectedSound] = useState<string | null>(null)

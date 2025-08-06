@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable, postCommentsTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
 import { put } from "@vercel/blob"
 
@@ -319,6 +319,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const content = formData.get("content") as string
     const media = formData.get("media") as File | null
+    const isInvite = formData.get("isInvite") === "true"
+    const inviteLimit = formData.get("inviteLimit") ? parseInt(formData.get("inviteLimit") as string) : 10
 
     console.log("Form data parsed:", {
       content: content ? `"${content.substring(0, 100)}${content.length > 100 ? "..." : ""}"` : "null",
@@ -330,6 +332,8 @@ export async function POST(request: NextRequest) {
             type: media.type,
           }
         : null,
+      isInvite,
+      inviteLimit,
     })
 
     if (!content?.trim() && !media) {
@@ -427,6 +431,30 @@ export async function POST(request: NextRequest) {
       userId: verifyPost[0].userId,
       persisted: true,
     })
+
+    // Create invite entry if this is an invite post
+    if (isInvite) {
+      console.log("=== CREATING INVITE ENTRY ===")
+      try {
+        const inviteEntry = await db
+          .insert(postInvitesTable)
+          .values({
+            postId: post[0].id,
+            participantLimit: inviteLimit,
+            currentParticipants: 0,
+          })
+          .returning()
+
+        console.log("✅ INVITE CREATED SUCCESSFULLY:", {
+          inviteId: inviteEntry[0].id,
+          postId: inviteEntry[0].postId,
+          participantLimit: inviteEntry[0].participantLimit,
+        })
+      } catch (inviteError) {
+        console.error("❌ INVITE CREATION FAILED:", inviteError)
+        // Don't fail the entire post creation, just log the error
+      }
+    }
 
     // Check total posts count for this user after insert
     const userPostsCount = await db

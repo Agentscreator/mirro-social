@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
 import { Edit, Send, Heart, MessageCircle, Share2, Users, UserPlus, Camera, Check, Eye, Plus, Trash2, X, Play, Reply, ChevronDown, ChevronUp, Loader2, Video } from 'lucide-react'
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -105,6 +107,8 @@ export default function ProfilePage() {
   // Simple post creation states
   const [isSimplePostOpen, setIsSimplePostOpen] = useState(false)
   const [isCreatingPost, setIsCreatingPost] = useState(false)
+  const [simplePostInviteMode, setSimplePostInviteMode] = useState(true)
+  const [simplePostInviteLimit, setSimplePostInviteLimit] = useState(5)
   const [inviteLimit, setInviteLimit] = useState(5)
   const [videoDescription, setVideoDescription] = useState("")
   const [selectedSound, setSelectedSound] = useState<string | null>(null)
@@ -307,20 +311,7 @@ export default function ProfilePage() {
     }
   }, [userId, session, isOwnProfile, fetchPosts])
 
-  // Media handling for post creation
-  const handleMediaTypeSelect = (type: "image" | "video") => {
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = type === "image" ? "image/*" : "video/*"
-    input.onchange = (event) => {
-      const syntheticEvent = {
-        target: event.target,
-        currentTarget: event.target,
-      } as React.ChangeEvent<HTMLInputElement>
-      handleMediaSelect(syntheticEvent)
-    }
-    input.click()
-  }
+  // Media handling for post creation - removed duplicate function
 
   const handleMediaSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -443,6 +434,12 @@ export default function ProfilePage() {
         formData.append("media", selectedMedia)
       }
 
+      // Add invite data 
+      if (simplePostInviteMode) {
+        formData.append("isInvite", "true")
+        formData.append("inviteLimit", simplePostInviteLimit.toString())
+      }
+
       const response = await fetch("/api/posts", {
         method: "POST",
         body: formData,
@@ -466,6 +463,8 @@ export default function ProfilePage() {
         setSelectedMedia(null)
         setMediaPreview(null)
         setMediaType(null)
+        setSimplePostInviteMode(true)
+        setSimplePostInviteLimit(5)
         setIsSimplePostOpen(false)
 
         toast({
@@ -486,6 +485,21 @@ export default function ProfilePage() {
     } finally {
       setIsCreatingPost(false)
     }
+  }
+
+  // Handle media type selection for simple posts
+  const handleMediaTypeSelect = (type: "image" | "video") => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = type === "image" ? "image/*" : "video/*"
+    input.onchange = (event) => {
+      const syntheticEvent = {
+        target: event.target,
+        currentTarget: event.target,
+      } as React.ChangeEvent<HTMLInputElement>
+      handleMediaSelect(syntheticEvent)
+    }
+    input.click()
   }
 
   const handlePostClick = async (post: Post) => {
@@ -1522,6 +1536,44 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+            </div>
+            
+            {/* Invite Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <div className="font-medium text-blue-900">Create Activity Invite</div>
+                    <div className="text-xs text-blue-600">Let others request to join your activity</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={simplePostInviteMode}
+                  onCheckedChange={setSimplePostInviteMode}
+                  className="bg-blue-500 data-[state=checked]:bg-blue-600"
+                />
+              </div>
+
+              {simplePostInviteMode && (
+                <div className="ml-6">
+                  <Label className="text-sm font-medium mb-2 block">
+                    Maximum participants: {simplePostInviteLimit}
+                  </Label>
+                  <Slider
+                    value={[simplePostInviteLimit]}
+                    onValueChange={([value]) => setSimplePostInviteLimit(value)}
+                    min={2}
+                    max={50}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>2</span>
+                    <span>50</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
