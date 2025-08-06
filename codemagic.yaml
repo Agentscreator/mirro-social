@@ -4,18 +4,16 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     
-    integrations:
-      app_store_connect: APP_STORE_CONNECT  # Reference your API key
-    
     environment:
       groups:
-        - APP_STORE_CONNECT  # This references your environment variable group
+        - APP_STORE_CONNECT  # Your environment variable group
       ios_signing:
         distribution_type: development
-        bundle_identifier: com.mirro2.app
+        bundle_identifier: B46X894ZHC.Mirro.Social.App  # CORRECTED BUNDLE ID
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "B46X894ZHC.Mirro.Social.App"  # CORRECTED BUNDLE ID
       node: 18
       xcode: latest
       cocoapods: default
@@ -34,19 +32,23 @@ workflows:
         script: |
           yarn build
           
+      - name: Update Capacitor config with correct bundle ID
+        script: |
+          # Update the bundle ID in capacitor.config.ts before syncing
+          sed -i '' "s/com.mirro2.app/B46X894ZHC.Mirro.Social.App/g" capacitor.config.ts || true
+          
       - name: Capacitor sync
         script: |
           npx cap sync ios
           
-      - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
+      - name: Set up keychain
         script: |
           keychain initialize
           
       - name: Fetch signing files
         script: |
-          # This uses the App Store Connect API to automatically fetch certificates and profiles
           app-store-connect fetch-signing-files \
-            "com.mirro2.app" \
+            "B46X894ZHC.Mirro.Social.App" \
             --type IOS_APP_DEVELOPMENT \
             --platform IOS \
             --create
@@ -55,11 +57,11 @@ workflows:
         script: |
           keychain add-certificates
           
-      - name: Set up code signing settings on Xcode project
+      - name: Set up code signing
         script: |
           xcode-project use-profiles
           
-      - name: Build ipa for distribution
+      - name: Build ipa
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
@@ -68,8 +70,6 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     
     publishing:
       email:

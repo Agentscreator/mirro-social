@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mirro2.app',
+  appId: 'B46X894ZHC.Mirro.Social.App',  // UPDATED TO MATCH APPLE DEVELOPER
   appName: 'Mirro',
   webDir: 'out',
   server: {
