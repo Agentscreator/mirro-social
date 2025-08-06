@@ -23,7 +23,8 @@ import {
   VolumeX,
   Settings,
   Check,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
