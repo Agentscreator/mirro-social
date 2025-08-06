@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,8 +44,6 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { HamburgerMenu } from "@/components/hamburger-menu"
 
-const MAX_TOTAL_CHARS = 8000
-const MAX_THOUGHT_CHARS = 1000
 const STORY_DURATION = 5000 // 5 seconds per story
 
 interface Post {
@@ -99,18 +96,6 @@ interface FollowUser {
   image?: string
 }
 
-interface Thought {
-  id: number
-  title: string
-  content: string
-  createdAt: string
-  userId: string
-  user?: {
-    username: string
-    nickname?: string
-    profileImage?: string
-  }
-}
 
 interface Comment {
   id: number
@@ -135,12 +120,10 @@ export default function ProfilePage() {
 
   const [user, setUser] = useState<ProfileUser | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
-  const [thoughts, setThoughts] = useState<Thought[]>([])
   const [followers, setFollowers] = useState<FollowUser[]>([])
   const [following, setFollowing] = useState<FollowUser[]>([])
   const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(false)
-  const [thoughtsLoading, setThoughtsLoading] = useState(false)
   const [profileImageUploading, setProfileImageUploading] = useState(false)
   const [isEditingAbout, setIsEditingAbout] = useState(false)
   const [editedAbout, setEditedAbout] = useState("")
@@ -194,14 +177,6 @@ export default function ProfilePage() {
   const [removeEditMedia, setRemoveEditMedia] = useState(false)
   const [isEditPostDialogOpen, setIsEditPostDialogOpen] = useState(false)
 
-  // Thoughts/Notes states
-  const [newThought, setNewThought] = useState({
-    title: "",
-    content: "",
-  })
-  const [editingThought, setEditingThought] = useState<null | Thought>(null)
-  const [isAddThoughtDialogOpen, setIsAddThoughtDialogOpen] = useState(false)
-  const [isEditThoughtDialogOpen, setIsEditThoughtDialogOpen] = useState(false)
 
   const cacheKey = `posts-${userId || session?.user?.id}`
 
@@ -470,30 +445,6 @@ export default function ProfilePage() {
     [cacheKey],
   )
 
-  const fetchThoughts = useCallback(async (targetUserId: string) => {
-    try {
-      setThoughtsLoading(true)
-      console.log("=== FETCHING THOUGHTS DEBUG ===")
-      console.log("Target user ID:", targetUserId)
-
-      const response = await fetch(`/api/thoughts?userId=${targetUserId}`)
-      console.log("Thoughts response status:", response.status)
-
-      if (response.ok) {
-        const thoughtsData = await response.json()
-        console.log("Thoughts fetched:", thoughtsData.length)
-        setThoughts(thoughtsData)
-      } else {
-        console.error("Failed to fetch thoughts")
-        setThoughts([])
-      }
-    } catch (error) {
-      console.error("Error fetching thoughts:", error)
-      setThoughts([])
-    } finally {
-      setThoughtsLoading(false)
-    }
-  }, [])
 
   const fetchFollowers = async (targetUserId: string) => {
     try {
@@ -581,8 +532,8 @@ export default function ProfilePage() {
           setEditedAbout(data.user.about || "")
         }
 
-        // Fetch posts, thoughts, and stories
-        await Promise.all([fetchPosts(targetUserId), fetchThoughts(targetUserId), fetchStories()])
+        // Fetch posts and stories
+        await Promise.all([fetchPosts(targetUserId), fetchStories()])
 
         // Fetch follow status if not own profile
         if (!isOwnProfile) {
@@ -610,7 +561,7 @@ export default function ProfilePage() {
     if (session) {
       fetchProfile()
     }
-  }, [userId, session, isOwnProfile, fetchPosts, fetchThoughts, fetchStories])
+  }, [userId, session, isOwnProfile, fetchPosts, fetchStories])
 
   // Media handling for post creation
   const handleMediaTypeSelect = (type: "image" | "video") => {
@@ -1136,131 +1087,6 @@ export default function ProfilePage() {
     }
   }
 
-  // Thoughts functions
-  const thoughtsCharCount = thoughts.reduce((acc, t) => acc + t.content.length, 0)
-  const remainingChars = MAX_TOTAL_CHARS - thoughtsCharCount
-  const usagePercentage = (thoughtsCharCount / MAX_TOTAL_CHARS) * 100
-
-  const handleAddThought = async () => {
-    if (!newThought.title || !newThought.content) return
-
-    if (newThought.content.length > remainingChars) {
-      toast({
-        title: "Error",
-        description: `You only have ${remainingChars} characters remaining. This note is too long.`,
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      const response = await fetch("/api/thoughts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: newThought.title,
-          content: newThought.content,
-        }),
-      })
-
-      if (response.ok) {
-        const savedThought = await response.json()
-        setThoughts([savedThought, ...thoughts])
-        setNewThought({ title: "", content: "" })
-        setIsAddThoughtDialogOpen(false)
-
-        toast({
-          title: "Success",
-          description: "Thought saved successfully!",
-        })
-      } else {
-        throw new Error("Failed to save thought")
-      }
-    } catch (error) {
-      console.error("Error saving thought:", error)
-      toast({
-        title: "Error",
-        description: "Failed to save thought. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleEditThought = async () => {
-    if (!editingThought || !editingThought.title || !editingThought.content) return
-
-    const originalThought = thoughts.find((t) => t.id === editingThought.id)
-    const charDifference = editingThought.content.length - (originalThought?.content.length || 0)
-
-    if (charDifference > 0 && charDifference > remainingChars) {
-      toast({
-        title: "Error",
-        description: `You only have ${remainingChars} characters remaining. This edit adds too many characters.`,
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/thoughts/${editingThought.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: editingThought.title,
-          content: editingThought.content,
-        }),
-      })
-
-      if (response.ok) {
-        const updatedThought = await response.json()
-        setThoughts(thoughts.map((t) => (t.id === editingThought.id ? updatedThought : t)))
-        setEditingThought(null)
-        setIsEditThoughtDialogOpen(false)
-
-        toast({
-          title: "Success",
-          description: "Thought updated successfully!",
-        })
-      } else {
-        throw new Error("Failed to update thought")
-      }
-    } catch (error) {
-      console.error("Error updating thought:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update thought. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleDeleteThought = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this thought?")) return
-
-    try {
-      const response = await fetch(`/api/thoughts/${id}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        setThoughts(thoughts.filter((t) => t.id !== id))
-
-        toast({
-          title: "Success",
-          description: "Thought deleted successfully!",
-        })
-      } else {
-        throw new Error("Failed to delete thought")
-      }
-    } catch (error) {
-      console.error("Error deleting thought:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete thought. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -1759,29 +1585,10 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Tabs with Posts and Notes */}
-      <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 rounded-xl sm:rounded-2xl bg-blue-50 p-1 mb-6">
-          <TabsTrigger
-            value="posts"
-            className="rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium text-sm sm:text-base py-2"
-          >
-            Posts
-            {postsLoading && <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>}
-          </TabsTrigger>
-          <TabsTrigger
-            value="notes"
-            className="rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium text-sm sm:text-base py-2"
-          >
-            Thoughts
-            {thoughtsLoading && (
-              <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {/* Posts Section */}
+      <div className="w-full">
 
-        {/* Posts Tab */}
-        <TabsContent value="posts" className="space-y-4 sm:space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-blue-600">
               {isOwnProfile ? "Your Posts" : `${user.username}'s Posts`}
@@ -1850,103 +1657,8 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </TabsContent>
-
-        {/* Notes Tab */}
-        <TabsContent value="notes" className="space-y-4 sm:space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-semibold text-blue-600">
-              {isOwnProfile ? "Your Thoughts" : `${user.username}'s Thoughts`}
-            </h2>
-            {isOwnProfile && (
-              <Button
-                onClick={() => setIsAddThoughtDialogOpen(true)}
-                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">New Thought</span>
-                <span className="sm:hidden">New</span>
-              </Button>
-            )}
-          </div>
-
-          {/* Character Usage - More subtle */}
-          {isOwnProfile && (
-            <div className="text-xs text-gray-500 text-right">
-              {thoughtsCharCount} / {MAX_TOTAL_CHARS} characters used
-            </div>
-          )}
-
-          {/* Notes Display */}
-          {thoughts.length === 0 ? (
-            <Card className="rounded-xl bg-card shadow-sm border border-blue-100">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-2xl">📝</span>
-                </div>
-                <h3 className="text-lg font-semibold text-blue-600 mb-2">
-                  {isOwnProfile ? "No thoughts yet" : "No thoughts shared"}
-                </h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {isOwnProfile
-                    ? "Begin building connections with your first thought. Each reflection you add helps Mirro find patterns and insights that matter to you."
-                    : `${user.username} hasn't shared any thoughts yet.`}
-                </p>
-                {isOwnProfile && (
-                  <Button
-                    onClick={() => setIsAddThoughtDialogOpen(true)}
-                    className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Thought
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {thoughts.map((thought) => (
-                <Card key={thought.id} className="rounded-xl bg-card shadow-sm border border-blue-100">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-blue-600 font-semibold text-lg mb-1">{thought.title}</h3>
-                        <p className="text-sm text-gray-500">{formatDate(thought.createdAt)}</p>
-                      </div>
-                      {isOwnProfile && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingThought(thought)
-                              setIsEditThoughtDialogOpen(true)
-                            }}
-                            className="rounded-full bg-background/50 border-blue-200"
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteThought(thought.id)}
-                            className="bg-red-100 hover:bg-red-200 text-red-600 rounded-full"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    <p className="whitespace-pre-line text-gray-800 leading-relaxed">{thought.content}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       {/* Story Creation Dialog */}
       <Dialog open={isCreateStoryDialogOpen} onOpenChange={setIsCreateStoryDialogOpen}>
@@ -2523,144 +2235,6 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Thought Dialog */}
-      <Dialog open={isAddThoughtDialogOpen} onOpenChange={setIsAddThoughtDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] rounded-xl bg-background/90 backdrop-blur-md border border-blue-200 w-[calc(100%-2rem)] mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-blue-600">Create New Thought</DialogTitle>
-            <DialogDescription>
-              Add a new thought to your collection. These thoughts help build meaningful connections.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title" className="text-gray-900">
-                Title
-              </Label>
-              <Input
-                id="title"
-                value={newThought.title}
-                onChange={(e) => setNewThought({ ...newThought, title: e.target.value })}
-                placeholder="Give your note a title"
-                className="rounded-full bg-background/50 text-gray-900 placeholder:text-gray-500"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="content" className="text-gray-900">
-                Content
-              </Label>
-              <Textarea
-                id="content"
-                value={newThought.content}
-                onChange={(e) => {
-                  const content = e.target.value.slice(0, MAX_THOUGHT_CHARS)
-                  setNewThought({ ...newThought, content })
-                }}
-                placeholder="Write your note here..."
-                className="min-h-[150px] rounded-xl bg-background/50 text-gray-900 placeholder:text-gray-500"
-              />
-              <div className="flex flex-col sm:flex-row sm:justify-between text-xs text-muted-foreground">
-                <span className={newThought.content.length >= MAX_THOUGHT_CHARS ? "text-red-500" : ""}>
-                  {newThought.content.length}/{MAX_THOUGHT_CHARS} characters
-                </span>
-                <span className="mt-1 sm:mt-0">{remainingChars} characters remaining in total</span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsAddThoughtDialogOpen(false)}
-              className="rounded-full bg-background/50 w-full sm:w-auto text-gray-700 hover:text-gray-900"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddThought}
-              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
-              disabled={!newThought.title || !newThought.content || newThought.content.length > MAX_THOUGHT_CHARS}
-            >
-              Save Note
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Thought Dialog */}
-      <Dialog
-        open={isEditThoughtDialogOpen && editingThought !== null}
-        onOpenChange={(open) => {
-          setIsEditThoughtDialogOpen(open)
-          if (!open) setEditingThought(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-[550px] rounded-xl bg-background/90 backdrop-blur-md border border-blue-200 w-[calc(100%-2rem)] mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-blue-600">Edit Note</DialogTitle>
-          </DialogHeader>
-          {editingThought && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-title" className="text-gray-900">
-                  Title
-                </Label>
-                <Input
-                  id="edit-title"
-                  value={editingThought.title}
-                  onChange={(e) => setEditingThought({ ...editingThought, title: e.target.value })}
-                  className="rounded-full bg-background/50 text-gray-900 placeholder:text-gray-500"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-content" className="text-gray-900">
-                  Content
-                </Label>
-                <Textarea
-                  id="edit-content"
-                  value={editingThought.content}
-                  onChange={(e) => {
-                    const content = e.target.value.slice(0, MAX_THOUGHT_CHARS)
-                    setEditingThought({ ...editingThought, content })
-                  }}
-                  className="min-h-[150px] rounded-xl bg-background/50 text-gray-900 placeholder:text-gray-500"
-                />
-                <div className="flex flex-col sm:flex-row sm:justify-between text-xs text-muted-foreground">
-                  <span className={editingThought.content.length >= MAX_THOUGHT_CHARS ? "text-red-500" : ""}>
-                    {editingThought.content.length}/{MAX_THOUGHT_CHARS} characters
-                  </span>
-                  <span className="mt-1 sm:mt-0">
-                    {remainingChars +
-                      (thoughts.find((t) => t.id === editingThought.id)?.content.length || 0) -
-                      editingThought.content.length}{" "}
-                    characters remaining in total
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditingThought(null)
-                setIsEditThoughtDialogOpen(false)
-              }}
-              className="rounded-full bg-background/50 w-full sm:w-auto text-gray-700 hover:text-gray-900"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEditThought}
-              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
-              disabled={
-                !editingThought?.title || !editingThought?.content || editingThought?.content.length > MAX_THOUGHT_CHARS
-              }
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
