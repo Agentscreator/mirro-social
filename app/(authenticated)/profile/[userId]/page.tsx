@@ -103,7 +103,7 @@ export default function ProfilePage() {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isInviteMode, setIsInviteMode] = useState(false)
-  
+
   // Removed simple post creation states - using video creation only
   const [inviteLimit, setInviteLimit] = useState(5)
   const [videoDescription, setVideoDescription] = useState("")
@@ -424,7 +424,7 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error("Error creating post:", error)
       toast({
-        title: "Error", 
+        title: "Error",
         description: error.message || "Failed to create post. Please try again.",
         variant: "destructive",
       })
@@ -446,9 +446,9 @@ export default function ProfilePage() {
       // Find the current post to determine if it's liked
       const currentPost = posts.find(p => p.id === postId);
       const isCurrentlyLiked = currentPost?.isLiked || false;
-      
+
       console.log(`${isCurrentlyLiked ? 'Unliking' : 'Liking'} post ${postId}`);
-      
+
       const response = await fetch(`/api/posts/${postId}/like`, {
         method: isCurrentlyLiked ? "DELETE" : "POST",
         headers: {
@@ -461,22 +461,22 @@ export default function ProfilePage() {
       if (response.ok) {
         const updatedPost = await response.json()
         console.log("✅ Like successful:", updatedPost);
-        
+
         const updatedPosts = posts.map((post) =>
-          post.id === postId ? { 
-            ...post, 
-            likes: updatedPost.likes !== undefined ? updatedPost.likes : post.likes, 
-            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !post.isLiked 
+          post.id === postId ? {
+            ...post,
+            likes: updatedPost.likes !== undefined ? updatedPost.likes : post.likes,
+            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !post.isLiked
           } : post,
         )
         setPosts(updatedPosts)
 
         // Update selected post if it's the same
         if (selectedPost?.id === postId) {
-          setSelectedPost((prev) => (prev ? { 
-            ...prev, 
-            likes: updatedPost.likes !== undefined ? updatedPost.likes : prev.likes, 
-            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !prev.isLiked 
+          setSelectedPost((prev) => (prev ? {
+            ...prev,
+            likes: updatedPost.likes !== undefined ? updatedPost.likes : prev.likes,
+            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !prev.isLiked
           } : null))
         }
 
@@ -756,10 +756,10 @@ export default function ProfilePage() {
         setUser((prev) =>
           prev
             ? {
-                ...prev,
-                profileImage: data.imageUrl,
-                image: data.imageUrl,
-              }
+              ...prev,
+              profileImage: data.imageUrl,
+              image: data.imageUrl,
+            }
             : null,
         )
 
@@ -826,9 +826,9 @@ export default function ProfilePage() {
         setUser((prev) =>
           prev
             ? {
-                ...prev,
-                followers: (prev.followers || 0) + (isFollowing ? -1 : 1),
-              }
+              ...prev,
+              followers: (prev.followers || 0) + (isFollowing ? -1 : 1),
+            }
             : null,
         )
 

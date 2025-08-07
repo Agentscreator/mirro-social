@@ -4,30 +4,35 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { 
-  Video, 
   Upload, 
   Camera, 
   Pause, 
   Play, 
   Square, 
   RotateCcw, 
-  Download,
-  Sparkles,
-  Palette,
-  Layers,
-  Timer,
-  Volume2,
-  VolumeX,
-  Settings,
   Check,
   X,
   Loader2,
-  MapPin,
-  Navigation,
-  Users
+  Users,
+  Music,
+  Sparkles,
+  Palette,
+  Layers,
+  Volume2,
+  VolumeX,
+  Timer,
+  FlipHorizontal,
+  Zap,
+  Image as ImageIcon,
+  Mic,
+  MicOff,
+  MoreHorizontal,
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -38,43 +43,49 @@ interface NewPostCreatorProps {
   onPostCreated?: (post: any) => void;
 }
 
-type PostType = 'video-record' | 'video-upload' | 'image-upload';
-type VideoDuration = 15 | 30 | 60 | 180; // seconds
-type VideoFilter = 'none' | 'vintage' | 'dramatic' | 'bright' | 'warm' | 'cool' | 'noir';
-type VideoEffect = 'none' | 'greenscreen' | 'overlay' | 'blur-background' | 'split-screen';
+type CreationStep = 'upload' | 'edit' | 'effects' | 'audio' | 'details';
+type VideoFilter = 'none' | 'vintage' | 'dramatic' | 'bright' | 'warm' | 'cool' | 'noir' | 'bw' | 'sepia' | 'vibrant';
+type VideoEffect = 'none' | 'greenscreen' | 'blur-bg' | 'split-screen' | 'overlay' | 'zoom' | 'shake';
+type AudioTrack = {
+  id: string;
+  name: string;
+  artist: string;
+  duration: number;
+  url: string;
+  thumbnail?: string;
+};
 
 export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreatorProps) {
-  const [postType, setPostType] = useState<PostType | null>(null);
+  // Main state
+  const [currentStep, setCurrentStep] = useState<CreationStep>('upload');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   
-  // Video recording states
+  // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordedTime, setRecordedTime] = useState(0);
-  const [maxDuration, setMaxDuration] = useState<VideoDuration>(60);
-  const [hasPermission, setHasPermission] = useState(false);
+  const [maxDuration, setMaxDuration] = useState(60);
+  const [isMuted, setIsMuted] = useState(false);
   
-  // Video effects and filters
+  // Effects and filters
   const [selectedFilter, setSelectedFilter] = useState<VideoFilter>('none');
   const [selectedEffect, setSelectedEffect] = useState<VideoEffect>('none');
-  const [showEffects, setShowEffects] = useState(false);
-  const [overlayOpacity, setOverlayOpacity] = useState(0.8);
-  const [backgroundBlur, setBackgroundBlur] = useState(5);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [saturation, setSaturation] = useState(100);
+  const [blur, setBlur] = useState(0);
   
-  // Location sharing states
-  const [hasPrivateLocation, setHasPrivateLocation] = useState(false);
-  const [locationName, setLocationName] = useState("");
-  const [locationAddress, setLocationAddress] = useState("");
-  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  // Audio
+  const [selectedAudio, setSelectedAudio] = useState<AudioTrack | null>(null);
+  const [audioVolume, setAudioVolume] = useState(50);
+  const [originalAudioVolume, setOriginalAudioVolume] = useState(100);
   
-  // Auto-accept group states
+  // Auto-accept group (all posts are invites now)
   const [autoAcceptInvites, setAutoAcceptInvites] = useState(false);
   const [groupName, setGroupName] = useState("");
-  
-  // File upload states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,7 +96,15 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Video filters CSS
+  // Sample audio tracks (in real app, these would come from an API)
+  const audioTracks: AudioTrack[] = [
+    { id: '1', name: 'Original Audio', artist: 'Your Video', duration: 30, url: '' },
+    { id: '2', name: 'Chill Vibes', artist: 'Lo-Fi Beats', duration: 180, url: '/audio/chill.mp3' },
+    { id: '3', name: 'Upbeat Energy', artist: 'Pop Mix', duration: 120, url: '/audio/upbeat.mp3' },
+    { id: '4', name: 'Trending Sound', artist: 'Viral Audio', duration: 15, url: '/audio/trending.mp3' },
+  ];
+
+  // Video filters
   const videoFilters = {
     none: 'none',
     vintage: 'sepia(0.5) contrast(1.2) brightness(0.9)',
@@ -93,124 +112,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     bright: 'brightness(1.2) contrast(1.1) saturate(1.2)',
     warm: 'sepia(0.3) saturate(1.4) hue-rotate(15deg)',
     cool: 'saturate(1.2) hue-rotate(-15deg) brightness(1.1)',
-    noir: 'grayscale(1) contrast(1.5) brightness(0.9)'
-  };
-
-  // Request camera permission and setup stream
-  const setupCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
-          facingMode: "user"
-        },
-        audio: true
-      });
-      
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true; // Prevent echo
-      }
-      setHasPermission(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasPermission(false);
-    }
-  };
-
-  // Start recording
-  const startRecording = useCallback(() => {
-    if (!streamRef.current) return;
-
-    try {
-      recordedChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
-      
-      mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-      };
-      
-      mediaRecorder.start(100); // Collect data every 100ms
-      setIsRecording(true);
-      setIsPaused(false);
-      
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setRecordedTime(prev => {
-          const newTime = prev + 0.1;
-          if (newTime >= maxDuration) {
-            stopRecording();
-            return maxDuration;
-          }
-          return newTime;
-        });
-      }, 100);
-      
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
-  }, [maxDuration]);
-
-  // Stop recording
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-  }, [isRecording]);
-
-  // Pause/Resume recording
-  const togglePause = useCallback(() => {
-    if (!mediaRecorderRef.current) return;
-    
-    if (isPaused) {
-      mediaRecorderRef.current.resume();
-      timerRef.current = setInterval(() => {
-        setRecordedTime(prev => {
-          const newTime = prev + 0.1;
-          if (newTime >= maxDuration) {
-            stopRecording();
-            return maxDuration;
-          }
-          return newTime;
-        });
-      }, 100);
-    } else {
-      mediaRecorderRef.current.pause();
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-    setIsPaused(!isPaused);
-  }, [isPaused, maxDuration, stopRecording]);
-
-  // Reset recording
-  const resetRecording = () => {
-    stopRecording();
-    setRecordedTime(0);
-    setPreviewUrl(null);
-    recordedChunksRef.current = [];
+    noir: 'grayscale(1) contrast(1.5) brightness(0.9)',
+    bw: 'grayscale(1)',
+    sepia: 'sepia(1)',
+    vibrant: 'saturate(2) contrast(1.2)'
   };
 
   // Handle file upload
@@ -220,94 +125,34 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      setCurrentStep('edit');
     }
   };
 
-  // Apply green screen effect
-  const applyGreenScreenEffect = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const video = videoRef.current;
-    
-    if (!ctx) return;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    const processFrame = () => {
-      if (!ctx || !video) return;
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      if (selectedEffect === 'greenscreen') {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Green screen processing (simplified)
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Detect green color (adjust threshold as needed)
-          if (g > 100 && r < 100 && b < 100) {
-            data[i + 3] = 0; // Make transparent
-          }
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-      }
-      
-      if (isRecording && !isPaused) {
-        requestAnimationFrame(processFrame);
-      }
-    };
-    
-    if (selectedEffect === 'greenscreen') {
-      processFrame();
-    }
-  }, [selectedEffect, isRecording, isPaused]);
+  // Format time display
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Create post
   const handleCreatePost = async () => {
-    if (!caption.trim() && !previewUrl) return;
+    if (!selectedFile && !previewUrl) return;
     
     setIsUploading(true);
     try {
-      console.log("=== CREATING POST ===");
-      console.log("Caption:", caption);
-      console.log("Post type:", postType);
-      console.log("Has selected file:", !!selectedFile);
-      console.log("Has recorded chunks:", recordedChunksRef.current.length > 0);
-      
       const formData = new FormData();
       formData.append('content', caption);
       
       if (selectedFile) {
-        console.log("Uploading selected file:", selectedFile.name, selectedFile.type);
         formData.append('media', selectedFile);
       } else if (recordedChunksRef.current.length > 0) {
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        console.log("Uploading recorded video blob:", blob.size);
         formData.append('media', blob, 'recorded-video.webm');
       }
 
-      // Add location data if provided
-      if (hasPrivateLocation && locationName.trim()) {
-        formData.append('hasPrivateLocation', 'true');
-        formData.append('locationName', locationName.trim());
-        if (locationAddress.trim()) {
-          formData.append('locationAddress', locationAddress.trim());
-        }
-        if (coordinates) {
-          formData.append('latitude', coordinates.lat.toString());
-          formData.append('longitude', coordinates.lng.toString());
-        }
-      }
-
-      // Add auto-accept group data if provided
+      // All posts are invites now, add auto-accept group data
       if (autoAcceptInvites && groupName.trim()) {
         formData.append('autoAcceptInvites', 'true');
         formData.append('groupName', groupName.trim());
@@ -318,21 +163,15 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         body: formData,
       });
       
-      console.log("Response status:", response.status);
-      
       if (response.ok) {
         const newPost = await response.json();
-        console.log("✅ Post created successfully:", newPost);
         onPostCreated?.(newPost);
         handleClose();
       } else {
-        const errorText = await response.text();
-        console.error("❌ Post creation failed:", response.status, errorText);
         throw new Error(`Failed to create post: ${response.status}`);
       }
     } catch (error) {
       console.error('Error creating post:', error);
-      // Show user-friendly error message
       alert('Failed to create post. Please try again.');
     } finally {
       setIsUploading(false);
@@ -341,512 +180,453 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   // Close and cleanup
   const handleClose = () => {
-    // Stop recording if active
-    if (isRecording) {
-      stopRecording();
-    }
-    
-    // Stop camera stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
     
-    // Clear timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     
-    // Reset states
-    setPostType(null);
-    setCaption("");
+    // Reset all states
+    setCurrentStep('upload');
     setSelectedFile(null);
     setPreviewUrl(null);
-    setRecordedTime(0);
-    setIsRecording(false);
-    setIsPaused(false);
+    setCaption("");
     setSelectedFilter('none');
     setSelectedEffect('none');
-    setShowEffects(false);
-    setHasPrivateLocation(false);
-    setLocationName("");
-    setLocationAddress("");
-    setCoordinates(null);
+    setBrightness(100);
+    setContrast(100);
+    setSaturation(100);
+    setBlur(0);
+    setSelectedAudio(null);
     setAutoAcceptInvites(false);
     setGroupName("");
+    setIsRecording(false);
+    setIsPaused(false);
+    setRecordedTime(0);
     
     onClose();
   };
 
-  // Initialize camera when recording video
-  useEffect(() => {
-    if (postType === 'video-record' && isOpen) {
-      setupCamera();
-    }
-    
-    return () => {
-      // Cleanup on unmount
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [postType, isOpen]);
+  // Render upload step
+  const renderUploadStep = () => (
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      
+      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mb-8 shadow-2xl">
+        <Upload className="w-12 h-12 text-white" />
+      </div>
+      
+      <h2 className="text-2xl font-bold text-white mb-3">Select Video to Upload</h2>
+      <p className="text-gray-400 text-center mb-8 leading-relaxed">
+        Choose a video from your device to create an<br />
+        amazing post with editing tools and sounds
+      </p>
+      
+      <Button
+        onClick={() => fileInputRef.current?.click()}
+        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
+      >
+        Choose Video
+      </Button>
+      
+      <p className="text-gray-500 text-sm mt-4">Max file size: 100MB</p>
+    </div>
+  );
 
-  // Format time display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-auto h-[90vh] bg-black text-white border-gray-800">
-        <DialogHeader className="border-b border-gray-800 pb-4">
-          <DialogTitle className="text-white text-center">
-            {postType ? 'Create Post' : 'New Post'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {!postType ? (
-            // Post type selection
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-center">Choose post type</h3>
-              
-              <div className="grid grid-cols-1 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-16 border-gray-700 hover:bg-gray-800"
-                  onClick={() => setPostType('video-record')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Camera className="w-6 h-6" />
-                    <div className="text-left">
-                      <div className="font-medium">Record Video</div>
-                      <div className="text-sm text-gray-400">Create with camera</div>
-                    </div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="h-16 border-gray-700 hover:bg-gray-800"
-                  onClick={() => setPostType('video-upload')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Video className="w-6 h-6" />
-                    <div className="text-left">
-                      <div className="font-medium">Upload Video</div>
-                      <div className="text-sm text-gray-400">Choose existing video</div>
-                    </div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="h-16 border-gray-700 hover:bg-gray-800"
-                  onClick={() => setPostType('image-upload')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Upload className="w-6 h-6" />
-                    <div className="text-left">
-                      <div className="font-medium">Upload Image</div>
-                      <div className="text-sm text-gray-400">Share a photo</div>
-                    </div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          ) : postType === 'video-record' ? (
-            // Video recording interface
-            <div className="space-y-4">
-              {/* Camera preview */}
-              <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-[9/16]">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ filter: videoFilters[selectedFilter] }}
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute inset-0 w-full h-full"
-                  style={{ display: selectedEffect !== 'none' ? 'block' : 'none' }}
-                />
-                
-                {/* Timer overlay */}
-                <div className="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-full">
-                  <span className="text-white text-sm font-mono">
-                    {formatTime(recordedTime)} / {formatTime(maxDuration)}
-                  </span>
-                </div>
-                
-                {/* Duration selector */}
-                <div className="absolute top-4 right-4 flex gap-1">
-                  {[15, 30, 60, 180].map((duration) => (
-                    <Button
-                      key={duration}
-                      size="sm"
-                      variant={maxDuration === duration ? "default" : "outline"}
-                      className="text-xs h-6 px-2"
-                      onClick={() => setMaxDuration(duration as VideoDuration)}
-                      disabled={isRecording}
-                    >
-                      {duration}s
-                    </Button>
-                  ))}
-                </div>
-                
-                {/* Recording indicator */}
-                {isRecording && (
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className={`w-4 h-4 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500'} animate-pulse`} />
-                  </div>
-                )}
-              </div>
-              
-              {/* Effects panel toggle */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEffects(!showEffects)}
-                className="w-full border-gray-700"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Effects & Filters
-              </Button>
-              
-              {/* Effects panel */}
-              {showEffects && (
-                <Card className="bg-gray-900 border-gray-700">
-                  <CardContent className="p-4 space-y-4">
-                    {/* Filters */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Filters</h4>
-                      <div className="grid grid-cols-4 gap-2">
-                        {Object.keys(videoFilters).map((filter) => (
-                          <Button
-                            key={filter}
-                            size="sm"
-                            variant={selectedFilter === filter ? "default" : "outline"}
-                            className="text-xs h-8"
-                            onClick={() => setSelectedFilter(filter as VideoFilter)}
-                          >
-                            {filter}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Effects */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Effects</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { key: 'none', label: 'None' },
-                          { key: 'greenscreen', label: 'Green Screen' },
-                          { key: 'overlay', label: 'Overlay' },
-                          { key: 'blur-background', label: 'Blur BG' }
-                        ].map((effect) => (
-                          <Button
-                            key={effect.key}
-                            size="sm"
-                            variant={selectedEffect === effect.key ? "default" : "outline"}
-                            className="text-xs h-8"
-                            onClick={() => setSelectedEffect(effect.key as VideoEffect)}
-                          >
-                            {effect.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Effect controls */}
-                    {selectedEffect === 'overlay' && (
-                      <div>
-                        <label className="text-sm">Opacity</label>
-                        <Slider
-                          value={[overlayOpacity]}
-                          onValueChange={(value) => setOverlayOpacity(value[0])}
-                          max={1}
-                          min={0}
-                          step={0.1}
-                          className="mt-2"
-                        />
-                      </div>
-                    )}
-                    
-                    {selectedEffect === 'blur-background' && (
-                      <div>
-                        <label className="text-sm">Blur Amount</label>
-                        <Slider
-                          value={[backgroundBlur]}
-                          onValueChange={(value) => setBackgroundBlur(value[0])}
-                          max={20}
-                          min={0}
-                          step={1}
-                          className="mt-2"
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Recording controls */}
-              <div className="flex justify-center gap-4">
-                {!isRecording && !previewUrl && (
-                  <Button
-                    size="lg"
-                    onClick={startRecording}
-                    disabled={!hasPermission}
-                    className="bg-red-600 hover:bg-red-700 rounded-full w-16 h-16"
-                  >
-                    <Camera className="w-6 h-6" />
-                  </Button>
-                )}
-                
-                {isRecording && (
-                  <>
-                    <Button
-                      size="lg"
-                      onClick={togglePause}
-                      className="bg-yellow-600 hover:bg-yellow-700 rounded-full w-12 h-12"
-                    >
-                      {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-                    </Button>
-                    
-                    <Button
-                      size="lg"
-                      onClick={stopRecording}
-                      className="bg-red-600 hover:bg-red-700 rounded-full w-12 h-12"
-                    >
-                      <Square className="w-5 h-5" />
-                    </Button>
-                  </>
-                )}
-                
-                {previewUrl && (
-                  <Button
-                    size="lg"
-                    onClick={resetRecording}
-                    className="bg-gray-600 hover:bg-gray-700 rounded-full w-12 h-12"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                )}
-              </div>
-              
-              {/* Preview video */}
-              {previewUrl && (
-                <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-[9/16]">
-                  <video
-                    src={previewUrl}
-                    controls
-                    className="w-full h-full object-cover"
-                    style={{ filter: videoFilters[selectedFilter] }}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            // File upload interface
-            <div className="space-y-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={postType === 'video-upload' ? 'video/*' : 'image/*'}
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              
-              {!selectedFile ? (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center cursor-pointer hover:border-gray-600"
-                >
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-400">
-                    Click to upload {postType === 'video-upload' ? 'video' : 'image'}
-                  </p>
-                </div>
-              ) : (
-                <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-                  {postType === 'video-upload' ? (
-                    <video
-                      src={previewUrl || undefined}
-                      controls
-                      className="w-full aspect-video object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={previewUrl || undefined}
-                      alt="Upload preview"
-                      className="w-full aspect-square object-cover"
-                    />
-                  )}
-                  
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setPreviewUrl(null);
-                    }}
-                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+  // Render edit step
+  const renderEditStep = () => (
+    <div className="flex flex-col h-full">
+      {/* Video Preview */}
+      <div className="flex-1 relative bg-black rounded-t-3xl overflow-hidden">
+        {previewUrl && (
+          <video
+            src={previewUrl}
+            className="w-full h-full object-cover"
+            style={{
+              filter: `${videoFilters[selectedFilter]} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`
+            }}
+            controls
+            muted={isMuted}
+          />
+        )}
+        
+        {/* Top Controls */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentStep('upload')}
+            className="bg-black/50 text-white rounded-full backdrop-blur-sm"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           
-          {/* Caption input (shown for all post types when file/video is ready) */}
-          {(previewUrl || selectedFile) && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Caption</label>
-                <Textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Write a caption..."
-                  className="bg-gray-900 border-gray-700 text-white resize-none"
-                  rows={3}
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMuted(!isMuted)}
+              className="bg-black/50 text-white rounded-full backdrop-blur-sm"
+            >
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Bottom Tools */}
+      <div className="bg-gray-900 p-4 space-y-4">
+        {/* Tool Tabs */}
+        <div className="flex justify-center gap-1 bg-gray-800 rounded-full p-1">
+          <Button
+            variant={currentStep === 'edit' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentStep('edit')}
+            className="rounded-full px-6"
+          >
+            <Palette className="w-4 h-4 mr-2" />
+            Filters
+          </Button>
+          <Button
+            variant={currentStep === 'effects' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentStep('effects')}
+            className="rounded-full px-6"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Effects
+          </Button>
+          <Button
+            variant={currentStep === 'audio' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentStep('audio')}
+            className="rounded-full px-6"
+          >
+            <Music className="w-4 h-4 mr-2" />
+            Audio
+          </Button>
+        </div>
+        
+        {/* Filter Options */}
+        {currentStep === 'edit' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-5 gap-2">
+              {Object.keys(videoFilters).map((filter) => (
+                <Button
+                  key={filter}
+                  variant={selectedFilter === filter ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedFilter(filter as VideoFilter)}
+                  className="text-xs h-8 capitalize"
+                >
+                  {filter}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-300">Brightness</span>
+                <span className="text-sm text-gray-400">{brightness}%</span>
+              </div>
+              <Slider
+                value={[brightness]}
+                onValueChange={(value) => setBrightness(value[0])}
+                max={200}
+                min={0}
+                step={1}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-300">Contrast</span>
+                <span className="text-sm text-gray-400">{contrast}%</span>
+              </div>
+              <Slider
+                value={[contrast]}
+                onValueChange={(value) => setContrast(value[0])}
+                max={200}
+                min={0}
+                step={1}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-300">Saturation</span>
+                <span className="text-sm text-gray-400">{saturation}%</span>
+              </div>
+              <Slider
+                value={[saturation]}
+                onValueChange={(value) => setSaturation(value[0])}
+                max={200}
+                min={0}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Effects Options */}
+        {currentStep === 'effects' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'none', label: 'None', icon: X },
+                { key: 'greenscreen', label: 'Green Screen', icon: Layers },
+                { key: 'blur-bg', label: 'Blur Background', icon: ImageIcon },
+                { key: 'split-screen', label: 'Split Screen', icon: FlipHorizontal },
+              ].map((effect) => (
+                <Button
+                  key={effect.key}
+                  variant={selectedEffect === effect.key ? 'default' : 'outline'}
+                  onClick={() => setSelectedEffect(effect.key as VideoEffect)}
+                  className="h-16 flex flex-col items-center gap-1"
+                >
+                  <effect.icon className="w-5 h-5" />
+                  <span className="text-xs">{effect.label}</span>
+                </Button>
+              ))}
+            </div>
+            
+            {selectedEffect !== 'none' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Effect Intensity</span>
+                  <span className="text-sm text-gray-400">{blur}px</span>
+                </div>
+                <Slider
+                  value={[blur]}
+                  onValueChange={(value) => setBlur(value[0])}
+                  max={20}
+                  min={0}
+                  step={1}
+                  className="w-full"
                 />
               </div>
-
-              {/* Auto-Accept Group */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto-accept-group"
-                    checked={autoAcceptInvites}
-                    onCheckedChange={setAutoAcceptInvites}
-                  />
-                  <label htmlFor="auto-accept-group" className="text-sm font-medium flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Auto-Accept to Group
-                  </label>
-                </div>
-                
-                {autoAcceptInvites && (
-                  <div className="space-y-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
-                    <p className="text-xs text-gray-400">
-                      People who accept your invite will automatically be added to a group chat.
-                    </p>
-                    
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Group name (required)"
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white"
-                        required={autoAcceptInvites}
-                      />
+            )}
+          </div>
+        )}
+        
+        {/* Audio Options */}
+        {currentStep === 'audio' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {audioTracks.map((track) => (
+                <div
+                  key={track.id}
+                  onClick={() => setSelectedAudio(track)}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedAudio?.id === track.id
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <Music className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-medium">{track.name}</p>
+                        <p className="text-gray-400 text-xs">{track.artist}</p>
+                      </div>
                     </div>
+                    <span className="text-gray-400 text-xs">{formatTime(track.duration)}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Private Location Sharing */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="private-location"
-                    checked={hasPrivateLocation}
-                    onCheckedChange={setHasPrivateLocation}
-                  />
-                  <label htmlFor="private-location" className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Add Private Location
-                  </label>
                 </div>
+              ))}
+            </div>
+            
+            {selectedAudio && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Audio Volume</span>
+                  <span className="text-sm text-gray-400">{audioVolume}%</span>
+                </div>
+                <Slider
+                  value={[audioVolume]}
+                  onValueChange={(value) => setAudioVolume(value[0])}
+                  max={100}
+                  min={0}
+                  step={1}
+                  className="w-full"
+                />
                 
-                {hasPrivateLocation && (
-                  <div className="space-y-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
-                    <p className="text-xs text-gray-400">
-                      This location will only be shared with people who request it and you approve.
-                    </p>
-                    
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Location name (e.g., Central Park)"
-                        value={locationName}
-                        onChange={(e) => setLocationName(e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white"
-                      />
-                      <Input
-                        placeholder="Address (optional)"
-                        value={locationAddress}
-                        onChange={(e) => setLocationAddress(e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white"
-                      />
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (navigator.geolocation) {
-                          navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                              setCoordinates({
-                                lat: position.coords.latitude,
-                                lng: position.coords.longitude
-                              });
-                            },
-                            (error) => {
-                              console.error('Error getting location:', error);
-                            }
-                          );
-                        }
-                      }}
-                      className="border-gray-700 text-white hover:bg-gray-800"
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      {coordinates ? 'Location Set' : 'Use Current Location'}
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Original Audio</span>
+                  <span className="text-sm text-gray-400">{originalAudioVolume}%</span>
+                </div>
+                <Slider
+                  value={[originalAudioVolume]}
+                  onValueChange={(value) => setOriginalAudioVolume(value[0])}
+                  max={100}
+                  min={0}
+                  step={1}
+                  className="w-full"
+                />
               </div>
+            )}
+          </div>
+        )}
+        
+        {/* Next Button */}
+        <Button
+          onClick={() => setCurrentStep('details')}
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-3 rounded-full font-semibold"
+        >
+          Next
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Render details step
+  const renderDetailsStep = () => (
+    <div className="flex flex-col h-full">
+      {/* Video Preview */}
+      <div className="h-64 relative bg-black rounded-t-3xl overflow-hidden">
+        {previewUrl && (
+          <video
+            src={previewUrl}
+            className="w-full h-full object-cover"
+            style={{
+              filter: `${videoFilters[selectedFilter]} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`
+            }}
+            muted
+            loop
+            autoPlay
+          />
+        )}
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentStep('edit')}
+          className="absolute top-4 left-4 bg-black/50 text-white rounded-full backdrop-blur-sm"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+      </div>
+      
+      {/* Details Form */}
+      <div className="flex-1 bg-gray-900 p-6 space-y-6">
+        <div className="space-y-2">
+          <label className="text-white font-medium">Describe your invitation</label>
+          <Textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="What are you inviting people to do? Be creative and engaging..."
+            className="bg-gray-800 border-gray-700 text-white resize-none min-h-[100px] rounded-xl"
+            rows={4}
+          />
+          <p className="text-gray-400 text-xs">{caption.length}/2200</p>
+        </div>
+
+        {/* Auto-Accept Group */}
+        <div className="space-y-4 p-4 bg-gray-800 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-blue-400" />
+              <div>
+                <p className="text-white font-medium">Auto-Accept to Group</p>
+                <p className="text-gray-400 text-sm">Create instant group chats</p>
+              </div>
+            </div>
+            <Switch
+              checked={autoAcceptInvites}
+              onCheckedChange={setAutoAcceptInvites}
+            />
+          </div>
+          
+          {autoAcceptInvites && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Group name (e.g., 'Beach Volleyball Squad')"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="bg-gray-900 border-gray-700 text-white rounded-lg"
+                required
+              />
+              <p className="text-gray-400 text-xs">
+                People who accept your invite will automatically join this group chat
+              </p>
             </div>
           )}
         </div>
-
-        {/* Footer buttons */}
-        <div className="flex gap-3 pt-4 border-t border-gray-800">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            className="flex-1 border-gray-700"
-          >
-            Cancel
-          </Button>
-          
-          {(previewUrl || selectedFile) && (
-            <Button
-              onClick={handleCreatePost}
-              disabled={isUploading || (autoAcceptInvites && !groupName.trim())}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Posting...
-                </>
-              ) : (
-                'Post'
-              )}
-            </Button>
+      </div>
+      
+      {/* Post Button */}
+      <div className="p-6 bg-gray-900">
+        <Button
+          onClick={handleCreatePost}
+          disabled={isUploading || !caption.trim() || (autoAcceptInvites && !groupName.trim())}
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white py-4 rounded-full font-bold text-lg"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Creating Invitation...
+            </>
+          ) : (
+            <>
+              <Zap className="w-5 h-5 mr-2" />
+              Share Invitation
+            </>
           )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md mx-auto h-[95vh] bg-black text-white border-none p-0 overflow-hidden">
+        {/* Progress Indicator */}
+        <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm">
+          {['upload', 'edit', 'details'].map((step, index) => (
+            <div
+              key={step}
+              className={`flex-1 h-1 ${
+                currentStep === step || 
+                (['upload', 'edit', 'effects', 'audio'].indexOf(currentStep) > index)
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-600'
+                  : 'bg-gray-700'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Close Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClose}
+          className="absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full backdrop-blur-sm"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+
+        {/* Step Content */}
+        <div className="h-full pt-4">
+          {currentStep === 'upload' && renderUploadStep()}
+          {(currentStep === 'edit' || currentStep === 'effects' || currentStep === 'audio') && renderEditStep()}
+          {currentStep === 'details' && renderDetailsStep()}
         </div>
       </DialogContent>
     </Dialog>
