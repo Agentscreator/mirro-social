@@ -479,6 +479,5 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
     </div>
-    </div>
   )
 }

@@ -4,7 +4,6 @@ import { usersTable, userTagsTable, tagsTable, thoughtsTable } from "../db/schem
 import { eq, ne, and, sql, isNotNull, desc } from "drizzle-orm"
 import { Pinecone, type ScoredPineconeRecord } from "@pinecone-database/pinecone"
 import { openai } from "../lib/openai" // You'll need to create this
-import * as math from "mathjs"
 
 // Initialize Pinecone client - moved here from separate file
 const pineconeClient = new Pinecone({
@@ -609,6 +608,20 @@ async function getDatabaseRecommendations(
 }
 
 /**
+ * Calculate dot product of two vectors
+ */
+function dotProduct(a: number[], b: number[]): number {
+  return a.reduce((sum, val, i) => sum + val * b[i], 0)
+}
+
+/**
+ * Calculate Euclidean norm (magnitude) of a vector
+ */
+function vectorNorm(vector: number[]): number {
+  return Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0))
+}
+
+/**
  * Calculate similarity score between two users' thought embeddings
  */
 async function calculatePairwiseSimilarity(userAThoughts: number[][], userBThoughts: number[][]) {
@@ -619,8 +632,8 @@ async function calculatePairwiseSimilarity(userAThoughts: number[][], userBThoug
     similarityMatrix[i] = []
     for (let j = 0; j < userBThoughts.length; j++) {
       const similarity =
-        Number(math.dot(userAThoughts[i], userBThoughts[j])) /
-        (Number(math.norm(userAThoughts[i])) * Number(math.norm(userBThoughts[j])))
+        dotProduct(userAThoughts[i], userBThoughts[j]) /
+        (vectorNorm(userAThoughts[i]) * vectorNorm(userBThoughts[j]))
       similarityMatrix[i][j] = similarity
     }
   }

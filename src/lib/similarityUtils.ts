@@ -1,23 +1,36 @@
 // lib/similarityUtils.ts
-import * as math from 'mathjs';
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
 import { thoughtsTable, usersTable } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
+ * Calculate dot product of two vectors
+ */
+function dotProduct(vecA: number[], vecB: number[]): number {
+  return vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+}
+
+/**
+ * Calculate magnitude (norm) of a vector
+ */
+function magnitude(vec: number[]): number {
+  return Math.sqrt(vec.reduce((sum, val) => sum + val * val, 0));
+}
+
+/**
  * Calculate cosine similarity between two vectors
  */
 export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   // Calculate dot product
-  const dotProduct = math.dot(vecA, vecB) as number;
+  const dotProd = dotProduct(vecA, vecB);
   
   // Calculate magnitudes
-  const magnitudeA = math.norm(vecA) as number;
-  const magnitudeB = math.norm(vecB) as number;
+  const magnitudeA = magnitude(vecA);
+  const magnitudeB = magnitude(vecB);
   
   // Calculate cosine similarity
-  return dotProduct / (magnitudeA * magnitudeB);
+  return dotProd / (magnitudeA * magnitudeB);
 }
 
 /**

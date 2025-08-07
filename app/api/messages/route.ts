@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       if (conv.lastMessageSenderId === session.user.id) {
         lastMessagePreview = `You: ${conv.lastMessage}`
       }
-      
+
       return {
         id: conv.userId,
         userId: conv.userId,
