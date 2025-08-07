@@ -14,7 +14,7 @@ import { eq, sql } from "drizzle-orm";
 // Get album by share token
 export async function GET(
   request: NextRequest,
-  { params }: { params: { shareToken: string } }
+  { params }: { params: Promise<{ shareToken: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { shareToken } = params;
+    const { shareToken } = await params;
 
     // Find album by share token
     const album = await db
@@ -35,7 +35,7 @@ export async function GET(
         allowContributions: albumsTable.allowContributions,
         maxContributors: albumsTable.maxContributors,
         createdAt: albumsTable.createdAt,
-        creatorName: usersTable.name,
+        creatorName: usersTable.nickname,
         creatorUsername: usersTable.username,
         creatorAvatar: usersTable.profileImage,
       })
@@ -109,7 +109,7 @@ export async function GET(
 // Join album via share token
 export async function POST(
   request: NextRequest,
-  { params }: { params: { shareToken: string } }
+  { params }: { params: Promise<{ shareToken: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -117,7 +117,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { shareToken } = params;
+    const { shareToken } = await params;
 
     // Find album by share token
     const album = await db

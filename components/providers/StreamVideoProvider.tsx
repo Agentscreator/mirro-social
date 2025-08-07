@@ -51,7 +51,7 @@ export function StreamVideoProvider({ children }: { children: React.ReactNode })
       const client = new StreamVideoClient({
         apiKey: process.env.NEXT_PUBLIC_STREAM_KEY,
         user,
-        token: chatClient.user.token,
+        token: (chatClient.user as any).token || '',
       })
 
       setVideoClient(client)

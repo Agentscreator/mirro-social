@@ -8,7 +8,7 @@ import { unlink } from "fs/promises"
 import { join } from "path"
 
 // DELETE /api/stories/[storyId] - Delete a story
-export async function DELETE(request: NextRequest, { params }: { params: { storyId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ storyId: string }> }) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -16,7 +16,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { story
     }
 
     const userId = session.user.id
-    const storyId = Number.parseInt(params.storyId)
+    const { storyId: storyIdParam } = await params
+    const storyId = Number.parseInt(storyIdParam)
 
     if (isNaN(storyId)) {
       return NextResponse.json({ error: "Invalid story ID" }, { status: 400 })

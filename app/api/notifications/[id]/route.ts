@@ -8,7 +8,7 @@ import { eq, and } from "drizzle-orm"
 // PUT - Mark notification as read
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,7 +16,8 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const notificationId = parseInt(params.id)
+    const { id } = await params
+    const notificationId = parseInt(id)
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 })
     }
@@ -50,7 +51,7 @@ export async function PUT(
 // DELETE - Delete notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -58,7 +59,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const notificationId = parseInt(params.id)
+    const { id } = await params
+    const notificationId = parseInt(id)
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 })
     }

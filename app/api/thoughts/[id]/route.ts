@@ -9,7 +9,7 @@ import { authOptions } from "@/src/lib/auth"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get the current user session
@@ -18,7 +18,8 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const thoughtId = Number.parseInt(params.id)
+    const { id } = await params
+    const thoughtId = Number.parseInt(id)
     if (isNaN(thoughtId)) {
       return NextResponse.json({ error: "Invalid thought ID" }, { status: 400 })
     }
@@ -73,7 +74,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get the current user session
@@ -82,7 +83,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const thoughtId = Number.parseInt(params.id)
+    const { id } = await params
+    const thoughtId = Number.parseInt(id)
     if (isNaN(thoughtId)) {
       return NextResponse.json({ error: "Invalid thought ID" }, { status: 400 })
     }

@@ -21,14 +21,14 @@ interface CallInterfaceProps {
 
 export function CallInterface({ call, onClose, isIncoming = false }: CallInterfaceProps) {
   const [hasJoined, setHasJoined] = useState(false)
-  const { useCallEndReason } = useCallStateHooks()
-  const callEndReason = useCallEndReason()
+  const { useCallCallingState } = useCallStateHooks()
+  const callingState = useCallCallingState()
 
   useEffect(() => {
-    if (callEndReason) {
+    if (callingState === CallingState.LEFT) {
       onClose()
     }
-  }, [callEndReason, onClose])
+  }, [callingState, onClose])
 
   const handleAccept = async () => {
     try {
@@ -83,38 +83,7 @@ export function CallInterface({ call, onClose, isIncoming = false }: CallInterfa
               <SpeakerLayout />
             </div>
             <div className="p-4 flex justify-center">
-              <CallControls
-                render={({ isMuted, isCameraOn, toggleMicrophone, toggleCamera, leaveCall }) => (
-                  <div className="flex items-center gap-4">
-                    <Button
-                      onClick={toggleMicrophone}
-                      className={`${
-                        isMuted ? "bg-red-500 hover:bg-red-600" : "bg-gray-500 hover:bg-gray-600"
-                      } text-white rounded-full p-3 h-12 w-12`}
-                    >
-                      {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                    </Button>
-
-                    {call.type === "video" && (
-                      <Button
-                        onClick={toggleCamera}
-                        className={`${
-                          !isCameraOn ? "bg-red-500 hover:bg-red-600" : "bg-gray-500 hover:bg-gray-600"
-                        } text-white rounded-full p-3 h-12 w-12`}
-                      >
-                        {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-                      </Button>
-                    )}
-
-                    <Button
-                      onClick={leaveCall}
-                      className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 h-12 w-12"
-                    >
-                      <PhoneOff className="h-5 w-5" />
-                    </Button>
-                  </div>
-                )}
-              />
+              <CallControls onLeave={() => call.leave()} />
             </div>
           </div>
         </StreamTheme>

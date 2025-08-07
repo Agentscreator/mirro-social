@@ -2,12 +2,12 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoEditor } from '@/contexts/VideoEditorContext';
-import { fabric } from 'fabric';
+import { Canvas, FabricText, FabricImage } from 'fabric';
 import { VideoClip, TextOverlay, StickerOverlay } from '@/types/video-editor';
 
 export function VideoEditorCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const fabricCanvasRef = useRef<Canvas | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const {
@@ -28,7 +28,7 @@ export function VideoEditorCanvas() {
   useEffect(() => {
     if (!canvasRef.current || !project) return;
 
-    const canvas = new fabric.Canvas(canvasRef.current, {
+    const canvas = new Canvas(canvasRef.current, {
       width: project.canvas.width,
       height: project.canvas.height,
       backgroundColor: '#000000',
@@ -134,7 +134,7 @@ export function VideoEditorCanvas() {
           videoElement.currentTime = (currentTime - clip.startTime) / clip.speed;
           
           videoElement.onloadeddata = () => {
-            const fabricVideo = new fabric.Image(videoElement, {
+            const fabricVideo = new FabricImage(videoElement, {
               left: clip.position.x,
               top: clip.position.y,
               scaleX: clip.scale,
@@ -180,7 +180,7 @@ export function VideoEditorCanvas() {
     // Add current text overlays
     project.timeline.textOverlays.forEach((textOverlay) => {
       if (currentTime >= textOverlay.startTime && currentTime <= textOverlay.endTime) {
-        const fabricText = new fabric.Text(textOverlay.text, {
+        const fabricText = new FabricText(textOverlay.text, {
           left: textOverlay.position.x,
           top: textOverlay.position.y,
           fontSize: textOverlay.fontSize,
@@ -226,7 +226,7 @@ export function VideoEditorCanvas() {
           img.src = stickerOverlay.src;
           
           img.onload = () => {
-            const fabricSticker = new fabric.Image(img, {
+            const fabricSticker = new FabricImage(img, {
               left: stickerOverlay.position.x,
               top: stickerOverlay.position.y,
               scaleX: stickerOverlay.scale,

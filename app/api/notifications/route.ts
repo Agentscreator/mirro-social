@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { notificationsTable, usersTable } from "@/src/db/schema"
-import { desc, eq, count } from "drizzle-orm"
+import { desc, eq, count, and } from "drizzle-orm"
 
 // GET - Fetch user's notifications
 export async function GET(request: NextRequest) {
@@ -45,18 +45,47 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit)
 
+    let finalQuery
     if (onlyUnread) {
-      query = query.where(eq(notificationsTable.isRead, 0))
+      finalQuery = db
+        .select({
+          id: notificationsTable.id,
+          type: notificationsTable.type,
+          title: notificationsTable.title,
+          message: notificationsTable.message,
+          postId: notificationsTable.postId,
+          inviteRequestId: notificationsTable.inviteRequestId,
+          isRead: notificationsTable.isRead,
+          createdAt: notificationsTable.createdAt,
+          fromUser: {
+            id: usersTable.id,
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+            profileImage: usersTable.profileImage,
+          },
+        })
+        .from(notificationsTable)
+        .leftJoin(usersTable, eq(notificationsTable.fromUserId, usersTable.id))
+        .where(and(
+          eq(notificationsTable.userId, session.user.id),
+          eq(notificationsTable.isRead, 0)
+        ))
+        .orderBy(desc(notificationsTable.createdAt))
+        .limit(limit)
+    } else {
+      finalQuery = query
     }
 
-    const notifications = await query
+    const notifications = await finalQuery
 
     // Get unread count
     const unreadCountResult = await db
       .select({ count: count() })
       .from(notificationsTable)
-      .where(eq(notificationsTable.userId, session.user.id))
-      .where(eq(notificationsTable.isRead, 0))
+      .where(and(
+        eq(notificationsTable.userId, session.user.id),
+        eq(notificationsTable.isRead, 0)
+      ))
 
     console.log(`✅ Retrieved ${notifications.length} notifications`)
     console.log(`Unread count: ${unreadCountResult[0]?.count || 0}`)

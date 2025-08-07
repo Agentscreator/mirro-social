@@ -24,7 +24,8 @@ export async function signup(data: SignupData) {
   console.log("Creating user in database:", data)
 
   // Set a cookie to simulate authentication
-  cookies().set("auth-token", "demo-token", {
+  const cookieStore = await cookies()
+  cookieStore.set("auth-token", "demo-token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -43,7 +44,8 @@ export async function login(data: LoginData) {
   // Demo credentials check
   if (data.username === "1234" && data.password === "12345678") {
     // Set a cookie to simulate authentication
-    cookies().set("auth-token", "demo-token", {
+    const cookieStore = await cookies()
+    cookieStore.set("auth-token", "demo-token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -57,6 +59,7 @@ export async function login(data: LoginData) {
 }
 
 export async function logout() {
-  cookies().delete("auth-token")
+  const cookieStore = await cookies()
+  cookieStore.delete("auth-token")
   return { success: true }
 }
