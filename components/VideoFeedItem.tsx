@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InviteButton } from "@/components/invite-button";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface VideoFeedItemProps {
   post: {
@@ -150,6 +151,11 @@ const VideoFeedItem = ({
         // Revert on error
         setIsLiked(!newLikedState);
         setCurrentLikes(currentLikes);
+        toast({
+          title: "Error",
+          description: "Failed to like post. Please try again.",
+          variant: "destructive",
+        });
       } else {
         const result = await response.json();
         console.log("✅ Like successful:", result);
@@ -166,6 +172,11 @@ const VideoFeedItem = ({
       // Revert on error
       setIsLiked(!newLikedState);
       setCurrentLikes(currentLikes);
+      toast({
+        title: "Error",
+        description: "Failed to like post. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLiking(false);
     }
@@ -209,52 +220,101 @@ const VideoFeedItem = ({
   };
 
   const handleComment = () => {
-    // For now, just log - you can implement a comment modal or navigate to post detail
+    // Navigate to post detail page or profile where comments are available
     console.log('Comment clicked for post:', post.id);
-    // You could open a comment modal or navigate to a detailed post view
-    // For example: router.push(`/post/${post.id}`);
+    // For now, navigate to the user's profile where they can see and interact with comments
+    if (typeof window !== 'undefined') {
+      window.location.href = `/profile/${post.user.id}`;
+    }
   };
 
   const handleShare = async () => {
     try {
-      const shareUrl = `${window.location.origin}/post/${post.id}`;
+      console.log('Sharing post:', post.id);
       
-      // Try native sharing first on mobile
-      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        try {
-          await navigator.share({
-            title: `Check out this post by ${getUserDisplayName()}`,
-            text: post.content,
-            url: shareUrl,
-          });
-          return;
-        } catch (shareError) {
-          console.log("Native share failed, falling back to clipboard");
-        }
-      }
+      // Call the share API to get proper share data
+      const response = await fetch(`/api/posts/${post.id}/share`, {
+        method: "POST",
+      });
 
-      // Fallback to clipboard
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(shareUrl);
-        console.log('Link copied to clipboard');
-        // You could show a toast notification here
-      } else {
-        // Fallback for older browsers
-        const textArea = document.createElement("textarea");
-        textArea.value = shareUrl;
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand("copy");
-          console.log('Link copied to clipboard (fallback)');
-        } catch (err) {
-          console.error('Failed to copy link');
+      if (response.ok) {
+        const shareData = await response.json();
+        console.log('✅ Share data received:', shareData);
+        
+        // Try native sharing first on mobile
+        if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          try {
+            await navigator.share({
+              title: shareData.title || `Check out this post by ${getUserDisplayName()}`,
+              text: shareData.text || post.content,
+              url: shareData.url,
+            });
+            console.log('✅ Native share successful');
+            return;
+          } catch (shareError) {
+            console.log("Native share failed, falling back to clipboard");
+          }
         }
-        document.body.removeChild(textArea);
+
+        // Fallback to clipboard
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(shareData.url);
+          console.log('✅ Link copied to clipboard');
+          toast({
+            title: "Link Copied!",
+            description: "Post link has been copied to your clipboard.",
+          });
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = shareData.url;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            console.log('✅ Link copied to clipboard (fallback)');
+            toast({
+              title: "Link Copied!",
+              description: "Post link has been copied to your clipboard.",
+            });
+          } catch (err) {
+            console.error('Failed to copy link');
+            toast({
+              title: "Share Link",
+              description: `Copy this link: ${shareData.url}`,
+            });
+          }
+          document.body.removeChild(textArea);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Share API failed:', response.status, errorText);
+        throw new Error('Failed to generate share link');
       }
     } catch (error) {
       console.error('Error sharing post:', error);
+      // Fallback to basic sharing
+      const fallbackUrl = `${window.location.origin}/post/${post.id}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(fallbackUrl);
+          toast({
+            title: "Link Copied!",
+            description: "Post link has been copied to your clipboard.",
+          });
+        } catch {
+          toast({
+            title: "Share Link",
+            description: `Copy this link: ${fallbackUrl}`,
+          });
+        }
+      } else {
+        toast({
+          title: "Share Link",
+          description: `Copy this link: ${fallbackUrl}`,
+        });
+      }
     }
   };
 

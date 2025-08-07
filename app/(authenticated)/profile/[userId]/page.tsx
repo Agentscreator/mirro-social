@@ -443,20 +443,41 @@ export default function ProfilePage() {
 
   const handleLikePost = async (postId: number) => {
     try {
+      // Find the current post to determine if it's liked
+      const currentPost = posts.find(p => p.id === postId);
+      const isCurrentlyLiked = currentPost?.isLiked || false;
+      
+      console.log(`${isCurrentlyLiked ? 'Unliking' : 'Liking'} post ${postId}`);
+      
       const response = await fetch(`/api/posts/${postId}/like`, {
-        method: "POST",
+        method: isCurrentlyLiked ? "DELETE" : "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
+
+      console.log("Like response status:", response.status);
 
       if (response.ok) {
         const updatedPost = await response.json()
+        console.log("✅ Like successful:", updatedPost);
+        
         const updatedPosts = posts.map((post) =>
-          post.id === postId ? { ...post, likes: updatedPost.likes, isLiked: updatedPost.isLiked } : post,
+          post.id === postId ? { 
+            ...post, 
+            likes: updatedPost.likes !== undefined ? updatedPost.likes : post.likes, 
+            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !post.isLiked 
+          } : post,
         )
         setPosts(updatedPosts)
 
         // Update selected post if it's the same
         if (selectedPost?.id === postId) {
-          setSelectedPost((prev) => (prev ? { ...prev, likes: updatedPost.likes, isLiked: updatedPost.isLiked } : null))
+          setSelectedPost((prev) => (prev ? { 
+            ...prev, 
+            likes: updatedPost.likes !== undefined ? updatedPost.likes : prev.likes, 
+            isLiked: updatedPost.isLiked !== undefined ? updatedPost.isLiked : !prev.isLiked 
+          } : null))
         }
 
         sessionStorage.setItem(
@@ -467,6 +488,8 @@ export default function ProfilePage() {
           }),
         )
       } else {
+        const errorText = await response.text();
+        console.error("Like failed:", response.status, errorText);
         throw new Error("Failed to like post")
       }
     } catch (error) {
