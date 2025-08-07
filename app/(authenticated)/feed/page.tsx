@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import VideoFeedItem from "@/components/VideoFeedItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, ChevronUp, ChevronDown, Loader2, Plus } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
-import { NewPostCreator } from "@/components/new-post/NewPostCreator";
+
 
 interface Post {
   id: number;
@@ -45,8 +45,7 @@ export default function FeedPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [excludeIds, setExcludeIds] = useState<number[]>([]);
   
-  // Post creation state
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+
 
   // Fetch feed posts
   const fetchPosts = async (cursor?: string, excludePostIds: number[] = [], searchTerm?: string) => {
@@ -113,16 +112,7 @@ export default function FeedPage() {
     setNextCursor(data.nextCursor || null);
   };
 
-  // Handle new post creation
-  const handlePostCreated = (newPost: any) => {
-    console.log("New post created:", newPost);
-    // Add the new post to the beginning of the posts array
-    setPosts(prev => [newPost, ...prev]);
-    toast({
-      title: "Success",
-      description: "Post created successfully!",
-    });
-  };
+
 
   // Use posts directly since we're doing server-side search
   const filteredPosts = posts;
@@ -196,8 +186,11 @@ export default function FeedPage() {
   // Show loading if no session
   if (!session) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <p className="text-white/70 text-sm">Connecting...</p>
+        </div>
       </div>
     );
   }
@@ -205,10 +198,16 @@ export default function FeedPage() {
   // Show loading for initial load
   if (loading && posts.length === 0) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-white" />
-          <p className="text-white text-sm">Loading feed...</p>
+      <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6 px-8">
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-white" />
+            <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full bg-white/20"></div>
+          </div>
+          <div className="text-center">
+            <p className="text-white text-lg font-medium mb-2">Loading your feed</p>
+            <p className="text-white/60 text-sm">Discovering amazing content...</p>
+          </div>
         </div>
       </div>
     );
@@ -217,18 +216,26 @@ export default function FeedPage() {
   // Show empty state if no posts
   if (!loading && filteredPosts.length === 0) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <div className="text-center text-white">
-          <p className="text-lg mb-2">
-            {searchQuery ? `No posts found for "${searchQuery}"` : "No posts found"}
-          </p>
-          <p className="text-sm text-white/70">
-            {searchQuery ? "Try a different search term" : "Check back later for new content!"}
+      <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center text-white px-8 max-w-sm">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+              <Search className="w-8 h-8 text-white/60" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold mb-3">
+            {searchQuery ? "No results found" : "No posts yet"}
+          </h2>
+          <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            {searchQuery 
+              ? `We couldn't find any posts matching "${searchQuery}". Try a different search term.`
+              : "Your feed is empty right now. Check back later for new content from the community!"
+            }
           </p>
           {searchQuery && (
             <Button
               variant="outline"
-              className="mt-4 text-white border-white/20 hover:bg-white/10"
+              className="text-white border-white/30 hover:bg-white/10 rounded-full px-6 py-2"
               onClick={() => {
                 setSearchQuery("");
                 setShowSearchBar(false);
@@ -246,19 +253,19 @@ export default function FeedPage() {
     <div className="h-screen bg-black relative overflow-hidden">
 
       {/* Mobile Top Navigation */}
-      <div className="md:hidden absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/90 to-transparent">
-        <div className="flex items-center justify-between p-4">
+      <div className="md:hidden absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/95 via-black/80 to-transparent">
+        <div className="flex items-center justify-between p-4 pt-6">
           {/* Mobile Search */}
           {showSearchBar ? (
             <div className="flex-1 relative mr-3">
               {loading && searchQuery ? (
-                <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
+                <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
               ) : (
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
               )}
               <Input
                 placeholder="Search videos..."
-                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 rounded-full"
+                className="pl-12 pr-12 py-3 bg-white/15 border-white/30 text-white placeholder:text-white/70 rounded-full backdrop-blur-sm text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -266,7 +273,7 @@ export default function FeedPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
                 onClick={() => {
                   setShowSearchBar(false);
                   setSearchQuery("");
@@ -277,15 +284,17 @@ export default function FeedPage() {
             </div>
           ) : (
             <>
-              <div className="text-white font-semibold">For You</div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/10 rounded-full"
-                onClick={() => setShowSearchBar(true)}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
+              <div className="text-white font-bold text-xl tracking-wide">For You</div>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white hover:bg-white/20 rounded-full w-10 h-10 backdrop-blur-sm"
+                  onClick={() => setShowSearchBar(true)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </div>
             </>
           )}
         </div>
@@ -294,15 +303,15 @@ export default function FeedPage() {
       {/* Desktop Search Icon - Top Right */}
       <div className="hidden md:block absolute top-6 right-6 z-50">
         {showSearchBar ? (
-          <div className="relative w-80">
+          <div className="relative w-96">
             {loading && searchQuery ? (
-              <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
+              <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
             ) : (
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
             )}
             <Input
               placeholder="Search videos..."
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 rounded-full"
+              className="pl-12 pr-12 py-3 bg-white/15 border-white/30 text-white placeholder:text-white/70 rounded-full backdrop-blur-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
@@ -310,7 +319,7 @@ export default function FeedPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
               onClick={() => {
                 setShowSearchBar(false);
                 setSearchQuery("");
@@ -323,7 +332,7 @@ export default function FeedPage() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:bg-white/10 rounded-full bg-black/30 backdrop-blur-sm"
+            className="text-white hover:bg-white/20 rounded-full bg-black/40 backdrop-blur-sm w-12 h-12"
             onClick={() => setShowSearchBar(true)}
           >
             <Search className="h-5 w-5" />
@@ -353,20 +362,12 @@ export default function FeedPage() {
         </Button>
       </div>
 
-      {/* Create Post Button - Bottom Right */}
-      <div className="fixed bottom-24 right-4 z-50 md:bottom-8">
-        <Button
-          onClick={() => setIsCreatePostOpen(true)}
-          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
+
 
       {/* Video Feed */}
       <div 
         ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory flex justify-center items-start pt-16 md:pt-0"
+        className="h-full overflow-y-scroll snap-y snap-mandatory flex justify-center items-start pt-20 md:pt-0"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`
@@ -387,19 +388,17 @@ export default function FeedPage() {
           
           {/* Loading indicator at bottom */}
           {hasMore && (
-            <div className="h-32 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-white" />
+            <div className="h-32 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+                <p className="text-white/70 text-sm">Loading more...</p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* New Post Creator */}
-      <NewPostCreator
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onPostCreated={handlePostCreated}
-      />
+
 
     </div>
   );

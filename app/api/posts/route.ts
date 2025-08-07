@@ -332,6 +332,10 @@ export async function POST(request: NextRequest) {
     const latitude = formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null
     const longitude = formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null
 
+    // Auto-accept group data
+    const autoAcceptInvites = formData.get("autoAcceptInvites") === "true"
+    const groupName = formData.get("groupName") as string
+
     console.log("Form data parsed:", {
       content: content ? `"${content.substring(0, 100)}${content.length > 100 ? "..." : ""}"` : "null",
       hasMedia: !!media,
@@ -344,6 +348,10 @@ export async function POST(request: NextRequest) {
         : null,
       isInvite,
       inviteLimit,
+      hasPrivateLocation,
+      locationName: locationName?.substring(0, 50),
+      autoAcceptInvites,
+      groupName: groupName?.substring(0, 50),
     })
 
     if (!content?.trim() && !media) {
@@ -402,6 +410,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       content: content || "",
       hasPrivateLocation: hasPrivateLocation ? 1 : 0,
+      autoAcceptInvites: autoAcceptInvites ? 1 : 0,
+      groupName: autoAcceptInvites && groupName?.trim() ? groupName.trim() : null,
     }
 
     if (mediaType === "image") {

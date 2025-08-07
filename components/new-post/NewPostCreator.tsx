@@ -26,7 +26,8 @@ import {
   X,
   Loader2,
   MapPin,
-  Navigation
+  Navigation,
+  Users
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -66,6 +67,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [locationName, setLocationName] = useState("");
   const [locationAddress, setLocationAddress] = useState("");
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  
+  // Auto-accept group states
+  const [autoAcceptInvites, setAutoAcceptInvites] = useState(false);
+  const [groupName, setGroupName] = useState("");
   
   // File upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -301,6 +306,12 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           formData.append('longitude', coordinates.lng.toString());
         }
       }
+
+      // Add auto-accept group data if provided
+      if (autoAcceptInvites && groupName.trim()) {
+        formData.append('autoAcceptInvites', 'true');
+        formData.append('groupName', groupName.trim());
+      }
       
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -362,6 +373,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setLocationName("");
     setLocationAddress("");
     setCoordinates(null);
+    setAutoAcceptInvites(false);
+    setGroupName("");
     
     onClose();
   };
@@ -709,6 +722,39 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
                 />
               </div>
 
+              {/* Auto-Accept Group */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="auto-accept-group"
+                    checked={autoAcceptInvites}
+                    onCheckedChange={setAutoAcceptInvites}
+                  />
+                  <label htmlFor="auto-accept-group" className="text-sm font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Auto-Accept to Group
+                  </label>
+                </div>
+                
+                {autoAcceptInvites && (
+                  <div className="space-y-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                    <p className="text-xs text-gray-400">
+                      People who accept your invite will automatically be added to a group chat.
+                    </p>
+                    
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Group name (required)"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        className="bg-gray-900 border-gray-700 text-white"
+                        required={autoAcceptInvites}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Private Location Sharing */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
@@ -788,8 +834,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           {(previewUrl || selectedFile) && (
             <Button
               onClick={handleCreatePost}
-              disabled={isUploading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={isUploading || (autoAcceptInvites && !groupName.trim())}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
               {isUploading ? (
                 <>
