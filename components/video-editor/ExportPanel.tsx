@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
 import { ExportSettings } from '@/types/video-editor';
 import { Download, X, Settings } from 'lucide-react';
-import { saveAs } from 'file-saver';
+// import { saveAs } from 'file-saver'; // Removed for serverless compatibility
 
 export function ExportPanel() {
   const { project, exportProgress, isExporting, exportVideo } = useVideoEditor();

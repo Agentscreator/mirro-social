@@ -5,7 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db, withRetry } from "../db";
 import { usersTable } from "../db/schema";
 import { eq, or } from "drizzle-orm";
-import { compare } from "bcrypt";
+import { pbkdf2Sync } from "crypto";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -102,7 +102,16 @@ export const authOptions: NextAuthOptions = {
           const compareStart = Date.now();
           
           const passwordMatch = await Promise.race([
-            compare(password, user[0].password),
+            new Promise<boolean>((resolve) => {
+              try {
+                const [hash, salt] = user[0].password.split(':');
+                const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+                resolve(hash === verifyHash);
+              } catch (error) {
+                console.error('Password verification error:', error);
+                resolve(false);
+              }
+            }),
             new Promise<boolean>((_, reject) => 
               setTimeout(() => reject(new Error('Password comparison timeout')), 5000)
             )

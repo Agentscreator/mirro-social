@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoEditor } from '@/contexts/VideoEditorContext';
-import { Canvas, FabricText, FabricImage } from 'fabric';
+// import { Canvas, FabricText, FabricImage } from 'fabric'; // Removed for serverless compatibility
 import { VideoClip, TextOverlay, StickerOverlay } from '@/types/video-editor';
 
 export function VideoEditorCanvas() {

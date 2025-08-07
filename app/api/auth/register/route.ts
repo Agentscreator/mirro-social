@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { hash } from "bcrypt"
+import { createHash, pbkdf2Sync, randomBytes } from "crypto"
 import { db } from "@/src/db"
 import { usersTable, tagsTable, userTagsTable } from "@/src/db/schema"
 import { eq, or } from "drizzle-orm"
@@ -64,8 +64,9 @@ export async function POST(req: Request) {
       )
     }
 
-    // Hash password
-    const hashedPassword = await hash(password, 10)
+    // Hash password using Node.js crypto (serverless-friendly)
+    const salt = randomBytes(16).toString('hex')
+    const hashedPassword = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex') + ':' + salt
 
     // Create user
     const [newUser] = await db
