@@ -135,6 +135,72 @@ export async function POST(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    console.log('=== Unlike Route Debug ===');
+    
+    const session = await getServerSession(authOptions);
+    console.log('Session exists:', !!session);
+    
+    if (!session || !session.user || !session.user.id) {
+      console.log('Authentication failed - no valid session');
+      return NextResponse.json(
+        { error: 'Unauthorized. Please log in.' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+    const { id } = await context.params;
+    const postId = parseInt(id);
+    
+    console.log('Unliking post:', postId, 'by user:', userId);
+    
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { error: 'Invalid post ID' },
+        { status: 400 }
+      );
+    }
+
+    // Remove the like
+    await db
+      .delete(postLikesTable)
+      .where(
+        and(
+          eq(postLikesTable.postId, postId),
+          eq(postLikesTable.userId, userId)
+        )
+      );
+
+    // Get updated like count
+    const likeCountResult = await db
+      .select({ count: count() })
+      .from(postLikesTable)
+      .where(eq(postLikesTable.postId, postId));
+
+    const likeCount = likeCountResult[0]?.count || 0;
+    console.log('Post unliked, new count:', likeCount);
+
+    return NextResponse.json({
+      success: true,
+      isLiked: false,
+      likes: likeCount,
+      message: 'Post unliked'
+    });
+
+  } catch (error) {
+    console.error('Error in unlike endpoint:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

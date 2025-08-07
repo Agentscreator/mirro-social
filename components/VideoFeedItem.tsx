@@ -133,16 +133,36 @@ const VideoFeedItem = ({
     setCurrentLikes(newLikeCount);
     
     try {
+      console.log(`${newLikedState ? 'Liking' : 'Unliking'} post ${post.id}`);
+      
       const response = await fetch(`/api/posts/${post.id}/like`, {
         method: newLikedState ? 'POST' : 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
+      console.log("Like response status:", response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Like failed:", response.status, errorText);
         // Revert on error
         setIsLiked(!newLikedState);
         setCurrentLikes(currentLikes);
+      } else {
+        const result = await response.json();
+        console.log("✅ Like successful:", result);
+        // Update with server response to ensure consistency
+        if (result.likes !== undefined) {
+          setCurrentLikes(result.likes);
+        }
+        if (result.isLiked !== undefined) {
+          setIsLiked(result.isLiked);
+        }
       }
     } catch (error) {
+      console.error("Like error:", error);
       // Revert on error
       setIsLiked(!newLikedState);
       setCurrentLikes(currentLikes);
@@ -186,6 +206,56 @@ const VideoFeedItem = ({
 
   const getUserAvatar = () => {
     return getBestImageUrl(post.user) || '/placeholder-avatar.jpg';
+  };
+
+  const handleComment = () => {
+    // For now, just log - you can implement a comment modal or navigate to post detail
+    console.log('Comment clicked for post:', post.id);
+    // You could open a comment modal or navigate to a detailed post view
+    // For example: router.push(`/post/${post.id}`);
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/post/${post.id}`;
+      
+      // Try native sharing first on mobile
+      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        try {
+          await navigator.share({
+            title: `Check out this post by ${getUserDisplayName()}`,
+            text: post.content,
+            url: shareUrl,
+          });
+          return;
+        } catch (shareError) {
+          console.log("Native share failed, falling back to clipboard");
+        }
+      }
+
+      // Fallback to clipboard
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        console.log('Link copied to clipboard');
+        // You could show a toast notification here
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand("copy");
+          console.log('Link copied to clipboard (fallback)');
+        } catch (err) {
+          console.error('Failed to copy link');
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (error) {
+      console.error('Error sharing post:', error);
+    }
   };
 
   return (
@@ -289,6 +359,7 @@ const VideoFeedItem = ({
           <Button 
             variant="ghost" 
             size="icon" 
+            onClick={() => handleComment()}
             className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"
           >
             <MessageCircle className="w-6 h-6" />
@@ -300,6 +371,7 @@ const VideoFeedItem = ({
           <Button 
             variant="ghost" 
             size="icon" 
+            onClick={() => handleShare()}
             className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"
           >
             <Share className="w-6 h-6" />

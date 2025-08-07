@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import VideoFeedItem from "@/components/VideoFeedItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
+import { NewPostCreator } from "@/components/new-post/NewPostCreator";
 
 interface Post {
   id: number;
@@ -43,6 +44,9 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [excludeIds, setExcludeIds] = useState<number[]>([]);
+  
+  // Post creation state
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
   // Fetch feed posts
   const fetchPosts = async (cursor?: string, excludePostIds: number[] = [], searchTerm?: string) => {
@@ -107,6 +111,17 @@ export default function FeedPage() {
     setPosts(prev => [...prev, ...(data.posts || [])]);
     setHasMore(data.hasMore || false);
     setNextCursor(data.nextCursor || null);
+  };
+
+  // Handle new post creation
+  const handlePostCreated = (newPost: any) => {
+    console.log("New post created:", newPost);
+    // Add the new post to the beginning of the posts array
+    setPosts(prev => [newPost, ...prev]);
+    toast({
+      title: "Success",
+      description: "Post created successfully!",
+    });
   };
 
   // Use posts directly since we're doing server-side search
@@ -338,6 +353,16 @@ export default function FeedPage() {
         </Button>
       </div>
 
+      {/* Create Post Button - Bottom Right */}
+      <div className="fixed bottom-24 right-4 z-50 md:bottom-8">
+        <Button
+          onClick={() => setIsCreatePostOpen(true)}
+          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
       {/* Video Feed */}
       <div 
         ref={containerRef}
@@ -368,6 +393,13 @@ export default function FeedPage() {
           )}
         </div>
       </div>
+
+      {/* New Post Creator */}
+      <NewPostCreator
+        isOpen={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        onPostCreated={handlePostCreated}
+      />
 
     </div>
   );

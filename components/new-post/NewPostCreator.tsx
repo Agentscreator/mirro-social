@@ -263,33 +263,45 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     
     setIsUploading(true);
     try {
-      // In a real app, you would upload the video/image to storage
+      console.log("=== CREATING POST ===");
+      console.log("Caption:", caption);
+      console.log("Post type:", postType);
+      console.log("Has selected file:", !!selectedFile);
+      console.log("Has recorded chunks:", recordedChunksRef.current.length > 0);
+      
       const formData = new FormData();
-      formData.append('caption', caption);
-      formData.append('type', postType || 'video-record');
-      formData.append('filter', selectedFilter);
-      formData.append('effect', selectedEffect);
+      formData.append('content', caption);
       
       if (selectedFile) {
-        formData.append('file', selectedFile);
+        console.log("Uploading selected file:", selectedFile.name, selectedFile.type);
+        formData.append('media', selectedFile);
       } else if (recordedChunksRef.current.length > 0) {
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        formData.append('video', blob, 'recorded-video.webm');
+        console.log("Uploading recorded video blob:", blob.size);
+        formData.append('media', blob, 'recorded-video.webm');
       }
       
-      // Mock API call
       const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
       });
       
+      console.log("Response status:", response.status);
+      
       if (response.ok) {
         const newPost = await response.json();
+        console.log("✅ Post created successfully:", newPost);
         onPostCreated?.(newPost);
         handleClose();
+      } else {
+        const errorText = await response.text();
+        console.error("❌ Post creation failed:", response.status, errorText);
+        throw new Error(`Failed to create post: ${response.status}`);
       }
     } catch (error) {
       console.error('Error creating post:', error);
+      // Show user-friendly error message
+      alert('Failed to create post. Please try again.');
     } finally {
       setIsUploading(false);
     }
