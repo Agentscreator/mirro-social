@@ -522,7 +522,7 @@ const VideoFeedItem = ({
         <div className="space-y-2">
           {showInviteButton && (
             <div>
-              <InviteButton postId={post.id} />
+              <InviteButton postId={post.id} postUserId={post.user.id} />
             </div>
           )}
           

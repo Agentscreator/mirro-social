@@ -102,6 +102,24 @@ export async function POST(
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 })
     }
 
+    // First check if this is the user's own post
+    const postOwnerCheck = await db
+      .select({
+        userId: postsTable.userId,
+      })
+      .from(postsTable)
+      .where(eq(postsTable.id, postId))
+      .limit(1)
+
+    if (postOwnerCheck.length === 0) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    // Prevent users from inviting themselves to their own posts
+    if (postOwnerCheck[0].userId === session.user.id) {
+      return NextResponse.json({ error: "You cannot send an invite request to your own post" }, { status: 400 })
+    }
+
     // Get or create invite for the post
     let inviteInfo = await db
       .select({

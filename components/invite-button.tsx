@@ -4,9 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2, Users } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { useSession } from "next-auth/react"
 
 interface InviteButtonProps {
   postId: number
+  postUserId?: string
   className?: string
 }
 
@@ -28,10 +30,16 @@ interface InviteData {
   }
 }
 
-export function InviteButton({ postId, className }: InviteButtonProps) {
+export function InviteButton({ postId, postUserId, className }: InviteButtonProps) {
+  const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [inviteData, setInviteData] = useState<InviteData | null>(null)
   const [isFetching, setIsFetching] = useState(true)
+
+  // Don't show invite button for the post owner
+  if (postUserId && session?.user?.id === postUserId) {
+    return null
+  }
 
   // Fetch invite data
   const fetchInviteData = async () => {

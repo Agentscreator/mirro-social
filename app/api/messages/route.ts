@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { messagesTable, usersTable } from "@/src/db/schema"
-import { desc, eq, or, and, sql, ne } from "drizzle-orm"
+import { desc, eq, or, sql } from "drizzle-orm"
 
 // GET - Fetch conversations for the current user
 export async function GET(request: NextRequest) {
@@ -28,12 +28,13 @@ export async function GET(request: NextRequest) {
         image: usersTable.image,
         lastMessage: messagesTable.content,
         lastMessageTime: messagesTable.createdAt,
+        lastMessageSenderId: messagesTable.senderId,
         unreadCount: sql<number>`
           (SELECT COUNT(*)::int FROM ${messagesTable} m2 
            WHERE m2.sender_id != ${session.user.id} 
            AND m2.receiver_id = ${session.user.id}
            AND m2.is_read = 0
-           AND (m2.sender_id = ${usersTable.id} OR m2.receiver_id = ${usersTable.id}))
+           AND (m2.sender_id = ${usersTable.id}))
         `,
       })
       .from(messagesTable)
@@ -51,20 +52,28 @@ export async function GET(request: NextRequest) {
         )
       )
       .orderBy(desc(messagesTable.createdAt))
-      .groupBy(usersTable.id, usersTable.username, usersTable.nickname, usersTable.profileImage, usersTable.image, messagesTable.content, messagesTable.createdAt)
+      .groupBy(usersTable.id, usersTable.username, usersTable.nickname, usersTable.profileImage, usersTable.image, messagesTable.content, messagesTable.createdAt, messagesTable.senderId)
 
     // Format the response
-    const formattedConversations = conversations.map(conv => ({
-      id: conv.userId,
-      userId: conv.userId,
-      username: conv.username,
-      nickname: conv.nickname,
-      profileImage: conv.profileImage || conv.image,
-      lastMessage: conv.lastMessage,
-      lastMessageTime: conv.lastMessageTime,
-      unreadCount: conv.unreadCount,
-      isOnline: false, // TODO: Implement real-time online status
-    }))
+    const formattedConversations = conversations.map(conv => {
+      // Format last message preview
+      let lastMessagePreview = conv.lastMessage
+      if (conv.lastMessageSenderId === session.user.id) {
+        lastMessagePreview = `You: ${conv.lastMessage}`
+      }
+      
+      return {
+        id: conv.userId,
+        userId: conv.userId,
+        username: conv.username,
+        nickname: conv.nickname,
+        profileImage: conv.profileImage || conv.image,
+        lastMessage: lastMessagePreview,
+        lastMessageTime: conv.lastMessageTime,
+        unreadCount: conv.unreadCount,
+        isOnline: false, // TODO: Implement real-time online status
+      }
+    })
 
     return NextResponse.json({ conversations: formattedConversations })
   } catch (error) {
