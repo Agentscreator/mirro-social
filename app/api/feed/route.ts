@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
         content: postsTable.content,
         image: postsTable.image,
         video: postsTable.video,
+        hasPrivateLocation: postsTable.hasPrivateLocation,
         createdAt: postsTable.createdAt,
         user: {
           id: usersTable.id,

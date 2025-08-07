@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Search, User, MessageSquare, Image } from "lucide-react"
+import { Home, Search, User, MessageSquare, Bell } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 
@@ -22,10 +22,10 @@ export function Navigation() {
       active: pathname === "/discover",
     },
     {
-      href: "/albums",
-      icon: Image,
-      label: "Albums",
-      active: pathname === "/albums",
+      href: "/notifications",
+      icon: Bell,
+      label: "Notifications",
+      active: pathname === "/notifications",
     },
     {
       href: "/messages",

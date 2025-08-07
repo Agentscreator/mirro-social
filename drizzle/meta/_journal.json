@@ -8,6 +8,20 @@
       "when": 1754593427423,
       "tag": "0000_cloudy_loki",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1754602045666,
+      "tag": "0001_smiling_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754602256956,
+      "tag": "0002_fluffy_sleeper",
+      "breakpoints": true
     }
   ]
 }

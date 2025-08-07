@@ -24,7 +24,9 @@ import {
   Settings,
   Check,
   X,
-  Loader2
+  Loader2,
+  MapPin,
+  Navigation
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -58,6 +60,12 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [showEffects, setShowEffects] = useState(false);
   const [overlayOpacity, setOverlayOpacity] = useState(0.8);
   const [backgroundBlur, setBackgroundBlur] = useState(5);
+  
+  // Location sharing states
+  const [hasPrivateLocation, setHasPrivateLocation] = useState(false);
+  const [locationName, setLocationName] = useState("");
+  const [locationAddress, setLocationAddress] = useState("");
+  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
   
   // File upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -280,6 +288,19 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         console.log("Uploading recorded video blob:", blob.size);
         formData.append('media', blob, 'recorded-video.webm');
       }
+
+      // Add location data if provided
+      if (hasPrivateLocation && locationName.trim()) {
+        formData.append('hasPrivateLocation', 'true');
+        formData.append('locationName', locationName.trim());
+        if (locationAddress.trim()) {
+          formData.append('locationAddress', locationAddress.trim());
+        }
+        if (coordinates) {
+          formData.append('latitude', coordinates.lat.toString());
+          formData.append('longitude', coordinates.lng.toString());
+        }
+      }
       
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -337,6 +358,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setSelectedFilter('none');
     setSelectedEffect('none');
     setShowEffects(false);
+    setHasPrivateLocation(false);
+    setLocationName("");
+    setLocationAddress("");
+    setCoordinates(null);
     
     onClose();
   };
@@ -672,15 +697,80 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           
           {/* Caption input (shown for all post types when file/video is ready) */}
           {(previewUrl || selectedFile) && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Caption</label>
-              <Textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write a caption..."
-                className="bg-gray-900 border-gray-700 text-white resize-none"
-                rows={3}
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Caption</label>
+                <Textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="Write a caption..."
+                  className="bg-gray-900 border-gray-700 text-white resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Private Location Sharing */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="private-location"
+                    checked={hasPrivateLocation}
+                    onCheckedChange={setHasPrivateLocation}
+                  />
+                  <label htmlFor="private-location" className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Add Private Location
+                  </label>
+                </div>
+                
+                {hasPrivateLocation && (
+                  <div className="space-y-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                    <p className="text-xs text-gray-400">
+                      This location will only be shared with people who request it and you approve.
+                    </p>
+                    
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Location name (e.g., Central Park)"
+                        value={locationName}
+                        onChange={(e) => setLocationName(e.target.value)}
+                        className="bg-gray-900 border-gray-700 text-white"
+                      />
+                      <Input
+                        placeholder="Address (optional)"
+                        value={locationAddress}
+                        onChange={(e) => setLocationAddress(e.target.value)}
+                        className="bg-gray-900 border-gray-700 text-white"
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (navigator.geolocation) {
+                          navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                              setCoordinates({
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                              });
+                            },
+                            (error) => {
+                              console.error('Error getting location:', error);
+                            }
+                          );
+                        }
+                      }}
+                      className="border-gray-700 text-white hover:bg-gray-800"
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      {coordinates ? 'Location Set' : 'Use Current Location'}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
 import { put } from "@vercel/blob"
 
@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
           content: postsTable.content,
           image: postsTable.image,
           video: postsTable.video,
+          hasPrivateLocation: postsTable.hasPrivateLocation,
           createdAt: postsTable.createdAt,
           updatedAt: postsTable.updatedAt,
           user: {
@@ -158,6 +159,7 @@ export async function GET(request: NextRequest) {
           content: postsTable.content,
           image: postsTable.image,
           video: postsTable.video,
+          hasPrivateLocation: postsTable.hasPrivateLocation,
           createdAt: postsTable.createdAt,
           updatedAt: postsTable.updatedAt,
           user: {
@@ -233,6 +235,7 @@ export async function GET(request: NextRequest) {
           content: postsTable.content,
           image: postsTable.image,
           video: postsTable.video,
+          hasPrivateLocation: postsTable.hasPrivateLocation,
           createdAt: postsTable.createdAt,
           updatedAt: postsTable.updatedAt,
           user: {
@@ -321,6 +324,13 @@ export async function POST(request: NextRequest) {
     const media = formData.get("media") as File | null
     const isInvite = formData.get("isInvite") === "true"
     const inviteLimit = formData.get("inviteLimit") ? parseInt(formData.get("inviteLimit") as string) : 10
+    
+    // Location data
+    const hasPrivateLocation = formData.get("hasPrivateLocation") === "true"
+    const locationName = formData.get("locationName") as string
+    const locationAddress = formData.get("locationAddress") as string
+    const latitude = formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null
+    const longitude = formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null
 
     console.log("Form data parsed:", {
       content: content ? `"${content.substring(0, 100)}${content.length > 100 ? "..." : ""}"` : "null",
@@ -391,6 +401,7 @@ export async function POST(request: NextRequest) {
     const postData: any = {
       userId: session.user.id,
       content: content || "",
+      hasPrivateLocation: hasPrivateLocation ? 1 : 0,
     }
 
     if (mediaType === "image") {
@@ -431,6 +442,33 @@ export async function POST(request: NextRequest) {
       userId: verifyPost[0].userId,
       persisted: true,
     })
+
+    // Create location entry if this post has a private location
+    if (hasPrivateLocation && locationName?.trim()) {
+      console.log("=== CREATING LOCATION ENTRY ===")
+      try {
+        const locationEntry = await db
+          .insert(postLocationsTable)
+          .values({
+            postId: post[0].id,
+            locationName: locationName.trim(),
+            locationAddress: locationAddress?.trim() || null,
+            latitude: latitude,
+            longitude: longitude,
+            isPrivate: 1,
+          })
+          .returning()
+
+        console.log("✅ LOCATION CREATED SUCCESSFULLY:", {
+          locationId: locationEntry[0].id,
+          postId: locationEntry[0].postId,
+          locationName: locationEntry[0].locationName,
+        })
+      } catch (locationError) {
+        console.error("❌ LOCATION CREATION FAILED:", locationError)
+        // Don't fail the entire post creation, just log the error
+      }
+    }
 
     // Create invite entry if this is an invite post
     if (isInvite) {

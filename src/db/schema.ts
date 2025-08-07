@@ -123,6 +123,7 @@ export const postsTable = pgTable("posts", {
   video: varchar("video", { length: 500 }), // Preferred for new posts
   duration: integer("duration"), // Video duration in seconds (optional)
   editedVideoData: text("edited_video_data"), // JSON data for video editor projects
+  hasPrivateLocation: integer("has_private_location").notNull().default(0), // 0 = no, 1 = yes
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
@@ -349,6 +350,41 @@ export const albumImageCommentsTable = pgTable("album_image_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
+// Location Requests (NEW TABLE)
+export const locationRequestsTable = pgTable("location_requests", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  postId: integer("post_id")
+    .notNull()
+    .references(() => postsTable.id),
+  requesterId: uuid("requester_id")
+    .notNull()
+    .references(() => usersTable.id),
+  postOwnerId: uuid("post_owner_id")
+    .notNull()
+    .references(() => usersTable.id),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // "pending", "accepted", "denied"
+  locationName: varchar("location_name", { length: 200 }),
+  locationAddress: text("location_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+})
+
+// Post Locations (NEW TABLE) - stores private location data for posts
+export const postLocationsTable = pgTable("post_locations", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  postId: integer("post_id")
+    .notNull()
+    .references(() => postsTable.id),
+  locationName: varchar("location_name", { length: 200 }).notNull(),
+  locationAddress: text("location_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  isPrivate: integer("is_private").notNull().default(1), // 0 = public, 1 = private
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
 // Notifications (NEW TABLE)
 export const notificationsTable = pgTable("notifications", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -364,6 +400,8 @@ export const notificationsTable = pgTable("notifications", {
     .references(() => postsTable.id), // Related post (optional)
   inviteRequestId: integer("invite_request_id")
     .references(() => inviteRequestsTable.id), // Related invite request (optional)
+  locationRequestId: integer("location_request_id")
+    .references(() => locationRequestsTable.id), // Related location request (optional)
   isRead: integer("is_read").notNull().default(0), // 0 = unread, 1 = read
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })

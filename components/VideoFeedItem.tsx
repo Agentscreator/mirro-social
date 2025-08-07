@@ -1,7 +1,8 @@
-import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share, UserPlus, MoreHorizontal } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share, UserPlus, MoreHorizontal, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InviteButton } from "@/components/invite-button";
+import { CommentModal } from "@/components/CommentModal";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,6 +14,7 @@ interface VideoFeedItemProps {
     video?: string;
     duration?: number;
     createdAt: string;
+    hasPrivateLocation?: boolean;
     user: {
       id: string;
       username: string;
@@ -38,6 +40,8 @@ const VideoFeedItem = ({
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Autoplay effect when component becomes active
@@ -220,12 +224,8 @@ const VideoFeedItem = ({
   };
 
   const handleComment = () => {
-    // Navigate to post detail page or profile where comments are available
     console.log('Comment clicked for post:', post.id);
-    // For now, navigate to the user's profile where they can see and interact with comments
-    if (typeof window !== 'undefined') {
-      window.location.href = `/profile/${post.user.id}`;
-    }
+    setIsCommentModalOpen(true);
   };
 
   const handleShare = async () => {
@@ -315,6 +315,43 @@ const VideoFeedItem = ({
           description: `Copy this link: ${fallbackUrl}`,
         });
       }
+    }
+  };
+
+  const handleLocationRequest = async () => {
+    if (isRequestingLocation) return;
+    
+    try {
+      setIsRequestingLocation(true);
+      
+      const response = await fetch('/api/location-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId: post.id,
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Request Sent!",
+          description: "Your location request has been sent to the post owner.",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send location request');
+      }
+    } catch (error) {
+      console.error('Error requesting location:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send location request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingLocation(false);
     }
   };
 
@@ -482,12 +519,44 @@ const VideoFeedItem = ({
           {post.content}
         </p>
         
-        {showInviteButton && (
-          <div className="mb-2">
-            <InviteButton postId={post.id} />
-          </div>
-        )}
+        <div className="space-y-2">
+          {showInviteButton && (
+            <div>
+              <InviteButton postId={post.id} />
+            </div>
+          )}
+          
+          {post.hasPrivateLocation && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleLocationRequest}
+              disabled={isRequestingLocation}
+              className="bg-black/30 border-white/20 text-white hover:bg-black/50 backdrop-blur-sm"
+            >
+              {isRequestingLocation ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <MapPin className="h-4 w-4 mr-2" />
+              )}
+              Request Location
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Comment Modal */}
+      <CommentModal
+        isOpen={isCommentModalOpen}
+        onClose={() => setIsCommentModalOpen(false)}
+        postId={post.id}
+        postContent={post.content}
+        postUser={{
+          username: post.user.username,
+          nickname: post.user.nickname,
+          profileImage: getBestImageUrl(post.user),
+        }}
+      />
 
     </div>
   );
