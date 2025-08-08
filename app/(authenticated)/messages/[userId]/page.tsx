@@ -418,7 +418,7 @@ export default function ChatPage() {
               value={newMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-200 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-200 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
               disabled={sending}
               rows={1}
             />

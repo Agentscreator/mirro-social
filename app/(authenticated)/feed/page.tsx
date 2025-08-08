@@ -8,6 +8,7 @@ import { Search, Users, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface Post {
   id: number;
@@ -270,51 +271,64 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container">
-      {/* Mobile Top Navigation - More minimal like TikTok */}
-      <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
-        <div className="flex items-center justify-between p-4 pt-8 pb-6 pointer-events-auto">
-          {showSearchBar ? (
-            <div className="flex-1 relative mr-3">
-              {loading && searchQuery ? (
-                <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
-              ) : (
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-              )}
-              <Input
-                placeholder="Search videos..."
-                className="pl-12 pr-12 py-3 bg-black/40 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus={true}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
-                onClick={() => {
-                  setShowSearchBar(false);
-                  setSearchQuery("");
-                }}
-              >
-                ✕
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="text-white font-bold text-lg tracking-wide drop-shadow-lg">For You</div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20 rounded-full w-9 h-9 backdrop-blur-sm"
-                onClick={() => setShowSearchBar(true)}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+    <>
+      {/* Hide global notification bell on feed page */}
+      <style jsx global>{`
+        .feed-page ~ div > div:has(> button:has(svg[data-lucide="bell"])) {
+          display: none !important;
+        }
+      `}</style>
+      
+      <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page">
+        {/* Mobile Top Navigation - More minimal like TikTok */}
+        <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+          <div className="flex items-center justify-between p-4 pt-8 pb-6 pointer-events-auto">
+            {showSearchBar ? (
+              <div className="flex-1 relative mr-3">
+                {loading && searchQuery ? (
+                  <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
+                ) : (
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+                )}
+                <Input
+                  placeholder="Search videos..."
+                  className="pl-12 pr-12 py-3 bg-black/40 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus={true}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
+                  onClick={() => {
+                    setShowSearchBar(false);
+                    setSearchQuery("");
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="text-white font-bold text-lg tracking-wide drop-shadow-lg">For You</div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white hover:bg-white/20 rounded-full w-9 h-9 backdrop-blur-sm"
+                    onClick={() => setShowSearchBar(true)}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                  <div className="text-white">
+                    <NotificationBell theme="dark" />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
       
       {/* Desktop Search Icon - Top Right */}
       <div className="hidden md:block absolute top-6 right-20 xl:right-24 z-40">
@@ -436,6 +450,7 @@ export default function FeedPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

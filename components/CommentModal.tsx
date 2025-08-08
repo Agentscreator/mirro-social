@@ -234,7 +234,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Write a reply..."
-                  className="min-h-[60px] text-sm"
+                  className="min-h-[60px] text-sm text-gray-900 placeholder:text-gray-500"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -324,7 +324,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="min-h-[60px] resize-none"
+                className="min-h-[60px] resize-none text-gray-900 placeholder:text-gray-500"
               />
             </div>
           </div>

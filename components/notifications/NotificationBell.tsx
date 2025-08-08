@@ -35,7 +35,11 @@ interface NotificationsResponse {
   unreadCount: number
 }
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  theme?: 'dark' | 'light'
+}
+
+export function NotificationBell({ theme = 'light' }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -148,7 +152,15 @@ export function NotificationBell() {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative p-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`relative p-2 ${
+            theme === 'dark' 
+              ? 'text-white hover:bg-white/20' 
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
