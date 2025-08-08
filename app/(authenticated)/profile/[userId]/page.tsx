@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { HamburgerMenu } from "@/components/hamburger-menu"
-import { VideoCreationDialog } from "@/components/video-creation-dialog"
 
 interface Post {
   id: number
@@ -98,22 +97,7 @@ export default function ProfilePage() {
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null)
   const [postContent, setPostContent] = useState("")
 
-  // Video creation states
-  const [isVideoCreationOpen, setIsVideoCreationOpen] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
-  const [videoPreview, setVideoPreview] = useState<string | null>(null)
-  const [isInviteMode, setIsInviteMode] = useState(false)
 
-  // Removed simple post creation states - using video creation only
-  const [inviteLimit, setInviteLimit] = useState(5)
-  const [videoDescription, setVideoDescription] = useState("")
-  const [selectedSound, setSelectedSound] = useState<string | null>(null)
-  const [videoFilters, setVideoFilters] = useState({
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    blur: 0
-  })
 
   // Post viewing states
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -345,91 +329,7 @@ export default function ProfilePage() {
     reader.readAsDataURL(file)
   }
 
-  const handleCreatePost = async (data: {
-    video: File
-    description: string
-    isInvite: boolean
-    inviteLimit?: number
-    sound?: string
-    filters: {
-      brightness: number
-      contrast: number
-      saturation: number
-      blur: number
-    }
-  }) => {
-    try {
-      console.log("=== FRONTEND CREATE POST DEBUG ===")
-      console.log("Creating post with data:", {
-        description: data.description,
-        isInvite: data.isInvite,
-        inviteLimit: data.inviteLimit,
-        hasVideo: !!data.video,
-        videoSize: data.video?.size,
-        sound: data.sound,
-        filters: data.filters
-      })
 
-      const formData = new FormData()
-      formData.append("content", data.description)
-      formData.append("media", data.video)
-
-      // Add invite data if it's an invite
-      if (data.isInvite) {
-        formData.append("isInvite", "true")
-        formData.append("inviteLimit", data.inviteLimit?.toString() || "5")
-      }
-
-      // Add sound and filter data
-      if (data.sound) {
-        formData.append("sound", data.sound)
-      }
-      formData.append("filters", JSON.stringify(data.filters))
-
-      console.log("Sending request to /api/posts")
-      const response = await fetch("/api/posts", {
-        method: "POST",
-        body: formData,
-      })
-
-      console.log("Response status:", response.status)
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
-
-      if (response.ok) {
-        const newPostData = await response.json()
-        sessionStorage.removeItem(cacheKey)
-        const updatedPosts = [newPostData, ...posts]
-        setPosts(updatedPosts)
-        sessionStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            data: updatedPosts,
-            timestamp: Date.now(),
-          }),
-        )
-
-        toast({
-          title: "Success",
-          description: data.isInvite ? "Video invite created successfully!" : "Video posted successfully!",
-        })
-      } else {
-        const errorText = await response.text()
-        console.error("Create post failed:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorText: errorText
-        })
-        throw new Error(`Failed to create post: ${response.status} ${response.statusText}`)
-      }
-    } catch (error: any) {
-      console.error("Error creating post:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create post. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   // Removed simple post creation handler - using video creation only
 
@@ -1325,16 +1225,6 @@ export default function ProfilePage() {
             <h2 className="text-lg font-semibold text-blue-600">
               {isOwnProfile ? "Your Posts" : `${user.username}'s Posts`}
             </h2>
-            {isOwnProfile && (
-              <Button
-                onClick={() => setIsVideoCreationOpen(true)}
-                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">New Post</span>
-                <span className="sm:hidden">Post</span>
-              </Button>
-            )}
           </div>
 
           {/* Posts Grid */}
@@ -1392,12 +1282,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Video Creation Dialog */}
-      <VideoCreationDialog
-        open={isVideoCreationOpen}
-        onOpenChange={setIsVideoCreationOpen}
-        onCreatePost={handleCreatePost}
-      />
+
 
 
       {/* Post View Dialog */}

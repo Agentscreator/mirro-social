@@ -87,6 +87,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [autoAcceptInvites, setAutoAcceptInvites] = useState(false);
   const [groupName, setGroupName] = useState("");
   
+  // Invite limit (all posts are invites)
+  const [inviteLimit, setInviteLimit] = useState(10);
+  const [isUnlimitedInvites, setIsUnlimitedInvites] = useState(false);
+  
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -152,7 +156,11 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         formData.append('media', blob, 'recorded-video.webm');
       }
 
-      // All posts are invites now, add auto-accept group data
+      // All posts are invites now, add invite data
+      formData.append('isInvite', 'true');
+      formData.append('inviteLimit', isUnlimitedInvites ? '-1' : inviteLimit.toString());
+      
+      // Add auto-accept group data
       if (autoAcceptInvites && groupName.trim()) {
         formData.append('autoAcceptInvites', 'true');
         formData.append('groupName', groupName.trim());
@@ -204,6 +212,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setSelectedAudio(null);
     setAutoAcceptInvites(false);
     setGroupName("");
+    setInviteLimit(10);
+    setIsUnlimitedInvites(false);
     setIsRecording(false);
     setIsPaused(false);
     setRecordedTime(0);
@@ -222,7 +232,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         className="hidden"
       />
       
-      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mb-8 shadow-2xl">
+      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-8 shadow-2xl">
         <Upload className="w-12 h-12 text-white" />
       </div>
       
@@ -234,7 +244,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       
       <Button
         onClick={() => fileInputRef.current?.click()}
-        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
+        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
       >
         Choose Video
       </Button>
@@ -438,7 +448,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                         <Music className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -487,7 +497,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         {/* Next Button */}
         <Button
           onClick={() => setCurrentStep('details')}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-3 rounded-full font-semibold"
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-full font-semibold"
         >
           Next
           <ArrowRight className="w-4 h-4 ml-2" />
@@ -538,6 +548,49 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           <p className="text-gray-400 text-xs">{caption.length}/2200</p>
         </div>
 
+        {/* Invite Limit */}
+        <div className="space-y-4 p-4 bg-gray-800 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-green-400" />
+              <div>
+                <p className="text-white font-medium">Participant Limit</p>
+                <p className="text-gray-400 text-sm">Set how many people can join</p>
+              </div>
+            </div>
+            <Switch
+              checked={isUnlimitedInvites}
+              onCheckedChange={setIsUnlimitedInvites}
+            />
+          </div>
+          
+          {!isUnlimitedInvites ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-300">Maximum participants</span>
+                <span className="text-sm text-gray-400">{inviteLimit}</span>
+              </div>
+              <Slider
+                value={[inviteLimit]}
+                onValueChange={(value) => setInviteLimit(value[0])}
+                max={100}
+                min={2}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>2</span>
+                <span>100</span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+              <p className="text-green-400 text-sm font-medium">Unlimited participants</p>
+              <p className="text-green-300/70 text-xs">Anyone can join your invitation</p>
+            </div>
+          )}
+        </div>
+
         {/* Auto-Accept Group */}
         <div className="space-y-4 p-4 bg-gray-800 rounded-xl">
           <div className="flex items-center justify-between">
@@ -576,7 +629,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         <Button
           onClick={handleCreatePost}
           disabled={isUploading || !caption.trim() || (autoAcceptInvites && !groupName.trim())}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white py-4 rounded-full font-bold text-lg"
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white py-4 rounded-full font-bold text-lg"
         >
           {isUploading ? (
             <>
@@ -596,16 +649,16 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-auto h-[95vh] bg-black text-white border-none p-0 overflow-hidden">
+      <DialogContent className="w-full max-w-md mx-auto h-[100vh] md:h-[95vh] md:max-h-[900px] bg-black text-white border-none p-0 overflow-hidden md:rounded-3xl">
         {/* Progress Indicator */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm">
+        <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm md:rounded-t-3xl">
           {['upload', 'edit', 'details'].map((step, index) => (
             <div
               key={step}
               className={`flex-1 h-1 ${
                 currentStep === step || 
                 (['upload', 'edit', 'effects', 'audio'].indexOf(currentStep) > index)
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-600'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                   : 'bg-gray-700'
               }`}
             />
@@ -617,13 +670,13 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           variant="ghost"
           size="icon"
           onClick={handleClose}
-          className="absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full backdrop-blur-sm"
+          className="absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
         >
           <X className="w-5 h-5" />
         </Button>
 
         {/* Step Content */}
-        <div className="h-full pt-4">
+        <div className="h-full pt-4 safe-area-inset-top">
           {currentStep === 'upload' && renderUploadStep()}
           {(currentStep === 'edit' || currentStep === 'effects' || currentStep === 'audio') && renderEditStep()}
           {currentStep === 'details' && renderDetailsStep()}
