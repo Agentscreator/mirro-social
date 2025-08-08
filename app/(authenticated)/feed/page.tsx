@@ -317,7 +317,7 @@ export default function FeedPage() {
       </div>
       
       {/* Desktop Search Icon - Top Right */}
-      <div className="hidden md:block absolute top-6 right-6 xl:right-12 z-40">
+      <div className="hidden md:block absolute top-6 right-20 xl:right-24 z-40">
         {showSearchBar ? (
           <div className="relative w-96">
             {loading && searchQuery ? (
