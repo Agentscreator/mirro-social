@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Pin } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { StreamChatMessages } from "@/components/StreamChatMessages"
+import { useStreamContext } from "@/components/providers/StreamProvider"
 
 interface Conversation {
   id: string
@@ -25,11 +27,15 @@ interface Conversation {
 export default function MessagesPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { client, isReady } = useStreamContext()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
 
-  // Fetch conversations from API
+  // Use Stream Chat if available, otherwise fallback to API
+  const useStreamChat = client && isReady
+
+  // Fetch conversations from API (fallback)
   const fetchConversations = async () => {
     try {
       const response = await fetch('/api/messages');
@@ -47,10 +53,12 @@ export default function MessagesPage() {
   };
 
   useEffect(() => {
-    if (session?.user?.id) {
+    if (useStreamChat) {
+      setLoading(false)
+    } else if (session?.user?.id) {
       fetchConversations();
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, useStreamChat])
 
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -86,6 +94,11 @@ export default function MessagesPage() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  // Use Stream Chat if available
+  if (useStreamChat) {
+    return <StreamChatMessages />
   }
 
   return (

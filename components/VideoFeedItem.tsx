@@ -503,13 +503,25 @@ const VideoFeedItem = ({
       {/* Bottom Left Content */}
       <div className="absolute bottom-28 md:bottom-24 left-4 right-20 z-10">
         <div className="flex items-center space-x-3 mb-3">
-          <Avatar className="w-12 h-12 border-2 border-white/20">
+          <Avatar 
+            className="w-12 h-12 border-2 border-white/20 cursor-pointer hover:border-white/40 transition-all"
+            onClick={() => {
+              // Navigate to user profile
+              window.location.href = `/profile/${post.user.id}`;
+            }}
+          >
             <AvatarImage src={getUserAvatar()} alt={getUserDisplayName()} />
             <AvatarFallback className="bg-primary text-white">
               {getUserDisplayName().charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div 
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              // Navigate to user profile
+              window.location.href = `/profile/${post.user.id}`;
+            }}
+          >
             <h3 className="font-semibold text-white text-sm">{getUserDisplayName()}</h3>
             <p className="text-white/80 text-xs">@{post.user.username}</p>
           </div>

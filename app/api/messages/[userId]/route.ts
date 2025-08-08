@@ -102,6 +102,7 @@ export async function POST(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    console.log("=== SEND MESSAGE API START ===")
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -110,6 +111,9 @@ export async function POST(
     const { userId } = await params
     const body = await request.json()
     const { content } = body
+
+    console.log("Sending message from:", session.user.id, "to:", userId)
+    console.log("Message content:", content?.substring(0, 100))
 
     // Validate input
     if (!content || content.trim().length === 0) {
@@ -131,7 +135,7 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Create the message
+    // Create the message in database
     const newMessage = await db
       .insert(messagesTable)
       .values({
@@ -142,12 +146,30 @@ export async function POST(
       })
       .returning()
 
+    console.log("✅ Message saved to database:", newMessage[0])
+
+    // Verify the message was saved
+    const verifyMessage = await db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.id, newMessage[0].id))
+      .limit(1)
+
+    if (verifyMessage.length === 0) {
+      console.error("❌ Message not found after creation")
+      return NextResponse.json({ error: "Failed to save message" }, { status: 500 })
+    }
+
+    console.log("✅ Message verified in database")
+    console.log("=== SEND MESSAGE API END ===")
+
     return NextResponse.json({
       message: newMessage[0],
       success: "Message sent successfully",
     })
   } catch (error) {
-    console.error("Error sending message:", error)
+    console.error("❌ Error sending message:", error)
+    console.error("Message error stack:", error instanceof Error ? error.stack : "No stack")
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

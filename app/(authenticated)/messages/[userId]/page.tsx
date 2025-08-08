@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Send, Phone, Video, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import dynamic from 'next/dynamic'
+import { useStreamContext } from "@/components/providers/StreamProvider"
 
 interface Message {
   id: string
@@ -28,11 +30,22 @@ interface ChatUser {
   lastSeen?: Date
 }
 
+// Import Stream Chat components
+const StreamChatMessages = dynamic(() => import('@/components/StreamChatMessages').then(mod => ({ default: mod.StreamChatMessages })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+  )
+})
+
 export default function ChatPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const userId = params?.userId as string
+  const { client, isReady } = useStreamContext()
   
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -43,6 +56,9 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Use Stream Chat if available
+  const useStreamChat = client && isReady
 
   // Fetch messages and user data from API
   const fetchMessages = async () => {
@@ -71,10 +87,12 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (userId && session?.user?.id) {
+    if (useStreamChat) {
+      setLoading(false)
+    } else if (userId && session?.user?.id) {
       fetchMessages();
     }
-  }, [userId, session?.user?.id])
+  }, [userId, session?.user?.id, useStreamChat])
 
   useEffect(() => {
     scrollToBottom()
@@ -181,6 +199,11 @@ export default function ChatPage() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  // Use Stream Chat if available
+  if (useStreamChat) {
+    return <StreamChatMessages selectedUserId={userId} />
   }
 
   if (loading) {

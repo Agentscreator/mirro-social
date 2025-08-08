@@ -227,6 +227,10 @@ export async function POST(
     // Create notification for manual requests (pending status)
     if (initialStatus === "pending") {
       try {
+        console.log("🔔 Creating notification for pending invite request")
+        console.log("Post author ID:", post[0].userId)
+        console.log("Requester ID:", session.user.id)
+        
         const requesterInfo = await db
           .select({
             username: usersTable.username,
@@ -237,6 +241,7 @@ export async function POST(
           .limit(1)
 
         const displayName = requesterInfo[0]?.nickname || requesterInfo[0]?.username || "Someone"
+        console.log("Requester display name:", displayName)
         
         const notification = await db.insert(notificationsTable).values({
           userId: post[0].userId, // Post author receives the notification
@@ -246,11 +251,27 @@ export async function POST(
           message: `${displayName} wants to join your activity invite!`,
           postId: postId,
           inviteRequestId: newRequest[0].id,
+          isRead: 0,
         }).returning()
         
         console.log("✅ Manual invite request notification created:", notification[0])
+        
+        // Verify the notification was saved
+        const verifyNotification = await db
+          .select()
+          .from(notificationsTable)
+          .where(eq(notificationsTable.id, notification[0].id))
+          .limit(1)
+        
+        if (verifyNotification.length > 0) {
+          console.log("✅ Notification verified in database:", verifyNotification[0])
+        } else {
+          console.error("❌ Notification not found after creation")
+        }
+        
       } catch (notificationError) {
         console.error("❌ Failed to create invite request notification:", notificationError)
+        console.error("Notification error stack:", notificationError instanceof Error ? notificationError.stack : "No stack")
         // Don't fail the entire operation
       }
     }
