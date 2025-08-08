@@ -16,25 +16,16 @@ import {
   X,
   Loader2,
   Users,
-  Music,
-  Sparkles,
-  Palette,
   Layers,
-  Volume2,
-  VolumeX,
   Timer,
-  FlipHorizontal,
   Zap,
   Image as ImageIcon,
-  Mic,
-  MicOff,
   MoreHorizontal,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
 interface NewPostCreatorProps {
@@ -43,17 +34,7 @@ interface NewPostCreatorProps {
   onPostCreated?: (post: any) => void;
 }
 
-type CreationStep = 'upload' | 'edit' | 'effects' | 'audio' | 'details';
-type VideoFilter = 'none' | 'vintage' | 'dramatic' | 'bright' | 'warm' | 'cool' | 'noir' | 'bw' | 'sepia' | 'vibrant';
-type VideoEffect = 'none' | 'greenscreen' | 'blur-bg' | 'split-screen' | 'overlay' | 'zoom' | 'shake';
-type AudioTrack = {
-  id: string;
-  name: string;
-  artist: string;
-  duration: number;
-  url: string;
-  thumbnail?: string;
-};
+type CreationStep = 'upload' | 'details';
 
 export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreatorProps) {
   // Main state
@@ -63,25 +44,6 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [caption, setCaption] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   
-  // Recording states
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [recordedTime, setRecordedTime] = useState(0);
-  const [maxDuration, setMaxDuration] = useState(60);
-  const [isMuted, setIsMuted] = useState(false);
-  
-  // Effects and filters
-  const [selectedFilter, setSelectedFilter] = useState<VideoFilter>('none');
-  const [selectedEffect, setSelectedEffect] = useState<VideoEffect>('none');
-  const [brightness, setBrightness] = useState(100);
-  const [contrast, setContrast] = useState(100);
-  const [saturation, setSaturation] = useState(100);
-  const [blur, setBlur] = useState(0);
-  
-  // Audio
-  const [selectedAudio, setSelectedAudio] = useState<AudioTrack | null>(null);
-  const [audioVolume, setAudioVolume] = useState(50);
-  const [originalAudioVolume, setOriginalAudioVolume] = useState(100);
   
   // Auto-accept group (all posts are invites now)
   const [autoAcceptInvites, setAutoAcceptInvites] = useState(false);
@@ -92,35 +54,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [isUnlimitedInvites, setIsUnlimitedInvites] = useState(false);
   
   // Refs
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sample audio tracks (in real app, these would come from an API)
-  const audioTracks: AudioTrack[] = [
-    { id: '1', name: 'Original Audio', artist: 'Your Video', duration: 30, url: '' },
-    { id: '2', name: 'Chill Vibes', artist: 'Lo-Fi Beats', duration: 180, url: '/audio/chill.mp3' },
-    { id: '3', name: 'Upbeat Energy', artist: 'Pop Mix', duration: 120, url: '/audio/upbeat.mp3' },
-    { id: '4', name: 'Trending Sound', artist: 'Viral Audio', duration: 15, url: '/audio/trending.mp3' },
-  ];
-
-  // Video filters
-  const videoFilters = {
-    none: 'none',
-    vintage: 'sepia(0.5) contrast(1.2) brightness(0.9)',
-    dramatic: 'contrast(1.5) saturate(1.3) brightness(0.8)',
-    bright: 'brightness(1.2) contrast(1.1) saturate(1.2)',
-    warm: 'sepia(0.3) saturate(1.4) hue-rotate(15deg)',
-    cool: 'saturate(1.2) hue-rotate(-15deg) brightness(1.1)',
-    noir: 'grayscale(1) contrast(1.5) brightness(0.9)',
-    bw: 'grayscale(1)',
-    sepia: 'sepia(1)',
-    vibrant: 'saturate(2) contrast(1.2)'
-  };
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,16 +64,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      setCurrentStep('edit');
+      setCurrentStep('details');
     }
   };
 
-  // Format time display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Create post
   const handleCreatePost = async () => {
@@ -151,9 +80,6 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       
       if (selectedFile) {
         formData.append('media', selectedFile);
-      } else if (recordedChunksRef.current.length > 0) {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        formData.append('media', blob, 'recorded-video.webm');
       }
 
       // All posts are invites now, add invite data
@@ -206,35 +132,15 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   // Close and cleanup
   const handleClose = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
     // Reset all states
     setCurrentStep('upload');
     setSelectedFile(null);
     setPreviewUrl(null);
     setCaption("");
-    setSelectedFilter('none');
-    setSelectedEffect('none');
-    setBrightness(100);
-    setContrast(100);
-    setSaturation(100);
-    setBlur(0);
-    setSelectedAudio(null);
     setAutoAcceptInvites(false);
     setGroupName("");
     setInviteLimit(10);
     setIsUnlimitedInvites(false);
-    setIsRecording(false);
-    setIsPaused(false);
-    setRecordedTime(0);
     
     onClose();
   };
@@ -271,258 +177,6 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     </div>
   );
 
-  // Render edit step
-  const renderEditStep = () => (
-    <div className="flex flex-col h-full">
-      {/* Video Preview */}
-      <div className="flex-1 relative bg-black overflow-hidden">
-        {previewUrl && (
-          <video
-            src={previewUrl}
-            className="w-full h-full object-cover"
-            style={{
-              filter: `${videoFilters[selectedFilter]} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`
-            }}
-            controls
-            muted={isMuted}
-          />
-        )}
-        
-        {/* Top Controls */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentStep('upload')}
-            className="bg-black/50 text-white rounded-full backdrop-blur-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMuted(!isMuted)}
-              className="bg-black/50 text-white rounded-full backdrop-blur-sm"
-            >
-              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Bottom Tools */}
-      <div className="bg-gray-900 p-4 space-y-4 flex-shrink-0 max-h-80 overflow-y-auto">
-        {/* Tool Tabs */}
-        <div className="flex justify-center gap-1 bg-gray-800 rounded-full p-1">
-          <Button
-            variant={currentStep === 'edit' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCurrentStep('edit')}
-            className="rounded-full px-6"
-          >
-            <Palette className="w-4 h-4 mr-2" />
-            Filters
-          </Button>
-          <Button
-            variant={currentStep === 'effects' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCurrentStep('effects')}
-            className="rounded-full px-6"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Effects
-          </Button>
-          <Button
-            variant={currentStep === 'audio' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCurrentStep('audio')}
-            className="rounded-full px-6"
-          >
-            <Music className="w-4 h-4 mr-2" />
-            Audio
-          </Button>
-        </div>
-        
-        {/* Filter Options */}
-        {currentStep === 'edit' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-5 gap-2">
-              {Object.keys(videoFilters).map((filter) => (
-                <Button
-                  key={filter}
-                  variant={selectedFilter === filter ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedFilter(filter as VideoFilter)}
-                  className="text-xs h-8 capitalize"
-                >
-                  {filter}
-                </Button>
-              ))}
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">Brightness</span>
-                <span className="text-sm text-gray-400">{brightness}%</span>
-              </div>
-              <Slider
-                value={[brightness]}
-                onValueChange={(value) => setBrightness(value[0])}
-                max={200}
-                min={0}
-                step={1}
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">Contrast</span>
-                <span className="text-sm text-gray-400">{contrast}%</span>
-              </div>
-              <Slider
-                value={[contrast]}
-                onValueChange={(value) => setContrast(value[0])}
-                max={200}
-                min={0}
-                step={1}
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">Saturation</span>
-                <span className="text-sm text-gray-400">{saturation}%</span>
-              </div>
-              <Slider
-                value={[saturation]}
-                onValueChange={(value) => setSaturation(value[0])}
-                max={200}
-                min={0}
-                step={1}
-                className="w-full"
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* Effects Options */}
-        {currentStep === 'effects' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: 'none', label: 'None', icon: X },
-                { key: 'greenscreen', label: 'Green Screen', icon: Layers },
-                { key: 'blur-bg', label: 'Blur Background', icon: ImageIcon },
-                { key: 'split-screen', label: 'Split Screen', icon: FlipHorizontal },
-              ].map((effect) => (
-                <Button
-                  key={effect.key}
-                  variant={selectedEffect === effect.key ? 'default' : 'outline'}
-                  onClick={() => setSelectedEffect(effect.key as VideoEffect)}
-                  className="h-16 flex flex-col items-center gap-1"
-                >
-                  <effect.icon className="w-5 h-5" />
-                  <span className="text-xs">{effect.label}</span>
-                </Button>
-              ))}
-            </div>
-            
-            {selectedEffect !== 'none' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Effect Intensity</span>
-                  <span className="text-sm text-gray-400">{blur}px</span>
-                </div>
-                <Slider
-                  value={[blur]}
-                  onValueChange={(value) => setBlur(value[0])}
-                  max={20}
-                  min={0}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Audio Options */}
-        {currentStep === 'audio' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              {audioTracks.map((track) => (
-                <div
-                  key={track.id}
-                  onClick={() => setSelectedAudio(track)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                    selectedAudio?.id === track.id
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-gray-700 hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                        <Music className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-white text-sm font-medium">{track.name}</p>
-                        <p className="text-gray-400 text-xs">{track.artist}</p>
-                      </div>
-                    </div>
-                    <span className="text-gray-400 text-xs">{formatTime(track.duration)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {selectedAudio && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Audio Volume</span>
-                  <span className="text-sm text-gray-400">{audioVolume}%</span>
-                </div>
-                <Slider
-                  value={[audioVolume]}
-                  onValueChange={(value) => setAudioVolume(value[0])}
-                  max={100}
-                  min={0}
-                  step={1}
-                  className="w-full"
-                />
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Original Audio</span>
-                  <span className="text-sm text-gray-400">{originalAudioVolume}%</span>
-                </div>
-                <Slider
-                  value={[originalAudioVolume]}
-                  onValueChange={(value) => setOriginalAudioVolume(value[0])}
-                  max={100}
-                  min={0}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Next Button */}
-        <Button
-          onClick={() => setCurrentStep('details')}
-          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-full font-semibold"
-        >
-          Next
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
-    </div>
-  );
 
   // Render details step
   const renderDetailsStep = () => (
@@ -533,9 +187,6 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           <video
             src={previewUrl}
             className="w-full h-full object-cover"
-            style={{
-              filter: `${videoFilters[selectedFilter]} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`
-            }}
             muted
             loop
             autoPlay
@@ -545,7 +196,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCurrentStep('edit')}
+          onClick={() => setCurrentStep('upload')}
           className="absolute top-4 left-4 bg-black/50 text-white rounded-full backdrop-blur-sm"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -670,12 +321,12 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       <DialogContent className="w-full max-w-md mx-auto h-[100vh] md:h-[90vh] bg-black text-white border-none p-0 flex flex-col md:rounded-3xl">
         {/* Progress Indicator */}
         <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm md:rounded-t-3xl">
-          {['upload', 'edit', 'details'].map((step, index) => (
+          {['upload', 'details'].map((step, index) => (
             <div
               key={step}
               className={`flex-1 h-1 ${
                 currentStep === step || 
-                (['upload', 'edit', 'effects', 'audio'].indexOf(currentStep) > index)
+                (['upload'].indexOf(currentStep) > index)
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                   : 'bg-gray-700'
               }`}
@@ -696,7 +347,6 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         {/* Step Content */}
         <div className="flex-1 pt-6 overflow-hidden">
           {currentStep === 'upload' && renderUploadStep()}
-          {(currentStep === 'edit' || currentStep === 'effects' || currentStep === 'audio') && renderEditStep()}
           {currentStep === 'details' && renderDetailsStep()}
         </div>
       </DialogContent>

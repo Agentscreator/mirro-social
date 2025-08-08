@@ -8,7 +8,6 @@ import { Search, Users, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface Post {
   id: number;
@@ -272,12 +271,6 @@ export default function FeedPage() {
 
   return (
     <>
-      {/* Hide global notification bell on feed page */}
-      <style jsx global>{`
-        .feed-page ~ div > div:has(> button:has(svg[data-lucide="bell"])) {
-          display: none !important;
-        }
-      `}</style>
       
       <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page">
         {/* Mobile Top Navigation - More minimal like TikTok */}
@@ -321,9 +314,6 @@ export default function FeedPage() {
                   >
                     <Search className="h-4 w-4" />
                   </Button>
-                  <div className="text-white">
-                    <NotificationBell theme="dark" />
-                  </div>
                 </div>
               </>
             )}
