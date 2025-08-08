@@ -18,7 +18,8 @@
       "Bash(npm run lint)",
       "Bash(npm install:*)",
       "Bash(mv:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(yarn run build)"
     ],
     "deny": []
   }

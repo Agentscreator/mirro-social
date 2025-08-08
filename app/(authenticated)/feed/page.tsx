@@ -286,7 +286,7 @@ export default function FeedPage() {
                 className="pl-12 pr-12 py-3 bg-black/40 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
+                autoFocus={true}
               />
               <Button
                 variant="ghost"
@@ -330,7 +330,7 @@ export default function FeedPage() {
               className="pl-12 pr-12 py-3 bg-white/15 border-white/30 text-white placeholder:text-white/70 rounded-full backdrop-blur-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
+              autoFocus={true}
             />
             <Button
               variant="ghost"
@@ -423,8 +423,6 @@ export default function FeedPage() {
                 />
               </div>
             ))}
-          </div>
-        </div>
             
             {/* Loading indicator at bottom */}
             {hasMore && (
