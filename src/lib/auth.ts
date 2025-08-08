@@ -102,50 +102,49 @@ export const authOptions: NextAuthOptions = {
           // Password comparison with timeout
           const compareStart = Date.now();
           
-          const passwordMatch = await Promise.race([
-            new Promise<boolean>((resolve) => {
-              try {
-                const storedPassword = user[0].password;
-                console.log('🔍 Raw password from DB:', storedPassword);
-                
-                // Check if it's a bcrypt hash (starts with $2b$, $2a$, or $2y$)
-                if (storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2y$')) {
-                  console.log('🔍 Using bcrypt verification');
-                  const isMatch = await bcrypt.compare(password, storedPassword);
-                  console.log('🔍 Bcrypt password match:', isMatch);
-                  resolve(isMatch);
-                  return;
-                }
-                
-                // Handle pbkdf2 format (hash:salt)
-                const passwordParts = storedPassword.split(':');
-                console.log('🔍 Password parts:', passwordParts, 'Length:', passwordParts.length);
-                
-                if (passwordParts.length !== 2) {
-                  console.error('❌ Invalid password format in database - expected hash:salt or bcrypt format');
-                  resolve(false);
-                  return;
-                }
-                
-                const [hash, salt] = passwordParts;
-                console.log('🔍 Hash length:', hash?.length, 'Salt length:', salt?.length);
-                
-                if (!hash || !salt) {
-                  console.error('❌ Missing hash or salt after split');
-                  resolve(false);
-                  return;
-                }
-                
-                console.log('🔍 Using pbkdf2 verification');
-                const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-                const isMatch = hash === verifyHash;
-                console.log('🔍 Pbkdf2 password match:', isMatch);
-                resolve(isMatch);
-              } catch (error) {
-                console.error('Password verification error:', error);
-                resolve(false);
+          const verifyPassword = async (): Promise<boolean> => {
+            try {
+              const storedPassword = user[0].password;
+              console.log('🔍 Raw password from DB:', storedPassword);
+              
+              // Check if it's a bcrypt hash (starts with $2b$, $2a$, or $2y$)
+              if (storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2y$')) {
+                console.log('🔍 Using bcrypt verification');
+                const isMatch = await bcrypt.compare(password, storedPassword);
+                console.log('🔍 Bcrypt password match:', isMatch);
+                return isMatch;
               }
-            }),
+              
+              // Handle pbkdf2 format (hash:salt)
+              const passwordParts = storedPassword.split(':');
+              console.log('🔍 Password parts:', passwordParts, 'Length:', passwordParts.length);
+              
+              if (passwordParts.length !== 2) {
+                console.error('❌ Invalid password format in database - expected hash:salt or bcrypt format');
+                return false;
+              }
+              
+              const [hash, salt] = passwordParts;
+              console.log('🔍 Hash length:', hash?.length, 'Salt length:', salt?.length);
+              
+              if (!hash || !salt) {
+                console.error('❌ Missing hash or salt after split');
+                return false;
+              }
+              
+              console.log('🔍 Using pbkdf2 verification');
+              const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+              const isMatch = hash === verifyHash;
+              console.log('🔍 Pbkdf2 password match:', isMatch);
+              return isMatch;
+            } catch (error) {
+              console.error('Password verification error:', error);
+              return false;
+            }
+          };
+          
+          const passwordMatch = await Promise.race([
+            verifyPassword(),
             new Promise<boolean>((_, reject) => 
               setTimeout(() => reject(new Error('Password comparison timeout')), 5000)
             )
