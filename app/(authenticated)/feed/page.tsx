@@ -94,12 +94,65 @@ export default function FeedPage() {
       setPosts(data.posts || []);
       setHasMore(data.hasMore || false);
       setNextCursor(data.nextCursor || null);
+      setExcludeIds([]); // Reset exclude IDs
       setLoading(false);
     };
     
     if (session?.user?.id) {
       loadPosts();
     }
+  }, [session?.user?.id, debouncedSearchQuery]);
+
+  // Listen for new posts (refresh feed when posts are created)
+  useEffect(() => {
+    const handleFeedRefresh = async () => {
+      console.log('🔄 Refreshing feed due to new post');
+      // Reload posts from the beginning
+      if (session?.user?.id && !loading) {
+        const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
+        setPosts(data.posts || []);
+        setHasMore(data.hasMore || false);
+        setNextCursor(data.nextCursor || null);
+        setExcludeIds([]);
+        setCurrentVideoIndex(0);
+      }
+    };
+
+    // Listen for focus events to refresh feed when returning to the page
+    const handleFocus = () => {
+      handleFeedRefresh();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    // Custom event for post creation
+    window.addEventListener('postCreated', handleFeedRefresh);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('postCreated', handleFeedRefresh);
+    };
+  }, [session?.user?.id, loading, debouncedSearchQuery]);
+      const loadPosts = async () => {
+        const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
+        setPosts(data.posts || []);
+        setHasMore(data.hasMore || false);
+        setNextCursor(data.nextCursor || null);
+        setExcludeIds([]);
+        setCurrentVideoIndex(0);
+      };
+      
+      if (session?.user?.id) {
+        loadPosts();
+      }
+    };
+
+    // Listen for custom events or storage changes
+    window.addEventListener('feedRefresh', handleFeedRefresh);
+    
+    return () => {
+      window.removeEventListener('feedRefresh', handleFeedRefresh);
+    };
   }, [session?.user?.id, debouncedSearchQuery]);
   
   // Load more posts when needed

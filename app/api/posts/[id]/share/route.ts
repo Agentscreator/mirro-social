@@ -2,41 +2,45 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable } from "@/src/db/schema"
+import { postsTable, postSharesTable, usersTable } from "@/src/db/schema"
 import { eq } from "drizzle-orm"
+import { createHash } from "crypto"
 
-// POST - Share a post (generate shareable link and metadata)
-export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+// Helper function to generate share token
+function generateShareToken(postId: number, userId: string): string {
+  const data = `${postId}-${userId}-${Date.now()}-${Math.random()}`
+  return createHash('sha256').update(data).digest('hex').substring(0, 32)
+}
+
+// POST - Create a share link for a post
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    console.log("=== SHARE POST API DEBUG START ===")
+    console.log("=== POST SHARE API START ===")
+    
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      console.error("Unauthorized: No session")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = await context.params
-    const postId = Number.parseInt(id)
-
-    console.log("Sharing post ID:", postId)
-
+    const postId = parseInt(params.id)
     if (isNaN(postId)) {
-      console.error("Invalid post ID")
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 })
     }
 
-    // Fetch post with user info
-    const postWithUser = await db
+    console.log("Creating share link for post:", postId, "by user:", session.user.id)
+
+    // Verify the post exists
+    const post = await db
       .select({
         id: postsTable.id,
-        content: postsTable.content,
-        image: postsTable.image,
-        createdAt: postsTable.createdAt,
         userId: postsTable.userId,
+        content: postsTable.content,
         user: {
           username: usersTable.username,
           nickname: usersTable.nickname,
-          profileImage: usersTable.profileImage,
         },
       })
       .from(postsTable)
@@ -44,49 +48,44 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .where(eq(postsTable.id, postId))
       .limit(1)
 
-    if (postWithUser.length === 0) {
-      console.error("Post not found")
+    if (post.length === 0) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
-    const post = postWithUser[0]
-    console.log("Post found for sharing:", { id: post.id, userId: post.userId })
+    // Generate a unique share token
+    const shareToken = generateShareToken(postId, session.user.id)
 
-    // Check if user data exists (handle the case where leftJoin returns null)
-    if (!post.user) {
-      console.error("User data not found for post")
-      return NextResponse.json({ error: "User data not found" }, { status: 404 })
-    }
+    // Create share record
+    const shareRecord = await db
+      .insert(postSharesTable)
+      .values({
+        postId,
+        userId: session.user.id,
+      })
+      .returning()
 
-    // Generate shareable content
-    const baseUrl = process.env.NEXTAUTH_URL || "https://www.mirro2.com"
-    const shareUrl = `${baseUrl}/post/${postId}`
+    console.log("✅ Share record created:", shareRecord[0])
 
-    const shareText = `Check out this post by ${post.user.nickname || post.user.username}: ${post.content.substring(0, 100)}${post.content.length > 100 ? "..." : ""}`
+    // Create the share URL
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const shareUrl = `${baseUrl}/posts/shared/${shareRecord[0].id}`
 
+    // Prepare share data
+    const userDisplayName = post[0].user?.nickname || post[0].user?.username || "Someone"
     const shareData = {
       url: shareUrl,
-      title: `Post by ${post.user.nickname || post.user.username}`,
-      text: shareText,
-      image: post.image,
-      author: {
-        username: post.user.username,
-        nickname: post.user.nickname,
-        profileImage: post.user.profileImage,
-      },
-      post: {
-        id: post.id,
-        content: post.content,
-        createdAt: post.createdAt,
-      },
+      title: `Check out this post by ${userDisplayName}`,
+      text: post[0].content || "Check out this amazing post!",
+      shareId: shareRecord[0].id,
     }
 
-    console.log("✅ Share data generated successfully")
-    console.log("=== SHARE POST API DEBUG END ===")
+    console.log("✅ Share link created:", shareUrl)
+    console.log("=== POST SHARE API END ===")
 
     return NextResponse.json(shareData)
+
   } catch (error) {
-    console.error("❌ Share post error:", error)
+    console.error("❌ Post share API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

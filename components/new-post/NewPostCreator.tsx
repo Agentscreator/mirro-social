@@ -173,14 +173,32 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       
       if (response.ok) {
         const newPost = await response.json();
+        console.log('✅ Post created successfully:', newPost);
+        
+        // Clear any cached feed data to ensure new post appears
+        if (typeof window !== 'undefined') {
+          // Clear feed cache
+          const feedCacheKeys = Object.keys(sessionStorage).filter(key => 
+            key.startsWith('posts-') || key.includes('feed')
+          );
+          feedCacheKeys.forEach(key => sessionStorage.removeItem(key));
+          
+          // Trigger feed refresh
+          window.dispatchEvent(new CustomEvent('feedRefresh'));
+        }
+        
         onPostCreated?.(newPost);
         handleClose();
+        
+        // Show success message
+        console.log('🎉 Post created and feed refresh triggered');
       } else {
-        throw new Error(`Failed to create post: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to create post: ${response.status}`);
       }
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Failed to create post. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to create post. Please try again.');
     } finally {
       setIsUploading(false);
     }

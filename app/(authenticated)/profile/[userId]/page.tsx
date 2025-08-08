@@ -135,7 +135,7 @@ export default function ProfilePage() {
           if (cachedPosts) {
             const parsed = JSON.parse(cachedPosts)
             const cacheAge = Date.now() - parsed.timestamp
-            if (cacheAge < 5 * 60 * 1000) {
+            if (cacheAge < 30 * 1000) { // Reduced cache time to 30 seconds for better post visibility
               setPosts(parsed.data)
               console.log("✅ Posts loaded from cache:", parsed.data.length)
               setPostsLoading(false)

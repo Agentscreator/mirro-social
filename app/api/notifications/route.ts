@@ -2,36 +2,28 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { notificationsTable, usersTable } from "@/src/db/schema"
-import { eq, desc, count } from "drizzle-orm"
+import { notificationsTable, usersTable, postsTable } from "@/src/db/schema"
+import { desc, eq, and } from "drizzle-orm"
 
 // GET - Fetch notifications for the current user
 export async function GET(request: NextRequest) {
   try {
-    console.log("=== NOTIFICATIONS GET API DEBUG START ===")
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      console.error("Unauthorized: No session")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get("limit") || "20")
-    const onlyUnread = searchParams.get("unread") === "true"
+    const limit = Number.parseInt(searchParams.get("limit") || "20")
+    const offset = Number.parseInt(searchParams.get("offset") || "0")
 
-    console.log("Fetching notifications for user:", session.user.id)
-    console.log("Limit:", limit, "Only unread:", onlyUnread)
-
-    // Build the query
-    let query = db
+    const notifications = await db
       .select({
         id: notificationsTable.id,
         type: notificationsTable.type,
         title: notificationsTable.title,
         message: notificationsTable.message,
-        postId: notificationsTable.postId,
-        inviteRequestId: notificationsTable.inviteRequestId,
-        locationRequestId: notificationsTable.locationRequestId,
+        data: notificationsTable.data,
         isRead: notificationsTable.isRead,
         createdAt: notificationsTable.createdAt,
         fromUser: {
@@ -39,43 +31,96 @@ export async function GET(request: NextRequest) {
           username: usersTable.username,
           nickname: usersTable.nickname,
           profileImage: usersTable.profileImage,
+          image: usersTable.image,
         },
       })
       .from(notificationsTable)
       .leftJoin(usersTable, eq(notificationsTable.fromUserId, usersTable.id))
       .where(eq(notificationsTable.userId, session.user.id))
-
-    if (onlyUnread) {
-      query = query.where(eq(notificationsTable.isRead, 0))
-    }
-
-    const finalQuery = query
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit)
+      .offset(offset)
 
-    console.log("Query:", finalQuery.toSQL())
+    return NextResponse.json({ notifications })
+  } catch (error) {
+    console.error("Error fetching notifications:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
 
-    const notifications = await finalQuery
+// POST - Create a new notification
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    // Get unread count
-    const unreadCountResult = await db
-      .select({ count: count() })
-      .from(notificationsTable)
-      .where(eq(notificationsTable.userId, session.user.id))
-      .where(eq(notificationsTable.isRead, 0))
+    const body = await request.json()
+    const { userId, type, title, message, data, fromUserId } = body
 
-    const unreadCount = unreadCountResult[0]?.count || 0
+    // Validate input
+    if (!userId || !type || !title || !message) {
+      return NextResponse.json({ 
+        error: "User ID, type, title, and message are required" 
+      }, { status: 400 })
+    }
 
-    console.log(`✅ Successfully fetched ${notifications.length} notifications`)
-    console.log("Unread count:", unreadCount)
+    // Create the notification
+    const notification = await db
+      .insert(notificationsTable)
+      .values({
+        userId,
+        fromUserId: fromUserId || session.user.id,
+        type,
+        title,
+        message,
+        data: data ? JSON.stringify(data) : null,
+        isRead: 0,
+      })
+      .returning()
 
     return NextResponse.json({
-      notifications,
-      unreadCount,
+      notification: notification[0],
+      message: "Notification created successfully",
     })
-
   } catch (error) {
-    console.error("❌ NOTIFICATIONS GET API ERROR:", error)
+    console.error("Error creating notification:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+// PUT - Mark notifications as read
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { notificationIds } = body
+
+    if (!notificationIds || !Array.isArray(notificationIds)) {
+      return NextResponse.json({ 
+        error: "Notification IDs array is required" 
+      }, { status: 400 })
+    }
+
+    // Mark notifications as read
+    await db
+      .update(notificationsTable)
+      .set({ isRead: 1 })
+      .where(
+        and(
+          eq(notificationsTable.userId, session.user.id),
+          // Only update notifications that belong to the user
+        )
+      )
+
+    return NextResponse.json({ message: "Notifications marked as read" })
+  } catch (error) {
+    console.error("Error updating notifications:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

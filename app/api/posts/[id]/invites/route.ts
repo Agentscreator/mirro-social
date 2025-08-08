@@ -92,6 +92,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log("=== INVITE REQUEST API START ===")
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -101,6 +102,8 @@ export async function POST(
     if (isNaN(postId)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 })
     }
+
+    console.log("Processing invite request for post:", postId, "by user:", session.user.id)
 
     // First check if this is the user's own post
     const postOwnerCheck = await db
@@ -204,34 +207,7 @@ export async function POST(
         })
         .where(eq(postInvitesTable.id, invite.id))
 
-      // Create notification for the post author
-      try {
-        const requesterInfo = await db
-          .select({
-            username: usersTable.username,
-            nickname: usersTable.nickname,
-          })
-          .from(usersTable)
-          .where(eq(usersTable.id, session.user.id))
-          .limit(1)
-
-        const displayName = requesterInfo[0]?.nickname || requesterInfo[0]?.username || "Someone"
-        
-        await db.insert(notificationsTable).values({
-          userId: post[0].userId, // Post author receives the notification
-          fromUserId: session.user.id, // User who requested the invite
-          type: "invite_accepted",
-          title: "Invite Request Accepted",
-          message: `${displayName} has joined your activity invite!`,
-          postId: postId,
-          inviteRequestId: null, // Will be set after request is created
-        })
-        
-        console.log("✅ Auto-acceptance notification created")
-      } catch (notificationError) {
-        console.error("❌ Failed to create auto-acceptance notification:", notificationError)
-        // Don't fail the entire operation
-      }
+      console.log("✅ Auto-accepted invite, participant count updated")
     }
 
     // Create the request
@@ -246,6 +222,137 @@ export async function POST(
       })
       .returning()
 
+    console.log("✅ Invite request created:", newRequest[0])
+
+    // Create notification for manual requests (pending status)
+    if (initialStatus === "pending") {
+      try {
+        const requesterInfo = await db
+          .select({
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, session.user.id))
+          .limit(1)
+
+        const displayName = requesterInfo[0]?.nickname || requesterInfo[0]?.username || "Someone"
+        
+        const notification = await db.insert(notificationsTable).values({
+          userId: post[0].userId, // Post author receives the notification
+          fromUserId: session.user.id, // User who requested the invite
+          type: "invite_request",
+          title: "New Invite Request",
+          message: `${displayName} wants to join your activity invite!`,
+          postId: postId,
+          inviteRequestId: newRequest[0].id,
+        }).returning()
+        
+        console.log("✅ Manual invite request notification created:", notification[0])
+      } catch (notificationError) {
+        console.error("❌ Failed to create invite request notification:", notificationError)
+        // Don't fail the entire operation
+      }
+    }
+
+    // Create notification for auto-accepted requests
+    if (initialStatus === "accepted") {
+      try {
+        const requesterInfo = await db
+          .select({
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, session.user.id))
+          .limit(1)
+
+        const displayName = requesterInfo[0]?.nickname || requesterInfo[0]?.username || "Someone"
+        
+        const notification = await db.insert(notificationsTable).values({
+          userId: post[0].userId, // Post author receives the notification
+          fromUserId: session.user.id, // User who requested the invite
+          type: "invite_accepted",
+          title: "Invite Request Auto-Accepted",
+          message: `${displayName} has joined your activity invite!`,
+          postId: postId,
+          inviteRequestId: newRequest[0].id,
+        }).returning()
+        
+        console.log("✅ Auto-acceptance notification created:", notification[0])
+      } catch (notificationError) {
+        console.error("❌ Failed to create auto-acceptance notification:", notificationError)
+        // Don't fail the entire operation
+      }
+    }
+
+    // Handle auto-group creation if the post has auto-accept enabled
+    if (initialStatus === "accepted") {
+      try {
+        // Get the post details to check for auto-group settings
+        const postDetails = await db
+          .select({
+            autoAcceptInvites: postsTable.autoAcceptInvites,
+            groupName: postsTable.groupName,
+          })
+          .from(postsTable)
+          .where(eq(postsTable.id, postId))
+          .limit(1)
+
+        if (postDetails[0]?.autoAcceptInvites && postDetails[0]?.groupName) {
+          console.log("🔄 Creating auto-group for accepted invite")
+          
+          // Get all accepted members for this post
+          const acceptedMembers = await db
+            .select({
+              userId: inviteRequestsTable.userId,
+            })
+            .from(inviteRequestsTable)
+            .where(
+              and(
+                eq(inviteRequestsTable.postId, postId),
+                eq(inviteRequestsTable.status, "accepted")
+              )
+            )
+
+          const memberIds = acceptedMembers.map(m => m.userId)
+          
+          // Only create group if we have multiple members
+          if (memberIds.length >= 1) {
+            try {
+              // Use internal API call for group creation
+              const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+              const groupResponse = await fetch(`${baseUrl}/api/stream/channels`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  postId,
+                  groupName: postDetails[0].groupName,
+                  memberIds,
+                }),
+              })
+
+              if (groupResponse.ok) {
+                const groupData = await groupResponse.json()
+                console.log("✅ Auto-group created successfully:", groupData)
+              } else {
+                const errorText = await groupResponse.text()
+                console.error("❌ Failed to create auto-group:", errorText)
+              }
+            } catch (groupError) {
+              console.error("❌ Error creating auto-group:", groupError)
+            }
+          }
+        }
+      } catch (autoGroupError) {
+        console.error("❌ Auto-group creation error:", autoGroupError)
+        // Don't fail the entire operation
+      }
+    }
+
+    console.log("=== INVITE REQUEST API END ===")
     return NextResponse.json({ 
       request: newRequest[0],
       autoAccepted: initialStatus === "accepted"

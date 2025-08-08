@@ -1,14 +1,16 @@
 "use client"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Home, Search, User, MessageSquare, Bell, Plus } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { NewPostCreator } from "@/components/new-post/NewPostCreator"
+import { toast } from "@/hooks/use-toast"
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
 
   const routes = [
@@ -40,7 +42,18 @@ export function Navigation() {
 
   const handlePostCreated = (newPost: any) => {
     console.log("New post created:", newPost);
-    // You could add a toast notification here or refresh the feed
+    toast({
+      title: "Success",
+      description: "Your invitation has been posted!",
+    });
+    
+    // Dispatch custom event to refresh feed
+    window.dispatchEvent(new CustomEvent('postCreated', { detail: newPost }));
+    
+    // Navigate to feed page if not already there
+    if (pathname !== '/feed') {
+      router.push('/feed');
+    }
   }
 
   return (

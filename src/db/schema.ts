@@ -223,6 +223,18 @@ export const inviteRequestsTable = pgTable("invite_requests", {
   respondedAt: timestamp("responded_at"),
 })
 
+// Post Invite Participants (NEW TABLE) - tracks who has accepted invites
+export const postInviteParticipantsTable = pgTable("post_invite_participants", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  inviteId: integer("invite_id")
+    .notNull()
+    .references(() => postInvitesTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+})
+
 // Post Shares (NEW TABLE)
 export const postSharesTable = pgTable("post_shares", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -398,12 +410,7 @@ export const notificationsTable = pgTable("notifications", {
   type: varchar("type", { length: 50 }).notNull(), // "invite_accepted", "invite_request", etc.
   title: varchar("title", { length: 200 }).notNull(),
   message: text().notNull(),
-  postId: integer("post_id")
-    .references(() => postsTable.id), // Related post (optional)
-  inviteRequestId: integer("invite_request_id")
-    .references(() => inviteRequestsTable.id), // Related invite request (optional)
-  locationRequestId: integer("location_request_id")
-    .references(() => locationRequestsTable.id), // Related location request (optional)
+  data: text("data"), // JSON data for additional notification context
   isRead: integer("is_read").notNull().default(0), // 0 = unread, 1 = read
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
