@@ -6,6 +6,7 @@ import { db, withRetry } from "../db";
 import { usersTable } from "../db/schema";
 import { eq, or } from "drizzle-orm";
 import { pbkdf2Sync } from "crypto";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -104,9 +105,42 @@ export const authOptions: NextAuthOptions = {
           const passwordMatch = await Promise.race([
             new Promise<boolean>((resolve) => {
               try {
-                const [hash, salt] = user[0].password.split(':');
+                const storedPassword = user[0].password;
+                console.log('🔍 Raw password from DB:', storedPassword);
+                
+                // Check if it's a bcrypt hash (starts with $2b$, $2a$, or $2y$)
+                if (storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2y$')) {
+                  console.log('🔍 Using bcrypt verification');
+                  const isMatch = await bcrypt.compare(password, storedPassword);
+                  console.log('🔍 Bcrypt password match:', isMatch);
+                  resolve(isMatch);
+                  return;
+                }
+                
+                // Handle pbkdf2 format (hash:salt)
+                const passwordParts = storedPassword.split(':');
+                console.log('🔍 Password parts:', passwordParts, 'Length:', passwordParts.length);
+                
+                if (passwordParts.length !== 2) {
+                  console.error('❌ Invalid password format in database - expected hash:salt or bcrypt format');
+                  resolve(false);
+                  return;
+                }
+                
+                const [hash, salt] = passwordParts;
+                console.log('🔍 Hash length:', hash?.length, 'Salt length:', salt?.length);
+                
+                if (!hash || !salt) {
+                  console.error('❌ Missing hash or salt after split');
+                  resolve(false);
+                  return;
+                }
+                
+                console.log('🔍 Using pbkdf2 verification');
                 const verifyHash = pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-                resolve(hash === verifyHash);
+                const isMatch = hash === verifyHash;
+                console.log('🔍 Pbkdf2 password match:', isMatch);
+                resolve(isMatch);
               } catch (error) {
                 console.error('Password verification error:', error);
                 resolve(false);
