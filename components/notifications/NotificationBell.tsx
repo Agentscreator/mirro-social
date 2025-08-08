@@ -18,8 +18,7 @@ interface Notification {
   type: string
   title: string
   message: string
-  postId?: number
-  inviteRequestId?: number
+  data?: string
   isRead: number
   createdAt: string
   fromUser?: {

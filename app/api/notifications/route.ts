@@ -17,6 +17,20 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "20")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
 
+    // Get unread count first
+    const unreadCountResult = await db
+      .select({ count: notificationsTable.id })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.userId, session.user.id),
+          eq(notificationsTable.isRead, 0)
+        )
+      )
+    
+    const unreadCount = unreadCountResult.length
+
+    // Get notifications with all required fields
     const notifications = await db
       .select({
         id: notificationsTable.id,
@@ -41,7 +55,10 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset)
 
-    return NextResponse.json({ notifications })
+    return NextResponse.json({ 
+      notifications,
+      unreadCount 
+    })
   } catch (error) {
     console.error("Error fetching notifications:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

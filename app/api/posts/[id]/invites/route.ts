@@ -249,9 +249,10 @@ export async function POST(
           type: "invite_request",
           title: "New Invite Request",
           message: `${displayName} wants to join your activity invite!`,
-          postId: postId,
-          inviteRequestId: newRequest[0].id,
-          isRead: 0,
+          data: JSON.stringify({
+            postId: postId,
+            inviteRequestId: newRequest[0].id,
+          }),
         }).returning()
         
         console.log("✅ Manual invite request notification created:", notification[0])
@@ -296,8 +297,10 @@ export async function POST(
           type: "invite_accepted",
           title: "Invite Request Auto-Accepted",
           message: `${displayName} has joined your activity invite!`,
-          postId: postId,
-          inviteRequestId: newRequest[0].id,
+          data: JSON.stringify({
+            postId: postId,
+            inviteRequestId: newRequest[0].id,
+          }),
         }).returning()
         
         console.log("✅ Auto-acceptance notification created:", notification[0])

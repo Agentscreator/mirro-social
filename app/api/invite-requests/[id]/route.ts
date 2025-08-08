@@ -141,8 +141,10 @@ export async function PUT(
           type: "invite_request_accepted",
           title: "Invite Request Accepted!",
           message: `${authorName} accepted your request to join their activity!`,
-          postId: request_data.postId,
-          inviteRequestId: requestId,
+          data: JSON.stringify({
+            postId: request_data.postId,
+            inviteRequestId: requestId,
+          }),
         })
         
         console.log("✅ Manual acceptance notification created")
