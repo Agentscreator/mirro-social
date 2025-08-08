@@ -357,7 +357,7 @@ const VideoFeedItem = ({
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Media Background */}
+      {/* Media Background - Full Screen */}
       <div className="absolute inset-0">
         {isVideo() ? (
           <video
@@ -386,12 +386,22 @@ const VideoFeedItem = ({
             onWaiting={() => {
               console.log('⏳ Video buffering:', post.id);
             }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
           />
         ) : (
           <img
             className="w-full h-full object-cover"
             src={getMediaUrl()}
             alt="Post content"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
           />
         )}
       </div>
@@ -399,31 +409,36 @@ const VideoFeedItem = ({
       {/* Video Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
 
-      {/* Play/Pause Overlay - Only show for videos */}
-      {isVideo() && (
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Play/Pause Overlay - Only show for videos, more subtle like TikTok */}
+      {isVideo() && !isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
               const video = videoRef.current;
               if (video) {
-                if (isPlaying) {
-                  video.pause();
-                } else {
-                  video.play().catch(console.error);
-                }
+                video.play().catch(console.error);
               }
             }}
-            className="w-16 h-16 rounded-full bg-black/30 hover:bg-black/50 text-white hover:text-white backdrop-blur-sm transition-all duration-300"
+            className="w-20 h-20 rounded-full bg-black/40 hover:bg-black/60 text-white hover:text-white backdrop-blur-md transition-all duration-300 border border-white/20"
           >
-            {isPlaying ? (
-              <Pause className="w-8 h-8" />
-            ) : (
-              <Play className="w-8 h-8 ml-1" />
-            )}
+            <Play className="w-10 h-10 ml-1" />
           </Button>
         </div>
+      )}
+      
+      {/* Tap to pause (invisible overlay) */}
+      {isVideo() && isPlaying && (
+        <div 
+          className="absolute inset-0 z-5"
+          onClick={() => {
+            const video = videoRef.current;
+            if (video) {
+              video.pause();
+            }
+          }}
+        />
       )}
       
       {/* Duration Badge (if available) */}
@@ -436,20 +451,24 @@ const VideoFeedItem = ({
       )}
 
       {/* Right Side Actions - TikTok Style */}
-      <div className="absolute right-4 bottom-24 flex flex-col space-y-4 z-10">
+      <div className="absolute right-3 bottom-32 md:bottom-28 flex flex-col space-y-6 z-20">
         <div className="flex flex-col items-center">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={handleLike}
             disabled={isLiking}
-            className={`w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all ${
-              isLiked ? 'text-red-400' : ''
-            }`}
+            className={`w-12 h-12 rounded-full transition-all duration-200 ${
+              isLiked 
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                : 'bg-black/40 text-white hover:bg-black/60'
+            } backdrop-blur-sm border border-white/10`}
           >
-            <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-7 h-7 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
-          <span className="text-white text-xs mt-1 font-medium">{currentLikes.toLocaleString()}</span>
+          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">
+            {currentLikes > 999 ? `${(currentLikes / 1000).toFixed(1)}K` : currentLikes.toLocaleString()}
+          </span>
         </div>
 
         <div className="flex flex-col items-center">
@@ -457,11 +476,13 @@ const VideoFeedItem = ({
             variant="ghost" 
             size="icon" 
             onClick={() => handleComment()}
-            className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"
+            className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all duration-200 border border-white/10"
           >
-            <MessageCircle className="w-6 h-6" />
+            <MessageCircle className="w-7 h-7" />
           </Button>
-          <span className="text-white text-xs mt-1 font-medium">{post.comments.toLocaleString()}</span>
+          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">
+            {post.comments > 999 ? `${(post.comments / 1000).toFixed(1)}K` : post.comments.toLocaleString()}
+          </span>
         </div>
 
         <div className="flex flex-col items-center">
@@ -469,28 +490,26 @@ const VideoFeedItem = ({
             variant="ghost" 
             size="icon" 
             onClick={() => handleShare()}
-            className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"
+            className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all duration-200 border border-white/10"
           >
-            <Share className="w-6 h-6" />
+            <Share className="w-7 h-7" />
           </Button>
-          <span className="text-white text-xs mt-1 font-medium">0</span>
+          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">Share</span>
         </div>
-
-
       </div>
 
-      {/* Bottom Left Content */}
-      <div className="absolute bottom-28 md:bottom-24 left-4 right-20 z-10">
+      {/* Bottom Left Content - TikTok Style */}
+      <div className="absolute bottom-6 left-4 right-24 z-20">
         <div className="flex items-center space-x-3 mb-3">
           <Avatar 
-            className="w-12 h-12 border-2 border-white/20 cursor-pointer hover:border-white/40 transition-all"
+            className="w-10 h-10 border-2 border-white/30 cursor-pointer hover:border-white/60 transition-all duration-200"
             onClick={() => {
               // Navigate to user profile
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
             <AvatarImage src={getUserAvatar()} alt={getUserDisplayName()} />
-            <AvatarFallback className="bg-primary text-white">
+            <AvatarFallback className="bg-primary text-white text-sm">
               {getUserDisplayName().charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -501,16 +520,16 @@ const VideoFeedItem = ({
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
-            <h3 className="font-semibold text-white text-sm">{getUserDisplayName()}</h3>
-            <p className="text-white/80 text-xs">@{post.user.username}</p>
+            <h3 className="font-bold text-white text-base drop-shadow-lg">{getUserDisplayName()}</h3>
+            <p className="text-white/70 text-sm drop-shadow-lg">@{post.user.username}</p>
           </div>
         </div>
 
-        <p className="text-white/90 text-sm mb-4 line-clamp-3">
+        <p className="text-white text-sm mb-4 line-clamp-3 drop-shadow-lg leading-relaxed">
           {post.content}
         </p>
         
-        <div className="space-y-2">
+        <div className="space-y-3">
           {showInviteButton && (
             <div>
               <InviteButton postId={post.id} postUserId={post.user.id} />
@@ -523,7 +542,7 @@ const VideoFeedItem = ({
               variant="outline"
               onClick={handleLocationRequest}
               disabled={isRequestingLocation}
-              className="bg-black/30 border-white/20 text-white hover:bg-black/50 backdrop-blur-sm"
+              className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-sm transition-all duration-200"
             >
               {isRequestingLocation ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

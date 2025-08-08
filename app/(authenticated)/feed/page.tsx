@@ -270,10 +270,10 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="h-screen bg-black relative overflow-hidden feed-container" style={{ paddingTop: 0, marginTop: 0 }}>
-      {/* Mobile Top Navigation */}
-      <div className="md:hidden absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/95 via-black/80 to-transparent">
-        <div className="flex items-center justify-between p-4 pt-6 pb-4">
+    <div className="fixed inset-0 bg-black overflow-hidden z-30 feed-container">
+      {/* Mobile Top Navigation - More minimal like TikTok */}
+      <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+        <div className="flex items-center justify-between p-4 pt-8 pb-6 pointer-events-auto">
           {showSearchBar ? (
             <div className="flex-1 relative mr-3">
               {loading && searchQuery ? (
@@ -283,7 +283,7 @@ export default function FeedPage() {
               )}
               <Input
                 placeholder="Search videos..."
-                className="pl-12 pr-12 py-3 bg-white/15 border-white/30 text-white placeholder:text-white/70 rounded-full backdrop-blur-sm text-base"
+                className="pl-12 pr-12 py-3 bg-black/40 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -302,24 +302,22 @@ export default function FeedPage() {
             </div>
           ) : (
             <>
-              <div className="text-white font-bold text-xl tracking-wide">For You</div>
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-white hover:bg-white/20 rounded-full w-10 h-10 backdrop-blur-sm"
-                  onClick={() => setShowSearchBar(true)}
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
-              </div>
+              <div className="text-white font-bold text-lg tracking-wide drop-shadow-lg">For You</div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20 rounded-full w-9 h-9 backdrop-blur-sm"
+                onClick={() => setShowSearchBar(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
             </>
           )}
         </div>
       </div>
       
       {/* Desktop Search Icon - Top Right */}
-      <div className="hidden md:block absolute top-6 right-6 z-50">
+      <div className="hidden md:block absolute top-6 right-6 z-40">
         {showSearchBar ? (
           <div className="relative w-96">
             {loading && searchQuery ? (
@@ -359,7 +357,7 @@ export default function FeedPage() {
       </div>
 
       {/* Desktop Navigation Controls - Far Right */}
-      <div className="hidden md:flex fixed right-4 top-1/2 -translate-y-1/2 z-50 flex-col gap-4">
+      <div className="hidden md:flex fixed right-4 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
         <Button
           variant="ghost"
           size="icon"
@@ -380,46 +378,53 @@ export default function FeedPage() {
         </Button>
       </div>
 
-      {/* Video Feed - Full Screen on Mobile */}
+      {/* Video Feed - Full Screen */}
       <div 
         ref={containerRef}
         className="h-full overflow-y-scroll snap-y snap-mandatory absolute inset-0"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', paddingTop: 0, marginTop: 0 }}
+        style={{ 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none',
+          paddingBottom: 'env(safe-area-inset-bottom)'
+        }}
       >
         <style>{`
-          .h-full::-webkit-scrollbar {
+          .feed-container::-webkit-scrollbar {
             display: none;
+          }
+          .feed-container {
+            -webkit-overflow-scrolling: touch;
+          }
+          /* Ensure full screen on mobile */
+          @media (max-width: 768px) {
+            .feed-container {
+              height: 100vh !important;
+              height: 100dvh !important;
+            }
           }
         `}</style>
         
-        {/* Mobile: Full screen videos, Desktop: Centered with max width */}
-        <div className="w-full md:flex md:justify-center">
-          <div className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] md:max-w-6xl">
-            {filteredPosts.map((post, index) => (
-              <div key={post.id} className="h-screen w-full snap-start snap-always relative">
-                {/* Mobile: Full screen container, Desktop: Centered */}
-                <div className="w-full h-full relative md:flex md:items-center md:justify-center">
-                  <div className="w-full h-full md:max-w-md md:h-full relative">
-                    <VideoFeedItem
-                      post={post}
-                      showInviteButton={true}
-                      isActive={index === currentVideoIndex}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Full screen videos like TikTok/Instagram Reels */}
+        <div className="w-full">
+          {filteredPosts.map((post, index) => (
+            <div key={post.id} className="h-screen w-full snap-start snap-always relative">
+              <VideoFeedItem
+                post={post}
+                showInviteButton={true}
+                isActive={index === currentVideoIndex}
+              />
+            </div>
+          ))}
             
-            {/* Loading indicator at bottom */}
-            {hasMore && (
-              <div className="h-32 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-white" />
-                  <p className="text-white/70 text-sm">Loading more...</p>
-                </div>
+          {/* Loading indicator at bottom */}
+          {hasMore && (
+            <div className="h-screen flex items-center justify-center bg-black">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+                <p className="text-white/70 text-base">Loading more videos...</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
