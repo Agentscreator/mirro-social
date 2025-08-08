@@ -32,33 +32,35 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
 
-  // Use Stream Chat if available, otherwise fallback to API
-  const useStreamChat = client && isReady
+  // Always use API for now to avoid infinite loading
+  const useStreamChat = false // Temporarily disabled
 
-  // Fetch conversations from API (fallback)
+  // Fetch conversations from API
   const fetchConversations = async () => {
     try {
+      console.log('🔄 Fetching conversations...')
       const response = await fetch('/api/messages');
       if (response.ok) {
         const data = await response.json();
-        setConversations(data.conversations);
+        console.log('✅ Conversations fetched:', data.conversations?.length || 0)
+        setConversations(data.conversations || []);
       } else {
-        console.error('Failed to fetch conversations');
+        console.error('❌ Failed to fetch conversations:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      console.error('❌ Error fetching conversations:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (useStreamChat) {
-      setLoading(false)
-    } else if (session?.user?.id) {
+    if (session?.user?.id) {
       fetchConversations();
+    } else {
+      setLoading(false);
     }
-  }, [session?.user?.id, useStreamChat])
+  }, [session?.user?.id])
 
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,10 +98,10 @@ export default function MessagesPage() {
     )
   }
 
-  // Use Stream Chat if available
-  if (useStreamChat) {
-    return <StreamChatMessages />
-  }
+  // Temporarily disabled Stream Chat to fix loading issue
+  // if (useStreamChat) {
+  //   return <StreamChatMessages />
+  // }
 
   return (
     <div className="min-h-screen bg-white">

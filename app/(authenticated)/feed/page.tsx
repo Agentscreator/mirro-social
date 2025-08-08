@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
 
-
 interface Post {
   id: number;
   content: string;
@@ -44,8 +43,6 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [excludeIds, setExcludeIds] = useState<number[]>([]);
-  
-
 
   // Fetch feed posts
   const fetchPosts = async (cursor?: string, excludePostIds: number[] = [], searchTerm?: string) => {
@@ -89,12 +86,12 @@ export default function FeedPage() {
   useEffect(() => {
     const loadPosts = async () => {
       setLoading(true);
-      setCurrentVideoIndex(0); // Reset video index when searching
+      setCurrentVideoIndex(0);
       const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
       setPosts(data.posts || []);
       setHasMore(data.hasMore || false);
       setNextCursor(data.nextCursor || null);
-      setExcludeIds([]); // Reset exclude IDs
+      setExcludeIds([]);
       setLoading(false);
     };
     
@@ -107,7 +104,6 @@ export default function FeedPage() {
   useEffect(() => {
     const handleFeedRefresh = async () => {
       console.log('🔄 Refreshing feed due to new post');
-      // Reload posts from the beginning
       if (session?.user?.id && !loading) {
         const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
         setPosts(data.posts || []);
@@ -118,14 +114,11 @@ export default function FeedPage() {
       }
     };
 
-    // Listen for focus events to refresh feed when returning to the page
     const handleFocus = () => {
       handleFeedRefresh();
     };
 
     window.addEventListener('focus', handleFocus);
-    
-    // Custom event for post creation
     window.addEventListener('postCreated', handleFeedRefresh);
     window.addEventListener('feedRefresh', handleFeedRefresh);
     
@@ -146,8 +139,6 @@ export default function FeedPage() {
     setNextCursor(data.nextCursor || null);
   };
 
-
-
   // Use posts directly since we're doing server-side search
   const filteredPosts = posts;
 
@@ -164,7 +155,6 @@ export default function FeedPage() {
         });
       }
     } else if (hasMore) {
-      // Load more posts when reaching the end
       await loadMorePosts();
     }
   };
@@ -195,15 +185,11 @@ export default function FeedPage() {
           const { scrollTop, clientHeight } = container;
           const videoIndex = Math.round(scrollTop / clientHeight);
           
-          // Only update if index actually changed
           if (videoIndex !== currentVideoIndex) {
             setCurrentVideoIndex(videoIndex);
-            console.log('📱 Current video index:', videoIndex);
           }
           
-          // Load more when near the end
           if (videoIndex >= filteredPosts.length - 2 && hasMore && !loading) {
-            console.log('🔄 Loading more posts...');
             loadMorePosts();
           }
           
@@ -285,11 +271,9 @@ export default function FeedPage() {
 
   return (
     <div className="h-screen bg-black relative overflow-hidden">
-
       {/* Mobile Top Navigation */}
       <div className="md:hidden absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/95 via-black/80 to-transparent">
-        <div className="flex items-center justify-between p-4 pt-6">
-          {/* Mobile Search */}
+        <div className="flex items-center justify-between p-4 pt-8 pb-6">
           {showSearchBar ? (
             <div className="flex-1 relative mr-3">
               {loading && searchQuery ? (
@@ -396,12 +380,10 @@ export default function FeedPage() {
         </Button>
       </div>
 
-
-
-      {/* Video Feed */}
+      {/* Video Feed - Full Screen on Mobile */}
       <div 
         ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory flex justify-center items-start pt-16 md:pt-0"
+        className="h-full overflow-y-scroll snap-y snap-mandatory"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`
@@ -409,33 +391,37 @@ export default function FeedPage() {
             display: none;
           }
         `}</style>
-        <div className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-6xl">
-          {filteredPosts.map((post, index) => (
-            <div key={post.id} className="h-screen w-full snap-start snap-always relative flex items-center justify-center">
-              <div className="w-full h-full relative">
-                <VideoFeedItem
-                  post={post}
-                  showInviteButton={true}
-                  isActive={index === currentVideoIndex}
-                />
+        
+        {/* Mobile: Full screen videos, Desktop: Centered with max width */}
+        <div className="w-full md:flex md:justify-center">
+          <div className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] md:max-w-6xl">
+            {filteredPosts.map((post, index) => (
+              <div key={post.id} className="h-screen w-full snap-start snap-always relative">
+                {/* Mobile: Full screen container, Desktop: Centered */}
+                <div className="w-full h-full relative md:flex md:items-center md:justify-center">
+                  <div className="w-full h-full md:max-w-md md:h-full relative">
+                    <VideoFeedItem
+                      post={post}
+                      showInviteButton={true}
+                      isActive={index === currentVideoIndex}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-          
-          {/* Loading indicator at bottom */}
-          {hasMore && (
-            <div className="h-32 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-white" />
-                <p className="text-white/70 text-sm">Loading more...</p>
+            ))}
+            
+            {/* Loading indicator at bottom */}
+            {hasMore && (
+              <div className="h-32 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  <p className="text-white/70 text-sm">Loading more...</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-
-
-
     </div>
   );
 }

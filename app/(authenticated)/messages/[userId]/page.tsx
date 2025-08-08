@@ -57,8 +57,8 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Use Stream Chat if available
-  const useStreamChat = client && isReady
+  // Temporarily disable Stream Chat to fix loading issue
+  const useStreamChat = false
 
   // Fetch messages and user data from API
   const fetchMessages = async () => {
@@ -87,12 +87,12 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (useStreamChat) {
-      setLoading(false)
-    } else if (userId && session?.user?.id) {
+    if (userId && session?.user?.id) {
       fetchMessages();
+    } else {
+      setLoading(false);
     }
-  }, [userId, session?.user?.id, useStreamChat])
+  }, [userId, session?.user?.id])
 
   useEffect(() => {
     scrollToBottom()
@@ -201,10 +201,10 @@ export default function ChatPage() {
     )
   }
 
-  // Use Stream Chat if available
-  if (useStreamChat) {
-    return <StreamChatMessages selectedUserId={userId} />
-  }
+  // Temporarily disabled Stream Chat to fix loading issue
+  // if (useStreamChat) {
+  //   return <StreamChatMessages selectedUserId={userId} />
+  // }
 
   if (loading) {
     return (
