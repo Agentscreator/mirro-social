@@ -19,7 +19,9 @@
       "Bash(npm install:*)",
       "Bash(mv:*)",
       "Bash(git push:*)",
-      "Bash(yarn run build)"
+      "Bash(yarn run build)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
