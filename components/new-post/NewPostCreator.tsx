@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
 interface NewPostCreatorProps {
