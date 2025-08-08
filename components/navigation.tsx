@@ -25,12 +25,6 @@ export function Navigation() {
       active: pathname === "/discover",
     },
     {
-      href: "/notifications",
-      icon: Bell,
-      label: "Notifications",
-      active: pathname === "/notifications",
-    },
-    {
       href: "/messages",
       icon: MessageSquare,
       label: "Messages",

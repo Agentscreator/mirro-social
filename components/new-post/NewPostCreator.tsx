@@ -257,7 +257,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const renderEditStep = () => (
     <div className="flex flex-col h-full">
       {/* Video Preview */}
-      <div className="flex-1 relative bg-black rounded-t-3xl overflow-hidden">
+      <div className="flex-1 relative bg-black overflow-hidden">
         {previewUrl && (
           <video
             src={previewUrl}
@@ -295,7 +295,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       </div>
       
       {/* Bottom Tools */}
-      <div className="bg-gray-900 p-4 space-y-4">
+      <div className="bg-gray-900 p-4 space-y-4 flex-shrink-0 max-h-80 overflow-y-auto">
         {/* Tool Tabs */}
         <div className="flex justify-center gap-1 bg-gray-800 rounded-full p-1">
           <Button
@@ -510,7 +510,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const renderDetailsStep = () => (
     <div className="flex flex-col h-full">
       {/* Video Preview */}
-      <div className="h-64 relative bg-black rounded-t-3xl overflow-hidden">
+      <div className="h-48 md:h-64 relative bg-black overflow-hidden flex-shrink-0">
         {previewUrl && (
           <video
             src={previewUrl}
@@ -535,7 +535,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       </div>
       
       {/* Details Form */}
-      <div className="flex-1 bg-gray-900 p-6 space-y-6">
+      <div className="flex-1 bg-gray-900 p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
         <div className="space-y-2">
           <label className="text-white font-medium">Describe your invitation</label>
           <Textarea
@@ -625,20 +625,20 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       </div>
       
       {/* Post Button */}
-      <div className="p-6 bg-gray-900">
+      <div className="p-4 md:p-6 bg-gray-900 border-t border-gray-800 flex-shrink-0">
         <Button
           onClick={handleCreatePost}
           disabled={isUploading || !caption.trim() || (autoAcceptInvites && !groupName.trim())}
-          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white py-4 rounded-full font-bold text-lg"
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white py-3 md:py-4 rounded-full font-bold text-base md:text-lg"
         >
           {isUploading ? (
             <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 md:w-5 md:h-5 mr-2 animate-spin" />
               Creating Invitation...
             </>
           ) : (
             <>
-              <Zap className="w-5 h-5 mr-2" />
+              <Zap className="w-4 h-4 md:w-5 md:h-5 mr-2" />
               Share Invitation
             </>
           )}
@@ -649,7 +649,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-md mx-auto h-[100vh] md:h-[95vh] md:max-h-[900px] bg-black text-white border-none p-0 overflow-hidden md:rounded-3xl">
+      <DialogContent className="w-full max-w-md mx-auto h-[100vh] md:h-[90vh] bg-black text-white border-none p-0 flex flex-col md:rounded-3xl">
         {/* Progress Indicator */}
         <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm md:rounded-t-3xl">
           {['upload', 'edit', 'details'].map((step, index) => (
@@ -676,7 +676,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         </Button>
 
         {/* Step Content */}
-        <div className="h-full pt-4 safe-area-inset-top">
+        <div className="flex-1 pt-6 overflow-hidden">
           {currentStep === 'upload' && renderUploadStep()}
           {(currentStep === 'edit' || currentStep === 'effects' || currentStep === 'audio') && renderEditStep()}
           {currentStep === 'details' && renderDetailsStep()}

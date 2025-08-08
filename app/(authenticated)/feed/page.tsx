@@ -367,7 +367,7 @@ export default function FeedPage() {
       {/* Video Feed */}
       <div 
         ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory flex justify-center items-start pt-20 md:pt-0"
+        className="h-full overflow-y-scroll snap-y snap-mandatory flex justify-center items-start pt-16 md:pt-0"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`
@@ -377,12 +377,14 @@ export default function FeedPage() {
         `}</style>
         <div className="w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-6xl">
           {filteredPosts.map((post, index) => (
-            <div key={post.id} className="h-screen w-full snap-start relative">
-              <VideoFeedItem
-                post={post}
-                showInviteButton={true}
-                isActive={index === currentVideoIndex}
-              />
+            <div key={post.id} className="h-screen w-full snap-start snap-always relative flex items-center justify-center">
+              <div className="w-full h-full relative">
+                <VideoFeedItem
+                  post={post}
+                  showInviteButton={true}
+                  isActive={index === currentVideoIndex}
+                />
+              </div>
             </div>
           ))}
           

@@ -501,7 +501,7 @@ const VideoFeedItem = ({
       </div>
 
       {/* Bottom Left Content */}
-      <div className="absolute bottom-24 left-4 right-20 z-10">
+      <div className="absolute bottom-28 md:bottom-24 left-4 right-20 z-10">
         <div className="flex items-center space-x-3 mb-3">
           <Avatar className="w-12 h-12 border-2 border-white/20">
             <AvatarImage src={getUserAvatar()} alt={getUserDisplayName()} />

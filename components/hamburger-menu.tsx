@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { Menu, Settings, HelpCircle, LogOut } from "lucide-react"
+import { Menu, Settings, HelpCircle, LogOut, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,6 +24,11 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
 
   const handleAccountSettings = () => {
     router.push("/settings")
+    setIsOpen(false)
+  }
+
+  const handleNotifications = () => {
+    router.push("/notifications")
     setIsOpen(false)
   }
 
@@ -54,6 +59,14 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
         className="w-56 bg-white/95 backdrop-blur-xl border-blue-100/50 shadow-xl rounded-xl"
         sideOffset={8}
       >
+        <DropdownMenuItem
+          onClick={handleNotifications}
+          className="flex items-center gap-3 px-4 py-3 text-blue-700 hover:bg-blue-50 cursor-pointer rounded-lg mx-1 my-1"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="font-medium">Notifications</span>
+        </DropdownMenuItem>
+
         <DropdownMenuItem
           onClick={handleAccountSettings}
           className="flex items-center gap-3 px-4 py-3 text-blue-700 hover:bg-blue-50 cursor-pointer rounded-lg mx-1 my-1"
