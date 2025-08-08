@@ -127,33 +127,14 @@ export default function FeedPage() {
     
     // Custom event for post creation
     window.addEventListener('postCreated', handleFeedRefresh);
+    window.addEventListener('feedRefresh', handleFeedRefresh);
     
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('postCreated', handleFeedRefresh);
-    };
-  }, [session?.user?.id, loading, debouncedSearchQuery]);
-      const loadPosts = async () => {
-        const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined);
-        setPosts(data.posts || []);
-        setHasMore(data.hasMore || false);
-        setNextCursor(data.nextCursor || null);
-        setExcludeIds([]);
-        setCurrentVideoIndex(0);
-      };
-      
-      if (session?.user?.id) {
-        loadPosts();
-      }
-    };
-
-    // Listen for custom events or storage changes
-    window.addEventListener('feedRefresh', handleFeedRefresh);
-    
-    return () => {
       window.removeEventListener('feedRefresh', handleFeedRefresh);
     };
-  }, [session?.user?.id, debouncedSearchQuery]);
+  }, [session?.user?.id, loading, debouncedSearchQuery]);
   
   // Load more posts when needed
   const loadMorePosts = async () => {
