@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile fixes for full-screen experience */
+@media (max-width: 768px) {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure feed page takes full screen on mobile */
+  .feed-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+  }
+  
+  /* Fix for mobile browsers with address bar */
+  .h-screen {
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height for mobile */
+  }
+}
+
 @layer base {
   :root {
     /* Light silver theme */

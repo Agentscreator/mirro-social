@@ -11,75 +11,74 @@ export function MobileAppRedirect() {
   useEffect(() => {
     // Detect if running in a mobile app environment
     const isMobileApp = () => {
-      // Check for common mobile app user agents
-      const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : ''
+      if (typeof window === 'undefined') return false
       
-      // Check for React Native / Expo
-      if (userAgent.includes('ReactNative') || userAgent.includes('Expo')) {
-        return true
-      }
+      const userAgent = window.navigator.userAgent
+      const mobileAppIndicators = [
+        'ReactNative',
+        'Expo',
+        'CapacitorWebView', 
+        'Cordova',
+        'PhoneGap',
+        'Flutter',
+        'MirroApp',
+        'MirroMobile',
+        'wv', // WebView indicator
+        'Version/', // Mobile Safari WebView
+      ]
       
-      // Check for Capacitor (Ionic)
-      if (userAgent.includes('CapacitorWebView')) {
-        return true
-      }
-      
-      // Check for Cordova/PhoneGap
-      if (userAgent.includes('Cordova') || userAgent.includes('PhoneGap')) {
-        return true
-      }
-      
-      // Check for Flutter WebView
-      if (userAgent.includes('Flutter')) {
-        return true
-      }
-      
-      // Check for custom app identifiers
-      if (userAgent.includes('MirroApp') || userAgent.includes('MirroMobile')) {
-        return true
-      }
+      // Check for mobile app indicators
+      const hasAppIndicator = mobileAppIndicators.some(indicator => 
+        userAgent.includes(indicator)
+      )
       
       // Check for standalone mode (PWA installed)
-      if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
-        return true
-      }
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       
       // Check for app mode in URL parameters
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search)
-        if (urlParams.get('app') === 'mobile' || urlParams.get('mode') === 'app') {
-          return true
-        }
-      }
+      const urlParams = new URLSearchParams(window.location.search)
+      const hasAppParam = urlParams.get('app') === 'mobile' || urlParams.get('mode') === 'app'
       
-      return false
+      // Check if it's a mobile device (iOS/Android)
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+      
+      console.log('🔍 Mobile app detection:', {
+        userAgent: userAgent.substring(0, 100),
+        hasAppIndicator,
+        isStandalone,
+        hasAppParam,
+        isMobileDevice
+      })
+      
+      return hasAppIndicator || isStandalone || hasAppParam || isMobileDevice
     }
 
-    // Only redirect if we're in a mobile app - don't interfere with web users
-    if (isMobileApp()) {
+    const handleRedirect = () => {
+      console.log('🔄 Handling redirect, status:', status, 'session:', !!session)
+      
       if (status === 'loading') {
-        // Still checking authentication, wait
+        console.log('⏳ Still loading authentication...')
         return
       }
       
       if (session) {
-        // User is authenticated, redirect to main app
+        console.log('✅ User authenticated, redirecting to feed')
         router.replace('/feed')
       } else {
-        // User is not authenticated - check if they've seen the app before
-        const hasSeenApp = localStorage.getItem('mirro_app_visited')
+        console.log('❌ User not authenticated')
         
-        if (hasSeenApp) {
-          // Returning user without session, go to login
+        // For mobile apps, always redirect to login to avoid landing page issues
+        if (isMobileApp()) {
+          console.log('📱 Mobile app detected, redirecting to login')
           router.replace('/login')
-        } else {
-          // First-time user, go directly to signup
-          localStorage.setItem('mirro_app_visited', 'true')
-          router.replace('/signup')
         }
       }
     }
-    // For web users: do nothing, let them see the landing page normally
+
+    // Small delay to ensure proper initialization
+    const timer = setTimeout(handleRedirect, 100)
+    
+    return () => clearTimeout(timer)
   }, [session, status, router])
 
   // Don't render anything, this is just for redirection

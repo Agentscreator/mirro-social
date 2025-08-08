@@ -270,10 +270,10 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="h-screen bg-black relative overflow-hidden">
+    <div className="h-screen bg-black relative overflow-hidden feed-container" style={{ paddingTop: 0, marginTop: 0 }}>
       {/* Mobile Top Navigation */}
       <div className="md:hidden absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/95 via-black/80 to-transparent">
-        <div className="flex items-center justify-between p-4 pt-8 pb-6">
+        <div className="flex items-center justify-between p-4 pt-6 pb-4">
           {showSearchBar ? (
             <div className="flex-1 relative mr-3">
               {loading && searchQuery ? (
@@ -383,8 +383,8 @@ export default function FeedPage() {
       {/* Video Feed - Full Screen on Mobile */}
       <div 
         ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="h-full overflow-y-scroll snap-y snap-mandatory absolute inset-0"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', paddingTop: 0, marginTop: 0 }}
       >
         <style>{`
           .h-full::-webkit-scrollbar {

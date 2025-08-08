@@ -1,4 +1,4 @@
-import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share, UserPlus, MoreHorizontal, MapPin, Loader2 } from "lucide-react";
+import { Play, Pause, Heart, MessageCircle, Share, UserPlus, MoreHorizontal, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InviteButton } from "@/components/invite-button";
@@ -36,7 +36,7 @@ const VideoFeedItem = ({
   isActive = false
 }: VideoFeedItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Always unmuted for feed
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
@@ -476,28 +476,7 @@ const VideoFeedItem = ({
           <span className="text-white text-xs mt-1 font-medium">0</span>
         </div>
 
-        {/* Volume control - Only show for videos */}
-        {isVideo() && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              const video = videoRef.current;
-              if (video) {
-                video.muted = !isMuted;
-                setIsMuted(!isMuted);
-                console.log('🔊 Video mute toggled:', !isMuted ? 'muted' : 'unmuted');
-              }
-            }}
-            className="w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm transition-all"
-          >
-            {isMuted ? (
-              <VolumeX className="w-6 h-6" />
-            ) : (
-              <Volume2 className="w-6 h-6" />
-            )}
-          </Button>
-        )}
+
       </div>
 
       {/* Bottom Left Content */}

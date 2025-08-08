@@ -237,11 +237,6 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         <Users className="h-4 w-4 mr-2" />
       )}
       {buttonConfig.text}
-      {inviteData && (
-        <span className="ml-2 text-xs opacity-75">
-          ({inviteData.invite.currentParticipants}/{inviteData.invite.participantLimit})
-        </span>
-      )}
     </Button>
   )
 }
