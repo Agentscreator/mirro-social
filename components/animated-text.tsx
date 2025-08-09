@@ -49,5 +49,5 @@ export function AnimatedText({ text, className, delay = 300, speed = 30 }: Anima
     }
   }, [text, delay, speed])
 
-  return <p className={cn("text-sm text-gray-700", className, !isComplete ? "typing-cursor" : "")}>{displayedText}</p>
+  return <p className={cn("text-sm text-white", className, !isComplete ? "typing-cursor" : "")}>{displayedText}</p>
 }
