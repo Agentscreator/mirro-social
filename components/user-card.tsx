@@ -180,7 +180,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
 
             {user.reason && (
               <div className="mt-4">
-                <div className={cn("leading-relaxed text-gray-300 max-w-2xl mx-auto", reasonTextSize)} style={{ color: '#d1d5db' }}>
+                <div className={cn("leading-relaxed text-white max-w-2xl mx-auto", reasonTextSize)} style={{ color: 'white' }}>
                   <AnimatedText text={user.reason} delay={500} speed={20} />
                 </div>
               </div>
