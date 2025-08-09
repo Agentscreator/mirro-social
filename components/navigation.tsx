@@ -59,7 +59,7 @@ export function Navigation() {
   return (
     <>
       {/* Desktop navigation (side) */}
-      <div className="fixed left-0 top-0 z-50 hidden h-screen w-16 border-r border-blue-100/50 bg-white/80 backdrop-blur-md md:flex md:flex-col md:items-center md:justify-between md:py-6">
+      <div className="fixed left-0 top-0 z-50 hidden h-screen w-16 border-r border-gray-800 bg-black md:flex md:flex-col md:items-center md:justify-between md:py-6">
         <Link href="/feed" className="flex items-center justify-center">
           <Logo size="md" />
         </Link>
@@ -69,12 +69,12 @@ export function Navigation() {
               key={route.href}
               href={route.href}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-blue-500/10",
-                route.active && "bg-blue-500/20 blue-glow",
+                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10",
+                route.active && "bg-white/20",
               )}
               aria-label={route.label}
             >
-              <route.icon className={cn("h-5 w-5", route.active ? "text-blue-600" : "text-muted-foreground")} />
+              <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
               <span className="sr-only">{route.label}</span>
             </Link>
           ))}
@@ -94,12 +94,12 @@ export function Navigation() {
               key={route.href}
               href={route.href}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-blue-500/10",
-                route.active && "bg-blue-500/20 blue-glow",
+                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10",
+                route.active && "bg-white/20",
               )}
               aria-label={route.label}
             >
-              <route.icon className={cn("h-5 w-5", route.active ? "text-blue-600" : "text-muted-foreground")} />
+              <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
               <span className="sr-only">{route.label}</span>
             </Link>
           ))}
@@ -108,7 +108,7 @@ export function Navigation() {
       </div>
 
       {/* Mobile navigation (bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-blue-100/50 bg-white/80 backdrop-blur-md pb-safe-bottom md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom md:hidden">
         <div className="flex h-16 items-center justify-around px-2">
           {routes.slice(0, 2).map((route) => (
             <Link
@@ -116,13 +116,13 @@ export function Navigation() {
               href={route.href}
               className={cn(
                 "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                route.active ? "text-blue-600" : "text-muted-foreground",
+                route.active ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full",
-                  route.active && "bg-blue-500/20 blue-glow",
+                  route.active && "bg-white/20",
                 )}
               >
                 <route.icon className="h-5 w-5" />
@@ -139,7 +139,7 @@ export function Navigation() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
               <Plus className="h-6 w-6 text-white" />
             </div>
-            <span className="mt-0.5 text-[10px] font-medium text-blue-600">Create</span>
+            <span className="mt-0.5 text-[10px] font-medium text-white">Create</span>
           </button>
           
           {routes.slice(2).map((route) => (
@@ -148,13 +148,13 @@ export function Navigation() {
               href={route.href}
               className={cn(
                 "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                route.active ? "text-blue-600" : "text-muted-foreground",
+                route.active ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full",
-                  route.active && "bg-blue-500/20 blue-glow",
+                  route.active && "bg-white/20",
                 )}
               >
                 <route.icon className="h-5 w-5" />

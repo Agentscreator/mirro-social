@@ -157,7 +157,7 @@ export default function PublicPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-white" />
           <p className="text-white/70 text-sm">Loading post...</p>
@@ -168,7 +168,7 @@ export default function PublicPostPage() {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center text-white px-8 max-w-sm">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
             <MessageCircle className="w-8 h-8 text-white/60" />
@@ -189,9 +189,9 @@ export default function PublicPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-gray-800">
+      <div className="sticky top-0 z-50 bg-black border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
@@ -207,7 +207,7 @@ export default function PublicPostPage() {
 
       {/* Post Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+        <Card className="bg-gray-900 border-gray-800">
           <CardContent className="p-6">
             {/* User Info */}
             <div className="flex items-center gap-3 mb-4">
@@ -239,6 +239,9 @@ export default function PublicPostPage() {
                 <video
                   src={post.video}
                   controls
+                  autoPlay
+                  loop
+                  playsInline
                   className="w-full max-h-96 object-contain"
                   poster={post.image || undefined}
                 >

@@ -36,7 +36,7 @@ const VideoFeedItem = ({
   isActive = false
 }: VideoFeedItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false); // Always unmuted for feed
+  const [isMuted, setIsMuted] = useState(true); // Start muted for better autoplay compliance
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
@@ -377,6 +377,12 @@ const VideoFeedItem = ({
                 videoRef.current.play().catch(console.error);
               }
             }}
+            onVolumeChange={() => {
+              // Sync muted state with video element
+              if (videoRef.current) {
+                setIsMuted(videoRef.current.muted);
+              }
+            }}
             onError={(e) => {
               console.error('Video error for post:', post.id, e);
             }}
@@ -428,14 +434,21 @@ const VideoFeedItem = ({
         </div>
       )}
       
-      {/* Tap to pause (invisible overlay) */}
+      {/* Tap to pause/unmute (invisible overlay) */}
       {isVideo() && isPlaying && (
         <div 
           className="absolute inset-0 z-5"
           onClick={() => {
             const video = videoRef.current;
             if (video) {
-              video.pause();
+              if (isMuted) {
+                // First tap unmutes
+                setIsMuted(false);
+                video.muted = false;
+              } else {
+                // Second tap pauses
+                video.pause();
+              }
             }
           }}
         />
@@ -446,6 +459,19 @@ const VideoFeedItem = ({
         <div className="absolute top-4 left-4 z-10">
           <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
             {formatDuration(post.duration)}
+          </div>
+        </div>
+      )}
+
+      {/* Mute indicator */}
+      {isVideo() && isMuted && isPlaying && (
+        <div className="absolute top-4 right-4 z-10">
+          <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm flex items-center gap-1">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 5.757a1 1 0 011.414 0A9.972 9.972 0 0119 12a9.972 9.972 0 01-2.929 7.071 1 1 0 11-1.414-1.414A7.971 7.971 0 0017 12c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.829a1 1 0 011.414 0A5.983 5.983 0 0115 12a5.983 5.983 0 01-1.758 4.243 1 1 0 01-1.414-1.415A3.987 3.987 0 0013 12a3.987 3.987 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+              <path d="M3.5 9.5L17.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            Tap to unmute
           </div>
         </div>
       )}

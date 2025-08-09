@@ -20,7 +20,7 @@ export default function AuthenticatedLayout({
     <ErrorBoundary>
       <StreamProvider>
         <StreamVideoProvider>
-          <div className="flex min-h-screen flex-col md:flex-row">
+          <div className="flex min-h-screen flex-col md:flex-row bg-black">
             <Navigation />
             {/* Top header with notifications - hidden on feed page */}
             {!isFeedPage && (
@@ -28,7 +28,7 @@ export default function AuthenticatedLayout({
                 <NotificationBell />
               </div>
             )}
-            <main className="flex-1 pb-20 md:ml-16 md:pb-0 pt-16 md:pt-safe-top px-safe-left px-safe-right">
+            <main className="flex-1 pb-20 md:ml-16 md:pb-0 pt-16 md:pt-safe-top px-safe-left px-safe-right bg-black">
               <div className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-8">
                 {children}
               </div>
