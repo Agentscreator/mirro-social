@@ -1247,7 +1247,7 @@ export default function ProfilePage() {
                     <Image src={post.image || "/placeholder.svg"} alt="Post" fill className="object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-2">
-                      <p className="text-xs text-blue-800 text-center line-clamp-4">{post.content}</p>
+                      <p className="text-xs text-white text-center line-clamp-4" style={{ color: 'white' }}>{post.content}</p>
                     </div>
                   )}
                   {isOwnProfile && (
@@ -1376,7 +1376,7 @@ export default function ProfilePage() {
                 {/* Content - Compact on mobile */}
                 {(selectedPost.image || selectedPost.video) && selectedPost.content && (
                   <div className="p-3 sm:p-4 border-b flex-shrink-0 max-h-20 sm:max-h-none overflow-y-auto">
-                    <p className="text-gray-800 text-sm sm:text-base leading-relaxed">{selectedPost.content}</p>
+                    <p className="text-white text-sm sm:text-base leading-relaxed" style={{ color: 'white' }}>{selectedPost.content}</p>
                   </div>
                 )}
 

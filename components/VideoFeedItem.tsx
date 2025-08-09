@@ -538,7 +538,7 @@ const VideoFeedItem = ({
           </div>
         </div>
 
-        <p className="text-white text-sm mb-4 line-clamp-3 drop-shadow-lg leading-relaxed">
+        <p className="text-white text-sm mb-4 line-clamp-3 drop-shadow-lg leading-relaxed" style={{ color: 'white' }}>
           {post.content}
         </p>
         
