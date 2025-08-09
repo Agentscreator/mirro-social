@@ -104,9 +104,9 @@ export default function MessagesPage() {
   // }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-black border-b border-gray-800 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
@@ -117,21 +117,21 @@ export default function MessagesPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
+            <h1 className="text-2xl font-bold text-white">Chats</h1>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/discover')}
-              className="rounded-full"
+              className="rounded-full text-white hover:bg-gray-800"
             >
               <Plus className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full text-white hover:bg-gray-800"
             >
               <MoreVertical className="h-5 w-5" />
             </Button>
@@ -140,12 +140,12 @@ export default function MessagesPage() {
       </div>
 
       {/* Search */}
-      <div className="px-4 py-3 bg-gray-50">
+      <div className="px-4 py-3 bg-gray-900">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
             placeholder="Search messages..."
-            className="pl-11 rounded-xl border-0 bg-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+            className="pl-11 rounded-xl border-0 bg-gray-800 text-white placeholder:text-gray-400 focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -159,12 +159,12 @@ export default function MessagesPage() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
         ) : filteredConversations.length > 0 ? (
-          <div className="bg-white">
+          <div className="bg-black">
             {filteredConversations.map((conversation, index) => (
               <div
                 key={conversation.id}
                 onClick={() => handleConversationClick(conversation.userId)}
-                className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors active:bg-gray-100"
+                className="px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
@@ -185,14 +185,14 @@ export default function MessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-semibold text-white truncate">
                           {conversation.nickname || conversation.username}
                         </h3>
                         {/* Add pinned indicator if needed */}
                         {/* <Pin className="h-3 w-3 text-gray-400 flex-shrink-0" /> */}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-400">
                           {formatTime(conversation.lastMessageTime)}
                         </span>
                         {conversation.unreadCount > 0 && (
@@ -202,7 +202,7 @@ export default function MessagesPage() {
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 truncate leading-tight">
+                    <p className="text-sm text-gray-300 truncate leading-tight">
                       {truncateMessage(conversation.lastMessage)}
                     </p>
                   </div>
@@ -212,13 +212,13 @@ export default function MessagesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
               <MessageCircle className="h-12 w-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-white mb-2">
               {searchQuery ? 'No chats found' : 'No messages yet'}
             </h3>
-            <p className="text-gray-500 text-center max-w-sm mb-6 leading-relaxed">
+            <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
               {searchQuery 
                 ? 'Try searching for a different name or username.'
                 : 'Start a conversation by discovering new people or messaging someone from your feed.'}

@@ -102,7 +102,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
 
   // Dynamic sizing based on isLarge prop
   const cardClasses = cn(
-    "border-2 border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white rounded-2xl",
+    "border-2 border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gray-800 rounded-2xl",
     isLarge && "shadow-xl hover:shadow-2xl max-w-4xl mx-auto",
   )
 
@@ -176,11 +176,11 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
           </div>
 
           <div className={cn("flex-1 text-center w-full", !isLarge && "sm:text-left")}>
-            <h3 className={cn("mb-3 font-bold text-blue-600", titleSize)}>@{user.username}</h3>
+            <h3 className={cn("mb-3 font-bold text-white", titleSize)}>@{user.username}</h3>
 
             {user.reason && (
               <div className="mt-4">
-                <div className={cn("leading-relaxed text-gray-700 max-w-2xl mx-auto", reasonTextSize)}>
+                <div className={cn("leading-relaxed text-gray-300 max-w-2xl mx-auto", reasonTextSize)}>
                   <AnimatedText text={user.reason} delay={500} speed={20} />
                 </div>
               </div>
@@ -188,7 +188,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
 
             {user.tags.length > 0 && (
               <div className="mt-4">
-                <h4 className={cn("mb-2 font-semibold text-blue-600", isLarge ? "text-sm" : "text-sm")}>
+                <h4 className={cn("mb-2 font-semibold text-white", isLarge ? "text-sm" : "text-sm")}>
                   Tags:
                 </h4>
                 <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
@@ -196,7 +196,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
                     <Badge
                       key={index}
                       className={cn(
-                        "rounded-full font-medium tag-hover bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 transition-colors",
+                        "rounded-full font-medium tag-hover bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 transition-colors",
                         isLarge ? "text-xs px-3 py-1" : "text-xs px-3 py-1",
                       )}
                     >
@@ -228,7 +228,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
               <Button
                 onClick={handleViewProfile}
                 variant="outline"
-                className="rounded-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 flex items-center gap-2 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
+                className="rounded-full border-2 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-white flex items-center gap-2 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
               >
                 <User className="h-4 w-4" />
                 <span>Profile</span>

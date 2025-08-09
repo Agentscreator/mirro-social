@@ -498,10 +498,10 @@ export default function DiscoverPage() {
         </div>
 
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             placeholder="Search for users..."
-            className="pl-10 rounded-full border-blue-200 bg-white text-gray-900 placeholder:text-gray-500"
+            className="pl-10 rounded-full border-gray-600 bg-gray-800 text-white placeholder:text-gray-400"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={handleSearchFocus}
@@ -511,7 +511,7 @@ export default function DiscoverPage() {
           {/* Search Results Dropdown */}
           {showSearchResults && (
             <div
-              className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+              className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
               data-search-dropdown
             >
               {searchLoading ? (
@@ -525,7 +525,7 @@ export default function DiscoverPage() {
                     return (
                       <div
                         key={user.id}
-                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -551,8 +551,8 @@ export default function DiscoverPage() {
                               </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900">{user.username}</div>
-                              {user.nickname && <div className="text-sm text-gray-500">{user.nickname}</div>}
+                              <div className="font-medium text-white">{user.username}</div>
+                              {user.nickname && <div className="text-sm text-gray-300">{user.nickname}</div>}
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -563,7 +563,7 @@ export default function DiscoverPage() {
                                 e.preventDefault()
                                 handleViewProfile(user.id)
                               }}
-                              className="rounded-full text-gray-700 hover:text-gray-900 border-gray-300"
+                              className="rounded-full text-gray-300 hover:text-white border-gray-500 bg-gray-700 hover:bg-gray-600"
                             >
                               <User className="h-3 w-3 mr-1" />
                               View
@@ -591,7 +591,7 @@ export default function DiscoverPage() {
                   })}
                 </div>
               ) : (
-                <div className="p-4 text-center text-gray-500">No users found</div>
+                <div className="p-4 text-center text-gray-300">No users found</div>
               )}
             </div>
           )}

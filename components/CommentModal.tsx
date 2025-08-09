@@ -178,7 +178,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
     const maxDepth = 3; // Limit nesting depth
 
     return (
-      <div key={comment.id} className={`space-y-3 ${depth > 0 ? "ml-8 border-l-2 border-gray-100 pl-4" : ""}`}>
+      <div key={comment.id} className={`space-y-3 ${depth > 0 ? "ml-8 border-l-2 border-gray-700 pl-4" : ""}`}>
         <div className="flex gap-3 group">
           <Avatar className="w-8 h-8 flex-shrink-0">
             <AvatarImage src={comment.user?.profileImage || "/placeholder-avatar.jpg"} />
@@ -191,12 +191,12 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm text-gray-900 truncate">
+                  <span className="font-medium text-sm text-white truncate">
                     {comment.user?.nickname || comment.user?.username}
                   </span>
-                  <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                  <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
                 </div>
-                <p className="text-sm text-gray-800 leading-relaxed break-words">{comment.content}</p>
+                <p className="text-sm text-gray-300 leading-relaxed break-words">{comment.content}</p>
                 
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 mt-1">
@@ -205,7 +205,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                       variant="ghost"
                       size="sm"
                       onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="h-6 px-2 text-xs text-gray-600 hover:text-blue-600"
+                      className="h-6 px-2 text-xs text-gray-400 hover:text-blue-400"
                     >
                       <Reply className="h-3 w-3 mr-1" />
                       Reply
@@ -217,7 +217,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteComment(comment.id)}
-                      className="h-6 px-2 text-xs text-gray-600 hover:text-red-600"
+                      className="h-6 px-2 text-xs text-gray-400 hover:text-red-400"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
@@ -234,7 +234,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Write a reply..."
-                  className="min-h-[60px] text-sm text-gray-900 placeholder:text-gray-500"
+                  className="min-h-[60px] text-sm text-white placeholder:text-gray-400 bg-gray-800 border-gray-600"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -279,7 +279,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col bg-gray-900 border-gray-700">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <Avatar className="w-8 h-8">
@@ -289,8 +289,8 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
               </AvatarFallback>
             </Avatar>
             <div>
-              <span className="font-medium">{postUser?.nickname || postUser?.username}</span>
-              <p className="text-sm text-gray-600 font-normal line-clamp-2">{postContent}</p>
+              <span className="font-medium text-white">{postUser?.nickname || postUser?.username}</span>
+              <p className="text-sm text-gray-300 font-normal line-clamp-2">{postContent}</p>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -302,7 +302,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-400">
               <p>No comments yet. Be the first to comment!</p>
             </div>
           ) : (
@@ -324,7 +324,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="min-h-[60px] resize-none text-gray-900 placeholder:text-gray-500"
+                className="min-h-[60px] resize-none text-white placeholder:text-gray-400 bg-gray-800 border-gray-600"
               />
             </div>
           </div>
