@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable } from "@/src/db/schema"
 import { desc, eq, sql, and, notInArray, or, ilike } from "drizzle-orm"
 
 // GET - Fetch feed posts with pagination
@@ -58,7 +58,11 @@ export async function GET(request: NextRequest) {
           WHERE ${postLikesTable.postId} = ${postsTable.id} 
           AND ${postLikesTable.userId} = ${session.user.id}
         )`,
-        comments: sql<number>`0`, // We'll add this later if needed
+        comments: sql<number>`(
+          SELECT COUNT(*)::int 
+          FROM ${postCommentsTable} 
+          WHERE ${postCommentsTable.postId} = ${postsTable.id}
+        )`
       })
       .from(postsTable)
       .leftJoin(usersTable, eq(postsTable.userId, usersTable.id))

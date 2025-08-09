@@ -156,7 +156,7 @@ export function NotificationBell({ theme = 'light' }: NotificationBellProps) {
           size="sm" 
           className={`relative p-2 ${
             theme === 'dark' 
-              ? 'text-white hover:bg-white/20' 
+              ? 'text-blue-400 hover:bg-white/20 hover:text-blue-300' 
               : 'text-gray-700 hover:bg-gray-100'
           }`}
         >

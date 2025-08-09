@@ -33,9 +33,10 @@ interface CommentModalProps {
     nickname?: string;
     profileImage?: string;
   };
+  onCommentCountChange?: (change: number) => void;
 }
 
-export function CommentModal({ isOpen, onClose, postId, postContent, postUser }: CommentModalProps) {
+export function CommentModal({ isOpen, onClose, postId, postContent, postUser, onCommentCountChange }: CommentModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -118,6 +119,9 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
           setNewComment("");
         }
 
+        // Notify parent component about comment count change
+        onCommentCountChange?.(1);
+
         toast({
           title: "Success",
           description: parentCommentId ? "Reply added successfully!" : "Comment added successfully!",
@@ -147,6 +151,10 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser }:
 
       if (response.ok) {
         await fetchComments();
+        
+        // Notify parent component about comment count change
+        onCommentCountChange?.(-1);
+        
         toast({
           title: "Success",
           description: "Comment deleted successfully!",

@@ -812,7 +812,7 @@ export default function ProfilePage() {
     return (
       <div
         key={comment.id}
-        className={cn("space-y-2 sm:space-y-3", depth > 0 && "ml-4 sm:ml-8 border-l-2 border-gray-100 pl-2 sm:pl-4")}
+        className={cn("space-y-2 sm:space-y-3", depth > 0 && "ml-4 sm:ml-8 border-l-2 border-gray-700 pl-2 sm:pl-4")}
       >
         <div className="flex gap-2 sm:gap-3 group">
           <div className="relative h-6 w-6 sm:h-8 sm:w-8 overflow-hidden rounded-full flex-shrink-0">
@@ -828,12 +828,12 @@ export default function ProfilePage() {
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-xs sm:text-sm text-gray-900 truncate">
+                  <span className="font-medium text-xs sm:text-sm text-white truncate">
                     {comment.user?.nickname || comment.user?.username}
                   </span>
-                  <span className="text-xs text-gray-500 flex-shrink-0">{formatDate(comment.createdAt)}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(comment.createdAt)}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-800 leading-relaxed break-words">{comment.content}</p>
+                <p className="text-xs sm:text-sm text-gray-200 leading-relaxed break-words">{comment.content}</p>
                 {/* Reply button */}
                 <div className="flex items-center gap-2 mt-1">
                   {depth < maxDepth && (
@@ -841,7 +841,7 @@ export default function ProfilePage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="h-5 w-auto sm:h-6 px-1 sm:px-2 text-xs text-gray-600 hover:text-blue-600"
+                      className="h-5 w-auto sm:h-6 px-1 sm:px-2 text-xs text-gray-400 hover:text-blue-400"
                     >
                       <Reply className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                       Reply
@@ -852,7 +852,7 @@ export default function ProfilePage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleCommentExpansion(comment.id)}
-                      className="h-5 w-auto sm:h-6 px-1 sm:px-2 text-xs text-gray-600 hover:text-blue-600"
+                      className="h-5 w-auto sm:h-6 px-1 sm:px-2 text-xs text-gray-400 hover:text-blue-400"
                     >
                       {isExpanded ? (
                         <>
@@ -874,7 +874,7 @@ export default function ProfilePage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDeleteComment(comment.id)}
-                  className="h-5 w-5 sm:h-6 sm:w-6 rounded-full hover:bg-red-100 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  className="h-5 w-5 sm:h-6 sm:w-6 rounded-full hover:bg-red-900/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   title="Delete comment"
                 >
                   <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -888,7 +888,7 @@ export default function ProfilePage() {
                   placeholder={`Reply to ${comment.user?.nickname || comment.user?.username}...`}
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  className="min-h-[50px] sm:min-h-[60px] rounded-lg border-blue-200 resize-none text-xs sm:text-sm text-gray-900 placeholder:text-gray-500"
+                  className="min-h-[50px] sm:min-h-[60px] rounded-lg border-gray-600 bg-gray-800 resize-none text-xs sm:text-sm text-white placeholder:text-gray-400"
                 />
                 <div className="flex justify-end gap-2">
                   <Button
@@ -898,7 +898,7 @@ export default function ProfilePage() {
                       setReplyingTo(null)
                       setReplyContent("")
                     }}
-                    className="text-xs text-gray-600 hover:text-gray-800 px-2 py-1"
+                    className="text-xs text-gray-400 hover:text-gray-200 px-2 py-1"
                   >
                     Cancel
                   </Button>
@@ -937,7 +937,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-600">User not found</h2>
+        <h2 className="text-xl font-semibold text-gray-400">User not found</h2>
       </div>
     )
   }
@@ -1465,7 +1465,7 @@ export default function ProfilePage() {
                         placeholder="Write a comment..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        className="min-h-[50px] sm:min-h-[60px] rounded-lg border-blue-200 resize-none text-sm sm:text-base text-gray-900 placeholder:text-gray-500"
+                        className="min-h-[50px] sm:min-h-[60px] rounded-lg border-gray-600 bg-gray-800 resize-none text-sm sm:text-base text-white placeholder:text-gray-400"
                       />
                       <div className="flex justify-end">
                         <Button

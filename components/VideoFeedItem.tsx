@@ -40,9 +40,15 @@ const VideoFeedItem = ({
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
+  const [currentComments, setCurrentComments] = useState(post.comments);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Sync comment count when post prop changes
+  useEffect(() => {
+    setCurrentComments(post.comments);
+  }, [post.comments]);
 
   // Autoplay effect when component becomes active
   useEffect(() => {
@@ -226,6 +232,10 @@ const VideoFeedItem = ({
   const handleComment = () => {
     console.log('Comment clicked for post:', post.id);
     setIsCommentModalOpen(true);
+  };
+
+  const handleCommentCountChange = (change: number) => {
+    setCurrentComments(prev => Math.max(0, prev + change));
   };
 
   const handleShare = async () => {
@@ -484,7 +494,7 @@ const VideoFeedItem = ({
             <MessageCircle className="w-7 h-7" />
           </Button>
           <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">
-            {post.comments > 999 ? `${(post.comments / 1000).toFixed(1)}K` : post.comments.toLocaleString()}
+            {currentComments > 999 ? `${(currentComments / 1000).toFixed(1)}K` : currentComments.toLocaleString()}
           </span>
         </div>
 
@@ -569,6 +579,7 @@ const VideoFeedItem = ({
           nickname: post.user.nickname,
           profileImage: getBestImageUrl(post.user),
         }}
+        onCommentCountChange={handleCommentCountChange}
       />
 
     </div>
