@@ -176,11 +176,11 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
           </div>
 
           <div className={cn("flex-1 text-center w-full", !isLarge && "sm:text-left")}>
-            <h3 className={cn("mb-3 font-bold text-white", titleSize)}>@{user.username}</h3>
+            <h3 className={cn("mb-3 font-bold text-white", titleSize)} style={{ color: 'white' }}>@{user.username}</h3>
 
             {user.reason && (
               <div className="mt-4">
-                <div className={cn("leading-relaxed text-gray-300 max-w-2xl mx-auto", reasonTextSize)}>
+                <div className={cn("leading-relaxed text-gray-300 max-w-2xl mx-auto", reasonTextSize)} style={{ color: '#d1d5db' }}>
                   <AnimatedText text={user.reason} delay={500} speed={20} />
                 </div>
               </div>
@@ -188,7 +188,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
 
             {user.tags.length > 0 && (
               <div className="mt-4">
-                <h4 className={cn("mb-2 font-semibold text-white", isLarge ? "text-sm" : "text-sm")}>
+                <h4 className={cn("mb-2 font-semibold text-white", isLarge ? "text-sm" : "text-sm")} style={{ color: 'white' }}>
                   Tags:
                 </h4>
                 <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">

@@ -259,7 +259,7 @@ export default function DiscoverPage() {
   }
 
   const goToNext = async () => {
-    if (currentIndex < filteredUsers.length - 1) {
+    if (currentIndex < shuffledUsers.length - 1) {
       setCurrentIndex(currentIndex + 1)
     } else if (hasMore && !loadingMore) {
       // Load more users when reaching the end
@@ -349,19 +349,29 @@ export default function DiscoverPage() {
     loadInitialData()
   }, [])
 
-  // Filter users based on search query
+  // Filter users based on search query and add randomization
   const filteredUsers = users.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  
+  // Add some randomization to prevent the same user always appearing first
+  const shuffledUsers = [...filteredUsers]
+  if (shuffledUsers.length > 1) {
+    // Fisher-Yates shuffle for the first few users to add variety
+    for (let i = Math.min(5, shuffledUsers.length - 1); i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j], shuffledUsers[i]];
+    }
+  }
 
   // Save and restore current index position
   useEffect(() => {
     const savedIndex = localStorage.getItem('discover-current-index')
-    if (savedIndex && filteredUsers.length > 0) {
+    if (savedIndex && shuffledUsers.length > 0) {
       const index = parseInt(savedIndex, 10)
-      if (index >= 0 && index < filteredUsers.length) {
+      if (index >= 0 && index < shuffledUsers.length) {
         setCurrentIndex(index)
       }
     }
-  }, [filteredUsers.length])
+  }, [shuffledUsers.length])
 
   useEffect(() => {
     localStorage.setItem('discover-current-index', currentIndex.toString())
@@ -393,7 +403,7 @@ export default function DiscoverPage() {
   }
 
   // Get current user to display
-  const currentUser = filteredUsers[currentIndex]
+  const currentUser = shuffledUsers[currentIndex]
 
   // ThoughtsUploadArea Component
   const ThoughtsUploadArea = () => {
@@ -447,8 +457,9 @@ export default function DiscoverPage() {
                   value={newThought}
                   onChange={(e) => setNewThought(e.target.value)}
                   placeholder="What kind of person would you like to meet? Share your thoughts..."
-                  className="w-full h-24 p-3 rounded-xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm resize-none text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-24 p-3 rounded-xl border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   maxLength={1000}
+                  style={{ backgroundColor: '#1f2937', color: 'white' }}
                 />
                 <div className="absolute bottom-2 right-2 text-xs text-gray-500">
                   {newThought.length}/1000
@@ -619,7 +630,7 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={currentIndex === filteredUsers.length - 1 && !hasMore}
+                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
                       variant="outline"
                       size="lg"
                       className="rounded-full w-14 h-14 p-0 border-2 border-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:border-gray-300 bg-white shadow-md"
@@ -704,7 +715,7 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={currentIndex === filteredUsers.length - 1 && !hasMore}
+                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
                       variant="outline"
                       size="lg"
                       className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
