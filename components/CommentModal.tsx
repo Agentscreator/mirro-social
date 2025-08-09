@@ -204,7 +204,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser, o
                   </span>
                   <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
                 </div>
-                <p className="text-sm text-gray-300 leading-relaxed break-words">{comment.content}</p>
+                <p className="text-sm text-white leading-relaxed break-words">{comment.content}</p>
                 
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 mt-1">
@@ -298,7 +298,7 @@ export function CommentModal({ isOpen, onClose, postId, postContent, postUser, o
             </Avatar>
             <div>
               <span className="font-medium text-white">{postUser?.nickname || postUser?.username}</span>
-              <p className="text-sm text-gray-300 font-normal line-clamp-2">{postContent}</p>
+              <p className="text-sm text-white font-normal line-clamp-2">{postContent}</p>
             </div>
           </DialogTitle>
         </DialogHeader>
