@@ -957,7 +957,7 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center mb-4 sm:mb-0 sm:flex-shrink-0">
               <div className="relative group">
                 <div className="relative h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 overflow-hidden rounded-full bg-gradient-to-br from-blue-400 to-blue-600 p-1 shadow-xl">
-                  <div className="h-full w-full overflow-hidden rounded-full bg-white">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-gray-800">
                     <Image
                       src={user.profileImage || user.image || "/placeholder.svg?height=150&width=150"}
                       alt={user.username}
@@ -1032,7 +1032,7 @@ export default function ProfilePage() {
                       className={cn(
                         "flex-1 sm:flex-none rounded-full px-4 sm:px-6 text-sm font-medium",
                         isFollowing
-                          ? "bg-white border border-blue-200 text-blue-600 hover:bg-blue-50"
+                          ? "bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
                           : "bg-blue-600 hover:bg-blue-700 text-white",
                       )}
                     >
@@ -1070,7 +1070,7 @@ export default function ProfilePage() {
                 <Textarea
                   value={editedAbout}
                   onChange={(e) => setEditedAbout(e.target.value)}
-                  className="min-h-[80px] sm:min-h-[100px] rounded-xl sm:rounded-2xl border-blue-200 bg-white/80 backdrop-blur-sm resize-none text-sm sm:text-base text-gray-900 placeholder-gray-500 focus:text-gray-900"
+                  className="min-h-[80px] sm:min-h-[100px] rounded-xl sm:rounded-2xl border-gray-600 bg-gray-800/80 backdrop-blur-sm resize-none text-sm sm:text-base text-white placeholder-gray-400 focus:text-white"
                   placeholder="Tell us about yourself..."
                 />
                 <div className="flex justify-end gap-2">
@@ -1093,8 +1093,8 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="relative group">
-                <div className="rounded-xl sm:rounded-2xl bg-white/80 backdrop-blur-sm border border-blue-100 p-4 sm:p-6 shadow-sm">
-                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                <div className="rounded-xl sm:rounded-2xl bg-gray-800/80 backdrop-blur-sm border border-gray-700 p-4 sm:p-6 shadow-sm">
+                  <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
                     {user.about || "No bio available"}
                   </p>
                 </div>
@@ -1355,7 +1355,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Comments Section - Optimized for mobile */}
-              <div className="w-full sm:w-96 bg-white flex flex-col h-[60vh] sm:h-full">
+              <div className="w-full sm:w-96 bg-gray-900 flex flex-col h-[60vh] sm:h-full">
                 {/* Header - Compact on mobile */}
                 <div className="p-3 sm:p-4 border-b flex items-center gap-3 flex-shrink-0">
                   <div className="relative h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full">
@@ -1449,7 +1449,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Comment Input - Fixed at bottom with better mobile UX */}
-                <div className="p-3 sm:p-4 border-t flex-shrink-0 bg-white safe-area-inset-bottom">
+                <div className="p-3 sm:p-4 border-t border-gray-700 flex-shrink-0 bg-gray-900 safe-area-inset-bottom">
                   <div className="flex gap-2 sm:gap-3">
                     <div className="relative h-7 w-7 sm:h-8 sm:w-8 overflow-hidden rounded-full flex-shrink-0">
                       <Image

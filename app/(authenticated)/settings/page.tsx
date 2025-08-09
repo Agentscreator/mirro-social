@@ -282,43 +282,43 @@ export default function SettingsPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.back()}
-          className="rounded-full hover:bg-blue-50 text-blue-600"
+          className="rounded-full hover:bg-gray-800 text-white"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-blue-600">Account Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Account Settings</h1>
       </div>
 
       <div className="space-y-6 pb-40 md:pb-24">
-        <Card className="premium-card">
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="premium-heading">Profile Information</CardTitle>
-            <CardDescription className="premium-subheading">Update your basic profile information</CardDescription>
+            <CardTitle className="text-white">Profile Information</CardTitle>
+            <CardDescription className="text-gray-300">Update your basic profile information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-white">Username</Label>
               <Input
                 id="username"
                 value={formData.username}
                 onChange={(e) => handleInputChange("username", e.target.value)}
-                className="premium-input"
+                className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nickname">Nickname</Label>
+              <Label htmlFor="nickname" className="text-white">Nickname</Label>
               <Input
                 id="nickname"
                 value={formData.nickname}
                 onChange={(e) => handleInputChange("nickname", e.target.value)}
                 placeholder="How you'd like to be called"
-                className="premium-input"
+                className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Gender</Label>
+              <Label className="text-white">Gender</Label>
               <RadioGroup
                 value={formData.gender}
                 onValueChange={(value) => handleInputChange("gender", value)}
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                 {GENDER_OPTIONS.map((option) => (
                   <div key={option.id} className="flex items-center space-x-2">
                     <RadioGroupItem value={option.id} id={`gender-${option.id}`} />
-                    <Label htmlFor={`gender-${option.id}`}>{option.label}</Label>
+                    <Label htmlFor={`gender-${option.id}`} className="text-white">{option.label}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -335,14 +335,14 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="premium-heading">Connection Preferences</CardTitle>
-            <CardDescription className="premium-subheading">Customize who you connect with</CardDescription>
+            <CardTitle className="text-white">Connection Preferences</CardTitle>
+            <CardDescription className="text-gray-300">Customize who you connect with</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>I'd like to connect with</Label>
+              <Label className="text-white">I'd like to connect with</Label>
               <RadioGroup
                 value={formData.genderPreference}
                 onValueChange={(value) => handleInputChange("genderPreference", value)}
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                 {GENDER_PREFERENCES.map((pref) => (
                   <div key={pref.id} className="flex items-center space-x-2">
                     <RadioGroupItem value={pref.id} id={`pref-${pref.id}`} />
-                    <Label htmlFor={`pref-${pref.id}`}>{pref.label}</Label>
+                    <Label htmlFor={`pref-${pref.id}`} className="text-white">{pref.label}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -364,9 +364,9 @@ export default function SettingsPage() {
             />
 
             <div className="space-y-2">
-              <Label>Proximity of recommendations</Label>
+              <Label className="text-white">Proximity of recommendations</Label>
               <Select value={formData.proximity} onValueChange={(value) => handleInputChange("proximity", value)}>
-                <SelectTrigger className="premium-input">
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                   <SelectValue placeholder="Select proximity" />
                 </SelectTrigger>
                 <SelectContent>
@@ -381,17 +381,17 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="premium-heading">Your Tags</CardTitle>
-            <CardDescription className="premium-subheading">
+            <CardTitle className="text-white">Your Tags</CardTitle>
+            <CardDescription className="text-gray-300">
               Update your interests, context, and intentions to improve connection recommendations
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="mb-3 text-lg font-medium text-blue-600">Your Interests</h3>
-              <p className="mb-3 text-sm text-muted-foreground">Choose up to 5 topics that interest you the most</p>
+              <h3 className="mb-3 text-lg font-medium text-white">Your Interests</h3>
+              <p className="mb-3 text-sm text-gray-400">Choose up to 5 topics that interest you the most</p>
               <TagSelector
                 tags={availableTags}
                 selectedTags={interestTags}
@@ -402,8 +402,8 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-lg font-medium text-blue-600">Your Context</h3>
-              <p className="mb-3 text-sm text-muted-foreground">
+              <h3 className="mb-3 text-lg font-medium text-white">Your Context</h3>
+              <p className="mb-3 text-sm text-gray-400">
                 Select up to 3 situations that describe where you are in life right now
               </p>
               <TagSelector
@@ -416,8 +416,8 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-lg font-medium text-blue-600">Your Intentions</h3>
-              <p className="mb-3 text-sm text-muted-foreground">Select up to 3 intentions for using Mirro</p>
+              <h3 className="mb-3 text-lg font-medium text-white">Your Intentions</h3>
+              <p className="mb-3 text-sm text-gray-400">Select up to 3 intentions for using Mirro</p>
               <TagSelector
                 tags={availableTags}
                 selectedTags={intentionTags}
@@ -429,17 +429,17 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="premium-heading">Notifications</CardTitle>
-            <CardDescription className="premium-subheading">Manage your notification preferences</CardDescription>
+            <CardTitle className="text-white">Notifications</CardTitle>
+            <CardDescription className="text-gray-300">Manage your notification preferences</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-blue-500" />
-                  <Label htmlFor="notifications" className="premium-text">
+                  <Label htmlFor="notifications" className="text-white">
                     Enable notifications
                   </Label>
                 </div>
@@ -454,10 +454,10 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="premium-heading">Account</CardTitle>
-            <CardDescription className="premium-subheading">Manage your account settings</CardDescription>
+            <CardTitle className="text-white">Account</CardTitle>
+            <CardDescription className="text-gray-300">Manage your account settings</CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive" className="w-full rounded-full" onClick={handleLogout}>
@@ -472,7 +472,7 @@ export default function SettingsPage() {
       <div className="fixed bottom-16 left-0 right-0 z-[60] pointer-events-none md:bottom-6 md:left-20 md:right-4">
         <div className="pointer-events-auto transition-all duration-300 ease-out" style={{ opacity: buttonOpacity }}>
           {/* Background blur overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/60 to-transparent backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-sm" />
 
           {/* Button container */}
           <div className="relative px-4 py-4 md:px-8 md:py-6">

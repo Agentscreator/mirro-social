@@ -223,22 +223,22 @@ export default function HelpPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.back()}
-          className="rounded-full hover:bg-blue-50 text-blue-600"
+          className="rounded-full hover:bg-gray-800 text-white"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-blue-600">Help & Support</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Help & Support</h1>
       </div>
 
       <div className="space-y-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {CONTACT_OPTIONS.map((option) => (
-            <Card key={option.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={option.id} className="bg-gray-900 border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
-                <option.icon className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900 mb-2">{option.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">{option.description}</p>
+                <option.icon className="h-8 w-8 text-blue-400 mx-auto mb-3" />
+                <h3 className="font-semibold text-white mb-2">{option.name}</h3>
+                <p className="text-sm text-gray-300 mb-3">{option.description}</p>
                 <Badge variant="secondary" className="mb-4">
                   {option.available}
                 </Badge>
@@ -249,7 +249,7 @@ export default function HelpPage() {
         </div>
 
         {/* Search */}
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardContent className="p-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -257,7 +257,7 @@ export default function HelpPage() {
                 placeholder="Search for help articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
               />
             </div>
           </CardContent>
@@ -265,20 +265,20 @@ export default function HelpPage() {
 
         {/* FAQ Categories */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Frequently Asked Questions</h2>
+          <h2 className="text-xl font-semibold text-white mb-6">Frequently Asked Questions</h2>
           <div className="space-y-4">
             {(searchQuery ? filteredFAQs : FAQ_CATEGORIES).map((category) => (
-              <Card key={category.id}>
+              <Card key={category.id} className="bg-gray-900 border-gray-700">
                 <Collapsible
                   open={openCategories.includes(category.id)}
                   onOpenChange={() => toggleCategory(category.id)}
                 >
                   <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <CardHeader className="cursor-pointer hover:bg-gray-800 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <category.icon className="h-5 w-5 text-blue-600" />
-                          <CardTitle className="text-lg">{category.name}</CardTitle>
+                          <category.icon className="h-5 w-5 text-blue-400" />
+                          <CardTitle className="text-lg text-white">{category.name}</CardTitle>
                           <Badge variant="secondary">{category.questions.length}</Badge>
                         </div>
                         {openCategories.includes(category.id) ? (
@@ -293,9 +293,9 @@ export default function HelpPage() {
                     <CardContent className="pt-0">
                       <div className="space-y-4">
                         {category.questions.map((faq, index) => (
-                          <div key={index} className="border-l-2 border-blue-100 pl-4">
-                            <h4 className="font-medium text-gray-900 mb-2">{faq.question}</h4>
-                            <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+                          <div key={index} className="border-l-2 border-blue-600 pl-4">
+                            <h4 className="font-medium text-white mb-2">{faq.question}</h4>
+                            <p className="text-gray-300 text-sm leading-relaxed">{faq.answer}</p>
                           </div>
                         ))}
                       </div>
@@ -308,13 +308,13 @@ export default function HelpPage() {
         </div>
 
         {/* Contact Form */}
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-white">
               <Mail className="h-5 w-5" />
               Contact Support
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-gray-300">
               Can't find what you're looking for? Send us a message and we'll help you out.
             </CardDescription>
           </CardHeader>
@@ -322,21 +322,22 @@ export default function HelpPage() {
             <form onSubmit={handleContactSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <Label htmlFor="subject" className="text-white">Subject</Label>
                   <Input
                     id="subject"
                     value={contactForm.subject}
                     onChange={(e) => setContactForm((prev) => ({ ...prev, subject: e.target.value }))}
                     placeholder="Brief description of your issue"
+                    className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category" className="text-white">Category</Label>
                   <Select
                     value={contactForm.category}
                     onValueChange={(value) => setContactForm((prev) => ({ ...prev, category: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -350,13 +351,13 @@ export default function HelpPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
+                <Label htmlFor="message" className="text-white">Message</Label>
                 <Textarea
                   id="message"
                   value={contactForm.message}
                   onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
                   placeholder="Please describe your issue in detail..."
-                  className="min-h-[120px]"
+                  className="min-h-[120px] bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                 />
               </div>
               <Button type="submit" disabled={submitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
@@ -377,51 +378,51 @@ export default function HelpPage() {
         </Card>
 
         {/* Additional Resources */}
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <CardTitle>Additional Resources</CardTitle>
+            <CardTitle className="text-white">Additional Resources</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" className="justify-start h-auto p-4">
+              <Button variant="outline" className="justify-start h-auto p-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
                 <div className="flex items-center gap-3">
-                  <Book className="h-5 w-5 text-blue-600" />
+                  <Book className="h-5 w-5 text-blue-400" />
                   <div className="text-left">
                     <div className="font-medium">User Guide</div>
-                    <div className="text-sm text-gray-600">Complete guide to using Mirro</div>
+                    <div className="text-sm text-gray-300">Complete guide to using Mirro</div>
                   </div>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto" />
               </Button>
 
-              <Button variant="outline" className="justify-start h-auto p-4">
+              <Button variant="outline" className="justify-start h-auto p-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
                 <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-blue-600" />
+                  <Users className="h-5 w-5 text-blue-400" />
                   <div className="text-left">
                     <div className="font-medium">Community Forum</div>
-                    <div className="text-sm text-gray-600">Connect with other users</div>
+                    <div className="text-sm text-gray-300">Connect with other users</div>
                   </div>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto" />
               </Button>
 
-              <Button variant="outline" className="justify-start h-auto p-4">
+              <Button variant="outline" className="justify-start h-auto p-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
                 <div className="flex items-center gap-3">
-                  <Bug className="h-5 w-5 text-blue-600" />
+                  <Bug className="h-5 w-5 text-blue-400" />
                   <div className="text-left">
                     <div className="font-medium">Report a Bug</div>
-                    <div className="text-sm text-gray-600">Help us improve the app</div>
+                    <div className="text-sm text-gray-300">Help us improve the app</div>
                   </div>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto" />
               </Button>
 
-              <Button variant="outline" className="justify-start h-auto p-4">
+              <Button variant="outline" className="justify-start h-auto p-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
                 <div className="flex items-center gap-3">
-                  <Lightbulb className="h-5 w-5 text-blue-600" />
+                  <Lightbulb className="h-5 w-5 text-blue-400" />
                   <div className="text-left">
                     <div className="font-medium">Feature Requests</div>
-                    <div className="text-sm text-gray-600">Suggest new features</div>
+                    <div className="text-sm text-gray-300">Suggest new features</div>
                   </div>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto" />
