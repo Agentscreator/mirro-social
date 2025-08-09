@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { notificationsTable, usersTable, postsTable } from "@/src/db/schema"
-import { desc, eq, and } from "drizzle-orm"
+import { desc, eq, and, sql } from "drizzle-orm"
 
 // GET - Fetch notifications for the current user
 export async function GET(request: NextRequest) {
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
       .where(
         and(
           eq(notificationsTable.userId, session.user.id),
-          // Only update notifications that belong to the user
+          sql`${notificationsTable.id} = ANY(${notificationIds})`
         )
       )
 
