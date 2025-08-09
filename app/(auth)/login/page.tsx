@@ -132,27 +132,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 silver-pattern">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-black">
       {/* Only show the home link in web mode */}
       {!isMobile && (
         <Link href="/" className="absolute left-4 top-4 flex items-center gap-2">
           <Logo size="sm" />
-          <span className="text-lg font-bold blue-text">Mirro</span>
         </Link>
       )}
 
-      <Card className="w-full max-w-md premium-card">
+      <Card className="w-full max-w-md bg-gray-900 border-gray-700">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center blue-text">Welcome back</CardTitle>
-          <CardDescription className="text-center premium-subheading">
+          <CardTitle className="text-2xl font-bold text-center text-white">Welcome back</CardTitle>
+          <CardDescription className="text-center text-gray-300">
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-md bg-red-50 p-3 border border-red-200">
-                <p className="text-sm text-red-600 text-center">{error}</p>
+              <div className="rounded-md bg-red-900/20 p-3 border border-red-700">
+                <p className="text-sm text-red-400 text-center">{error}</p>
               </div>
             )}
             <div className="space-y-2">
@@ -163,7 +162,7 @@ export default function LoginPage() {
                 value={formData.identifier}
                 onChange={handleChange}
                 required
-                className="premium-input"
+                className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                 disabled={loading}
                 onBlur={(e) => {
                   const trimmed = e.target.value.trim()
@@ -182,13 +181,13 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="premium-input pr-10"
+                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300 transition-colors"
                   disabled={loading}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -202,21 +201,21 @@ export default function LoginPage() {
               <div className="text-right">
                 <Link
                   href="/reset-password"
-                  className="text-xs premium-text-muted hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-xs text-gray-400 hover:text-blue-400 transition-colors"
                 >
                   Forgot password?
                 </Link>
               </div>
             </div>
-            <Button type="submit" className="w-full premium-button" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? "Logging in..." : "Log in"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <div className="text-center text-sm">
+          <div className="text-center text-sm text-gray-300">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="premium-link">
+            <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
               Sign up
             </Link>
           </div>

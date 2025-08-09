@@ -54,7 +54,7 @@ export function TagSelector({ tags, selectedTags, onChange, maxSelections = 5, c
               onClick={() => handleTagClick(tag.id)}
               className={cn(
                 "flex items-center gap-1 rounded-full px-3 py-1 text-sm transition-all tag-hover",
-                isSelected ? tag.color : "bg-gray-100 hover:bg-gray-200 text-gray-800",
+                isSelected ? tag.color : "bg-gray-700 hover:bg-gray-600 text-gray-200",
                 tag.category === "intention" && isSelected ? "tag-gradient" : "",
               )}
             >
@@ -64,8 +64,8 @@ export function TagSelector({ tags, selectedTags, onChange, maxSelections = 5, c
           )
         })}
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <p className="text-xs text-muted-foreground">
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <p className="text-xs text-gray-400">
         Selected {selectedTags.length}/{maxSelections}
       </p>
     </div>

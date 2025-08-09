@@ -27,8 +27,8 @@ export function AgeRangeSelector({ minAge, maxAge, onChange, className }: AgeRan
   return (
     <div className={className}>
       <div className="mb-2 flex items-center justify-between">
-        <Label>Age Range</Label>
-        <span className="text-sm text-muted-foreground">
+        <Label className="text-white">Age Range</Label>
+        <span className="text-sm text-gray-400">
           {range[0]} - {range[1]} years
         </span>
       </div>

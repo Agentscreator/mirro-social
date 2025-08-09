@@ -352,16 +352,15 @@ export default function SignupPage() {
   const mutableTags = [...TAGS]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 silver-pattern">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-black">
       <Link href="/" className="absolute left-4 top-4 flex items-center gap-2">
         <Logo size="sm" />
-        <span className="text-lg font-bold blue-text">Mirro</span>
       </Link>
 
-      <Card className="w-full max-w-2xl premium-card">
+      <Card className="w-full max-w-2xl bg-gray-900 border-gray-700">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center blue-text">Create your account</CardTitle>
-          <CardDescription className="text-center premium-subheading">
+          <CardTitle className="text-2xl font-bold text-center text-white">Create your account</CardTitle>
+          <CardDescription className="text-center text-gray-300">
             Step {currentStep} of 5:{" "}
             {currentStep === 1
               ? "Basic Information"
@@ -374,17 +373,17 @@ export default function SignupPage() {
                     : "Your Intentions"}
           </CardDescription>
           {locationStatus && (
-            <p className="text-xs text-center text-muted-foreground">{locationStatus}</p>
+            <p className="text-xs text-center text-gray-400">{locationStatus}</p>
           )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {error && <p className="text-sm text-red-400 text-center">{error}</p>}
             
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username" className="text-white">Username</Label>
                   <Input
                     id="username"
                     name="username"
@@ -392,23 +391,23 @@ export default function SignupPage() {
                     value={formData.username}
                     onChange={handleChange}
                     required
-                    className={`premium-input ${usernameError ? "border-red-500" : ""}`}
+                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${usernameError ? "border-red-500" : ""}`}
                   />
-                  {usernameError && <p className="text-xs text-red-500">{usernameError}</p>}
+                  {usernameError && <p className="text-xs text-red-400">{usernameError}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nickname">Nickname</Label>
+                  <Label htmlFor="nickname" className="text-white">Nickname</Label>
                   <Input
                     id="nickname"
                     name="nickname"
                     placeholder="How you'd like to be called"
                     value={formData.nickname}
                     onChange={handleChange}
-                    className="premium-input"
+                    className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-white">Email</Label>
                   <Input
                     id="email"
                     name="email"
@@ -417,12 +416,12 @@ export default function SignupPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className={`premium-input ${emailError ? "border-red-500" : ""}`}
+                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${emailError ? "border-red-500" : ""}`}
                   />
-                  {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+                  {emailError && <p className="text-xs text-red-400">{emailError}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Label htmlFor="dob" className="text-white">Date of Birth</Label>
                   <Input
                     id="dob"
                     name="dob"
@@ -430,14 +429,14 @@ export default function SignupPage() {
                     value={formData.dob}
                     onChange={handleChange}
                     required
-                    className={`premium-input ${dobError ? "border-red-500" : ""}`}
+                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${dobError ? "border-red-500" : ""}`}
                     maxLength={10}
                   />
-                  {dobError && <p className="text-xs text-red-500">{dobError}</p>}
-                  <p className="text-xs text-muted-foreground">Enter your date of birth (you must be 13+)</p>
+                  {dobError && <p className="text-xs text-red-400">{dobError}</p>}
+                  <p className="text-xs text-gray-400">Enter your date of birth (you must be 13+)</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-white">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -447,7 +446,7 @@ export default function SignupPage() {
                       value={formData.password}
                       onChange={handleChange}
                       required
-                      className="premium-input pr-10"
+                      className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
                       minLength={6}
                     />
                     <button
@@ -464,7 +463,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -474,7 +473,7 @@ export default function SignupPage() {
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       required
-                      className="premium-input pr-10"
+                      className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
                     />
                     <button
                       type="button"
@@ -490,7 +489,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Gender</Label>
+                  <Label className="text-white">Gender</Label>
                   <RadioGroup
                     value={formData.gender}
                     onValueChange={(value) => handleSelectChange("gender", value)}
@@ -499,7 +498,7 @@ export default function SignupPage() {
                     {GENDERS.map((gender) => (
                       <div key={gender.id} className="flex items-center space-x-2">
                         <RadioGroupItem value={gender.id} id={`gender-${gender.id}`} />
-                        <Label htmlFor={`gender-${gender.id}`}>{gender.label}</Label>
+                        <Label htmlFor={`gender-${gender.id}`} className="text-white">{gender.label}</Label>
                       </div>
                     ))}
                   </RadioGroup>
@@ -510,7 +509,7 @@ export default function SignupPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label>I'd like to connect with</Label>
+                  <Label className="text-white">I'd like to connect with</Label>
                   <RadioGroup
                     value={formData.genderPreference}
                     onValueChange={(value) => handleSelectChange("genderPreference", value)}
@@ -519,7 +518,7 @@ export default function SignupPage() {
                     {GENDER_PREFERENCES.map((pref) => (
                       <div key={pref.id} className="flex items-center space-x-2">
                         <RadioGroupItem value={pref.id} id={`pref-${pref.id}`} />
-                        <Label htmlFor={`pref-${pref.id}`}>{pref.label}</Label>
+                        <Label htmlFor={`pref-${pref.id}`} className="text-white">{pref.label}</Label>
                       </div>
                     ))}
                   </RadioGroup>
@@ -532,9 +531,9 @@ export default function SignupPage() {
                 />
 
                 <div className="space-y-2">
-                  <Label>Proximity of recommendations</Label>
+                  <Label className="text-white">Proximity of recommendations</Label>
                   <Select value={formData.proximity} onValueChange={(value) => handleSelectChange("proximity", value)}>
-                    <SelectTrigger className="premium-input">
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                       <SelectValue placeholder="Select proximity" />
                     </SelectTrigger>
                     <SelectContent>
@@ -552,8 +551,8 @@ export default function SignupPage() {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div>
-                  <h3 className="mb-2 text-lg font-medium text-blue-600 dark:text-blue-400">Select your interests</h3>
-                  <p className="mb-4 text-sm text-muted-foreground">Choose up to 5 topics that interest you the most</p>
+                  <h3 className="mb-2 text-lg font-medium text-white">Select your interests</h3>
+                  <p className="mb-4 text-sm text-gray-400">Choose up to 5 topics that interest you the most</p>
                   <TagSelector
                     tags={mutableTags}
                     selectedTags={formData.interestTags}
@@ -568,8 +567,8 @@ export default function SignupPage() {
             {currentStep === 4 && (
               <div className="space-y-4">
                 <div>
-                  <h3 className="mb-2 text-lg font-medium text-blue-600 dark:text-blue-400">What's your context?</h3>
-                  <p className="mb-4 text-sm text-muted-foreground">
+                  <h3 className="mb-2 text-lg font-medium text-white">What's your context?</h3>
+                  <p className="mb-4 text-sm text-gray-400">
                     Select up to 3 situations that describe where you are in life right now
                   </p>
                   <TagSelector
@@ -586,10 +585,10 @@ export default function SignupPage() {
             {currentStep === 5 && (
               <div className="space-y-4">
                 <div>
-                  <h3 className="mb-2 text-lg font-medium text-blue-600 dark:text-blue-400">
+                  <h3 className="mb-2 text-lg font-medium text-white">
                     What are your intentions?
                   </h3>
-                  <p className="mb-4 text-sm text-muted-foreground">Select up to 3 intentions for using Mirro</p>
+                  <p className="mb-4 text-sm text-gray-400">Select up to 3 intentions for using Mirro</p>
                   <TagSelector
                     tags={mutableTags}
                     selectedTags={formData.intentionTags}
@@ -607,7 +606,7 @@ export default function SignupPage() {
                   type="button"
                   variant="outline"
                   onClick={handlePrevStep}
-                  className="rounded-full bg-background/50"
+                  className="rounded-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                 >
                   Back
                 </Button>
@@ -619,7 +618,7 @@ export default function SignupPage() {
                 <Button
                   type="button"
                   onClick={handleNextStep}
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={loading}
                 >
                   Next
@@ -627,7 +626,7 @@ export default function SignupPage() {
               ) : (
                 <Button
                   type="submit"
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={loading}
                 >
                   {loading ? "Creating Account..." : "Create Account"}
@@ -637,19 +636,19 @@ export default function SignupPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm premium-text-muted">
+          <div className="text-center text-sm text-gray-400">
             By creating an account, you agree to our{" "}
-            <Link href="/terms" className="premium-link">
+            <Link href="/terms" className="text-blue-400 hover:text-blue-300 transition-colors">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="premium-link">
+            <Link href="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors">
               Privacy Policy
             </Link>
           </div>
-          <div className="text-center text-sm">
+          <div className="text-center text-sm text-gray-300">
             Already have an account?{" "}
-            <Link href="/auth/login" className="premium-link">
+            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 transition-colors">
               Log in
             </Link>
           </div>
