@@ -946,7 +946,7 @@ export default function ProfilePage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Profile Header */}
       <div className="relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl sm:rounded-3xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-2xl sm:rounded-3xl"></div>
         <div className="relative p-4 sm:p-6 lg:p-8">
           {/* Add Hamburger Menu */}
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8">
@@ -991,7 +991,7 @@ export default function ProfilePage() {
               </div>
               {user.nickname && (
                 <div className="mt-2 sm:mt-3">
-                  <span className="text-lg sm:text-xl font-medium text-gray-900">{user.nickname}</span>
+                  <span className="text-lg sm:text-xl font-medium text-white">{user.nickname}</span>
                 </div>
               )}
             </div>
@@ -999,11 +999,11 @@ export default function ProfilePage() {
             <div className="flex-1 w-full">
               <div className="flex flex-col items-center sm:items-start">
                 <div className="mb-3 sm:mb-4">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{user.username}</h1>
-                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1">{user.username}</h1>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4 text-xs sm:text-sm text-gray-300">
                     <button
                       onClick={handleViewFollowers}
-                      className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-1 hover:text-blue-400 transition-colors"
                     >
                       <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="font-medium">{user.followers || 0}</span>
@@ -1011,7 +1011,7 @@ export default function ProfilePage() {
                     </button>
                     <button
                       onClick={handleViewFollowing}
-                      className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-1 hover:text-blue-400 transition-colors"
                     >
                       <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="font-medium">{user.following || 0}</span>
@@ -1050,7 +1050,7 @@ export default function ProfilePage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1 sm:flex-none rounded-full border-blue-200 hover:bg-blue-50 text-blue-600 px-4 sm:px-6 text-sm bg-transparent"
+                      className="flex-1 sm:flex-none rounded-full border-gray-600 hover:bg-gray-700 text-white px-4 sm:px-6 text-sm bg-transparent"
                       onClick={handleMessage}
                     >
                       <MessageCircle className="h-4 w-4 mr-1 sm:mr-2" />
@@ -1077,7 +1077,7 @@ export default function ProfilePage() {
                   <Button
                     variant="outline"
                     onClick={() => setIsEditingAbout(false)}
-                    className="rounded-full px-4 text-sm text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-800"
+                    className="rounded-full px-4 text-sm text-white border-gray-600 hover:bg-gray-700 hover:text-white"
                     size="sm"
                   >
                     Cancel
@@ -1102,10 +1102,10 @@ export default function ProfilePage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-blue-100 h-8 w-8 sm:h-10 sm:w-10"
+                    className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity rounded-full hover:bg-gray-700 h-8 w-8 sm:h-10 sm:w-10"
                     onClick={() => setIsEditingAbout(true)}
                   >
-                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                   </Button>
                 )}
               </div>
@@ -1116,9 +1116,9 @@ export default function ProfilePage() {
 
       {/* Followers Dialog */}
       <Dialog open={isFollowersDialogOpen} onOpenChange={setIsFollowersDialogOpen}>
-        <DialogContent className="w-[90vw] max-w-[400px] max-h-[80vh] overflow-hidden rounded-2xl mx-auto">
+        <DialogContent className="w-[90vw] max-w-[400px] max-h-[80vh] overflow-hidden rounded-2xl mx-auto bg-gray-900 border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-blue-600 text-center">Followers</DialogTitle>
+            <DialogTitle className="text-white text-center">Followers</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[60vh] px-1">
             <div className="space-y-2 py-2">
@@ -1126,7 +1126,7 @@ export default function ProfilePage() {
                 followers.map((follower) => (
                   <div
                     key={follower.id}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 active:bg-gray-100 rounded-lg cursor-pointer transition-colors"
+                    className="flex items-center gap-3 p-3 hover:bg-gray-800 active:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                     onClick={() => {
                       setIsFollowersDialogOpen(false)
                       router.push(`/profile/${follower.id}`)
@@ -1142,11 +1142,11 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                      <div className="font-medium text-white text-sm sm:text-base truncate">
                         {follower.nickname || follower.username}
                       </div>
                       {follower.nickname && (
-                        <div className="text-xs sm:text-sm text-gray-500 truncate">@{follower.username}</div>
+                        <div className="text-xs sm:text-sm text-gray-400 truncate">@{follower.username}</div>
                       )}
                     </div>
                     <div className="text-gray-400 flex-shrink-0">
@@ -1157,7 +1157,7 @@ export default function ProfilePage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-400">
                   <div className="text-sm sm:text-base">No followers yet</div>
                 </div>
               )}
@@ -1168,9 +1168,9 @@ export default function ProfilePage() {
 
       {/* Following Dialog */}
       <Dialog open={isFollowingDialogOpen} onOpenChange={setIsFollowingDialogOpen}>
-        <DialogContent className="w-[90vw] max-w-[400px] max-h-[80vh] overflow-hidden rounded-2xl mx-auto">
+        <DialogContent className="w-[90vw] max-w-[400px] max-h-[80vh] overflow-hidden rounded-2xl mx-auto bg-gray-900 border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-blue-600 text-center">Following</DialogTitle>
+            <DialogTitle className="text-white text-center">Following</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[60vh] px-1">
             <div className="space-y-2 py-2">
@@ -1178,7 +1178,7 @@ export default function ProfilePage() {
                 following.map((followedUser) => (
                   <div
                     key={followedUser.id}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 active:bg-gray-100 rounded-lg cursor-pointer transition-colors"
+                    className="flex items-center gap-3 p-3 hover:bg-gray-800 active:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                     onClick={() => {
                       setIsFollowingDialogOpen(false)
                       router.push(`/profile/${followedUser.id}`)
@@ -1194,11 +1194,11 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                      <div className="font-medium text-white text-sm sm:text-base truncate">
                         {followedUser.nickname || followedUser.username}
                       </div>
                       {followedUser.nickname && (
-                        <div className="text-xs sm:text-sm text-gray-500 truncate">@{followedUser.username}</div>
+                        <div className="text-xs sm:text-sm text-gray-400 truncate">@{followedUser.username}</div>
                       )}
                     </div>
                     <div className="text-gray-400 flex-shrink-0">
@@ -1209,7 +1209,7 @@ export default function ProfilePage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-400">
                   <div className="text-sm sm:text-base">Not following anyone yet</div>
                 </div>
               )}
@@ -1222,7 +1222,7 @@ export default function ProfilePage() {
       <div className="w-full">
         <div className="space-y-4 sm:space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-blue-600">
+            <h2 className="text-lg font-semibold text-white">
               {isOwnProfile ? "Your Posts" : `${user.username}'s Posts`}
             </h2>
           </div>

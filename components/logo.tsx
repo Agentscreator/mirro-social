@@ -14,7 +14,7 @@ export function Logo({ size = "md", className }: LogoProps) {
 
   return (
     <div className={cn("relative", sizeClasses[size], className)}>
-      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 shadow-lg">
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 shadow-lg" style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(147, 51, 234, 0.4)' }}>
         <svg viewBox="0 0 100 100" className="h-full w-full p-6">
           <g fill="white">
             {/* Center circle */}

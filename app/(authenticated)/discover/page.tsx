@@ -615,7 +615,7 @@ export default function DiscoverPage() {
                       <ChevronLeft className="h-6 w-6 text-gray-800" />
                     </Button>
 
-                    <div className="text-xl font-bold text-gray-800 min-w-[140px] text-center">Discover People</div>
+                    <div className="text-xl font-bold text-white min-w-[140px] text-center">Discover People</div>
 
                     <Button
                       onClick={goToNext}
