@@ -208,18 +208,18 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-col h-screen bg-black">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="-ml-2">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="w-10 h-10 bg-gray-700 rounded-full animate-pulse"></div>
               <div>
-                <div className="w-24 h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
-                <div className="w-16 h-3 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-24 h-4 bg-gray-700 rounded animate-pulse mb-1"></div>
+                <div className="w-16 h-3 bg-gray-700 rounded animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -229,7 +229,7 @@ export default function ChatPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <p className="text-gray-500 text-sm">Loading messages...</p>
+            <p className="text-gray-400 text-sm">Loading messages...</p>
           </div>
         </div>
       </div>
@@ -239,8 +239,8 @@ export default function ChatPage() {
   if (!chatUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">User not found</h2>
-        <p className="text-gray-600 mb-4">This conversation doesn't exist or has been deleted.</p>
+        <h2 className="text-xl font-semibold text-white mb-2">User not found</h2>
+        <p className="text-gray-400 mb-4">This conversation doesn't exist or has been deleted.</p>
         <Button onClick={() => router.push('/messages')}>
           Back to Messages
         </Button>
@@ -249,9 +249,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-black">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -263,7 +263,7 @@ export default function ChatPage() {
           </Button>
           
           <div 
-            className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors"
+            className="flex items-center gap-3 cursor-pointer hover:bg-gray-800 rounded-lg p-2 -m-2 transition-colors"
             onClick={() => setShowUserProfile(true)}
           >
             <div className="relative">
@@ -279,10 +279,10 @@ export default function ChatPage() {
             </div>
             
             <div className="min-w-0">
-              <p className="font-semibold text-gray-900 truncate">
+              <p className="font-semibold text-white truncate">
                 {chatUser.nickname || chatUser.username}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-400 truncate">
                 {chatUser.isOnline ? 'Online' : chatUser.lastSeen ? `Last seen ${formatLastSeen(chatUser.lastSeen)}` : 'Offline'}
               </p>
             </div>
@@ -290,13 +290,13 @@ export default function ChatPage() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
             <Phone className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
             <Video className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
             <Info className="h-5 w-5" />
           </Button>
         </div>
@@ -306,11 +306,11 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
               <MessageCircle className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
-            <p className="text-gray-500 text-center max-w-sm">
+            <h3 className="text-lg font-medium text-white mb-2">No messages yet</h3>
+            <p className="text-gray-400 text-center max-w-sm">
               Start the conversation by sending a message to {chatUser.nickname || chatUser.username}.
             </p>
           </div>
@@ -327,7 +327,7 @@ export default function ChatPage() {
               <div key={message.id}>
                 {showTimestamp && (
                   <div className="flex justify-center my-4">
-                    <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
+                    <span className="text-xs text-gray-400 bg-gray-800 px-3 py-1 rounded-full shadow-sm">
                       {formatMessageTime(message.timestamp)}
                     </span>
                   </div>
@@ -352,7 +352,7 @@ export default function ChatPage() {
                       className={`px-4 py-2 rounded-2xl break-words ${
                         isMe
                           ? 'bg-blue-500 text-white rounded-br-md'
-                          : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
+                          : 'bg-gray-800 text-white rounded-bl-md shadow-sm border border-gray-700'
                       }`}
                     >
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -388,7 +388,7 @@ export default function ChatPage() {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-gray-100">
+              <div className="bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-gray-700">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -403,10 +403,10 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 bg-white border-t border-gray-100">
+      <div className="p-4 bg-gray-900 border-t border-gray-700">
         <div className="flex items-end gap-3">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full text-gray-500 hover:text-gray-700">
+            <Button variant="ghost" size="icon" className="rounded-full text-gray-400 hover:text-gray-300">
               <Paperclip className="h-5 w-5" />
             </Button>
           </div>
@@ -418,14 +418,14 @@ export default function ChatPage() {
               value={newMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-200 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+              className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
               disabled={sending}
               rows={1}
             />
             <Button 
               variant="ghost" 
               size="icon" 
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-gray-500 hover:text-gray-700"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-gray-400 hover:text-gray-300"
             >
               <Smile className="h-5 w-5" />
             </Button>
@@ -444,7 +444,7 @@ export default function ChatPage() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="rounded-full text-gray-500 hover:text-gray-700 w-11 h-11 flex-shrink-0"
+              className="rounded-full text-gray-400 hover:text-gray-300 w-11 h-11 flex-shrink-0"
             >
               <Mic className="h-5 w-5" />
             </Button>
@@ -454,7 +454,7 @@ export default function ChatPage() {
 
       {/* User Profile Modal */}
       <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-gray-900 border-gray-700">
           <DialogHeader>
             <DialogTitle className="text-center">Profile</DialogTitle>
           </DialogHeader>
@@ -468,11 +468,11 @@ export default function ChatPage() {
             </Avatar>
             
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-white">
                 {chatUser.nickname || chatUser.username}
               </h3>
-              <p className="text-gray-500">@{chatUser.username}</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-gray-400">@{chatUser.username}</p>
+              <p className="text-sm text-gray-500 mt-1">
                 {chatUser.isOnline ? 'Online now' : chatUser.lastSeen ? `Last seen ${formatLastSeen(chatUser.lastSeen)}` : 'Offline'}
               </p>
             </div>

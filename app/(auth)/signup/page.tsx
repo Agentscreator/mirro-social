@@ -352,15 +352,20 @@ export default function SignupPage() {
   const mutableTags = [...TAGS]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-black">
-      <Link href="/" className="absolute left-4 top-4 flex items-center gap-2">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-black">
+      <Link href="/" className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-2 z-10">
         <Logo size="sm" />
       </Link>
 
-      <Card className="w-full max-w-2xl bg-gray-900 border-gray-700">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Create your account</CardTitle>
-          <CardDescription className="text-center text-gray-300">
+      {/* Mobile-optimized logo at top */}
+      <div className="mb-6 sm:mb-8">
+        <Logo size="lg" />
+      </div>
+
+      <Card className="w-full max-w-2xl bg-gray-900/95 border-gray-700 backdrop-blur-sm shadow-2xl">
+        <CardHeader className="space-y-3 px-6 pt-8 pb-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-center text-white tracking-tight">Create your account</CardTitle>
+          <CardDescription className="text-center text-gray-300 text-base leading-relaxed">
             Step {currentStep} of 5:{" "}
             {currentStep === 1
               ? "Basic Information"
@@ -376,9 +381,13 @@ export default function SignupPage() {
             <p className="text-xs text-center text-gray-400">{locationStatus}</p>
           )}
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+        <CardContent className="px-6 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="rounded-lg bg-red-900/20 p-4 border border-red-700/50 backdrop-blur-sm">
+                <p className="text-sm text-red-400 text-center font-medium">{error}</p>
+              </div>
+            )}
             
             {currentStep === 1 && (
               <div className="space-y-4">
@@ -391,7 +400,7 @@ export default function SignupPage() {
                     value={formData.username}
                     onChange={handleChange}
                     required
-                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${usernameError ? "border-red-500" : ""}`}
+                    className={`bg-gray-800/80 border-gray-600 text-white placeholder:text-gray-400 h-12 text-base rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${usernameError ? "border-red-500" : ""}`}
                   />
                   {usernameError && <p className="text-xs text-red-400">{usernameError}</p>}
                 </div>

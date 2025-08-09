@@ -132,26 +132,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-black">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-black">
       {/* Only show the home link in web mode */}
       {!isMobile && (
-        <Link href="/" className="absolute left-4 top-4 flex items-center gap-2">
+        <Link href="/" className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-2 z-10">
           <Logo size="sm" />
         </Link>
       )}
 
-      <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Welcome back</CardTitle>
-          <CardDescription className="text-center text-gray-300">
+      {/* Mobile-optimized logo at top */}
+      <div className="mb-8 sm:mb-12">
+        <Logo size="lg" />
+      </div>
+
+      <Card className="w-full max-w-md bg-gray-900/95 border-gray-700 backdrop-blur-sm shadow-2xl">
+        <CardHeader className="space-y-3 px-6 pt-8 pb-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-center text-white tracking-tight">Welcome back</CardTitle>
+          <CardDescription className="text-center text-gray-300 text-base leading-relaxed">
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-md bg-red-900/20 p-3 border border-red-700">
-                <p className="text-sm text-red-400 text-center">{error}</p>
+              <div className="rounded-lg bg-red-900/20 p-4 border border-red-700/50 backdrop-blur-sm">
+                <p className="text-sm text-red-400 text-center font-medium">{error}</p>
               </div>
             )}
             <div className="space-y-2">
@@ -162,7 +167,7 @@ export default function LoginPage() {
                 value={formData.identifier}
                 onChange={handleChange}
                 required
-                className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
+                className="bg-gray-800/80 border-gray-600 text-white placeholder:text-gray-400 h-12 text-base rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={loading}
                 onBlur={(e) => {
                   const trimmed = e.target.value.trim()
@@ -181,7 +186,7 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
+                  className="bg-gray-800/80 border-gray-600 text-white placeholder:text-gray-400 h-12 text-base rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
                   disabled={loading}
                 />
                 <button
@@ -207,15 +212,26 @@ export default function LoginPage() {
                 </Link>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
-              {loading ? "Logging in..." : "Log in"}
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]" 
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Logging in...
+                </div>
+              ) : (
+                "Log in"
+              )}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <div className="text-center text-sm text-gray-300">
+        <CardFooter className="flex justify-center px-6 pb-8">
+          <div className="text-center text-base text-gray-300">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/signup" className="text-blue-400 hover:text-blue-300 transition-colors font-semibold">
               Sign up
             </Link>
           </div>

@@ -502,7 +502,7 @@ const VideoFeedItem = ({
       </div>
 
       {/* Bottom Left Content - TikTok Style */}
-      <div className="absolute bottom-6 left-4 right-24 z-20">
+      <div className="absolute bottom-20 md:bottom-6 left-4 right-24 z-20">
         <div className="flex items-center space-x-3 mb-3">
           <Avatar 
             className="w-10 h-10 border-2 border-white/30 cursor-pointer hover:border-white/60 transition-all duration-200"

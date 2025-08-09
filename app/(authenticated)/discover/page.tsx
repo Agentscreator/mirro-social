@@ -400,24 +400,24 @@ export default function DiscoverPage() {
     return (
       <div className="relative">
         {/* Cloudy background container */}
-        <div className="relative bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-3xl border border-blue-200 shadow-lg overflow-hidden">
+        <div className="relative bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-3xl border border-gray-700 shadow-lg overflow-hidden">
           {/* Decorative cloud elements */}
-          <div className="absolute top-4 right-4 text-blue-300 opacity-30">
+          <div className="absolute top-4 right-4 text-gray-600 opacity-30">
             <Cloud className="h-8 w-8" />
           </div>
-          <div className="absolute bottom-6 left-6 text-blue-200 opacity-20">
+          <div className="absolute bottom-6 left-6 text-gray-700 opacity-20">
             <Cloud className="h-6 w-6" />
           </div>
           
           <div className="p-6 space-y-4">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">Tell Mirro About You</h3>
-              <p className="text-sm text-blue-700 opacity-80">Share your thoughts to help us find your perfect connections</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Tell Mirro About You</h3>
+              <p className="text-sm text-gray-300">Share your thoughts to help us find your perfect connections</p>
             </div>
 
             {/* Character count display */}
             <div className="text-center">
-              <span className={`text-xs font-medium ${getTotalCharacters() > 7500 ? 'text-red-500' : 'text-blue-600'}`}>
+              <span className={`text-xs font-medium ${getTotalCharacters() > 7500 ? 'text-red-400' : 'text-gray-400'}`}>
                 {getTotalCharacters()}/8000 characters
               </span>
             </div>
@@ -426,11 +426,11 @@ export default function DiscoverPage() {
             {thoughts.length > 0 && (
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {thoughts.map((thought) => (
-                  <div key={thought.id} className="relative bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-blue-200/50">
-                    <p className="text-sm text-gray-700 pr-6">{thought.content}</p>
+                  <div key={thought.id} className="relative bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 border border-gray-600/50">
+                    <p className="text-sm text-gray-300 pr-6">{thought.content}</p>
                     <button
                       onClick={() => removeThought(thought.id)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="absolute top-2 right-2 text-gray-500 hover:text-red-400 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -447,7 +447,7 @@ export default function DiscoverPage() {
                   value={newThought}
                   onChange={(e) => setNewThought(e.target.value)}
                   placeholder="What kind of person would you like to meet? Share your thoughts..."
-                  className="w-full h-24 p-3 rounded-xl border border-blue-200 bg-white/90 backdrop-blur-sm resize-none text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  className="w-full h-24 p-3 rounded-xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm resize-none text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   maxLength={1000}
                 />
                 <div className="absolute bottom-2 right-2 text-xs text-gray-500">
@@ -470,7 +470,7 @@ export default function DiscoverPage() {
             </div>
 
             {/* Helper text */}
-            <div className="text-xs text-blue-600 opacity-70 text-center">
+            <div className="text-xs text-gray-400 text-center">
               Each thought can be up to 1,000 characters. You can add multiple thoughts up to 8,000 total characters.
             </div>
           </div>
@@ -493,7 +493,7 @@ export default function DiscoverPage() {
       <div className="w-full">
         {/* Header with Hamburger Menu */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600">Discover</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Discover</h1>
           <HamburgerMenu />
         </div>
 
@@ -718,10 +718,10 @@ export default function DiscoverPage() {
                   </div>
 
                   {/* Tell Mirro About You - Mobile */}
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
                     <div className="text-center mb-3">
-                      <h4 className="text-sm font-semibold text-blue-900">Tell Mirro About You</h4>
-                      <p className="text-xs text-blue-700">Share your thoughts to help us find your perfect connections</p>
+                      <h4 className="text-sm font-semibold text-white">Tell Mirro About You</h4>
+                      <p className="text-xs text-gray-300">Share your thoughts to help us find your perfect connections</p>
                     </div>
                     
                     <div className="space-y-3">
@@ -730,7 +730,7 @@ export default function DiscoverPage() {
                           value={newThought}
                           onChange={(e) => setNewThought(e.target.value)}
                           placeholder="What kind of person would you like to meet? Share your thoughts..."
-                          className="w-full h-20 p-3 rounded-lg border border-blue-200 bg-white text-sm text-gray-700 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                          className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-900 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           maxLength={1000}
                         />
                         <div className="absolute bottom-2 right-2 text-xs text-gray-500">
@@ -754,11 +754,11 @@ export default function DiscoverPage() {
 
                     {/* Recent thoughts preview */}
                     {thoughts.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-blue-200">
-                        <p className="text-xs text-blue-700 mb-2">Your thoughts ({thoughts.length}):</p>
+                      <div className="mt-4 pt-3 border-t border-gray-700">
+                        <p className="text-xs text-gray-300 mb-2">Your thoughts ({thoughts.length}):</p>
                         <div className="space-y-1 max-h-16 overflow-y-auto">
                           {thoughts.slice(0, 2).map((thought) => (
-                            <div key={thought.id} className="text-xs text-gray-600 bg-white rounded p-2 truncate">
+                            <div key={thought.id} className="text-xs text-gray-300 bg-gray-900 rounded p-2 truncate">
                               {thought.content}
                             </div>
                           ))}
@@ -766,7 +766,7 @@ export default function DiscoverPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="w-full mt-2 text-xs text-blue-600 hover:bg-blue-100"
+                          className="w-full mt-2 text-xs text-gray-300 hover:bg-gray-700"
                           onClick={() => router.push('/discover?section=thoughts')}
                         >
                           View all thoughts
