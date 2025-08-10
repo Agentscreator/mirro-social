@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable, groupsTable, groupMembersTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
 import { put } from "@vercel/blob"
 
@@ -480,6 +480,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let createdGroup = null
+
     // Create invite entry if this is an invite post
     if (isInvite) {
       console.log("=== CREATING INVITE ENTRY ===")
@@ -498,6 +500,42 @@ export async function POST(request: NextRequest) {
           postId: inviteEntry[0].postId,
           participantLimit: inviteEntry[0].participantLimit,
         })
+
+        // Create group if groupName is provided and autoAcceptInvites is enabled
+        if (groupName && autoAcceptInvites) {
+          console.log("=== CREATING AUTO-GROUP ===")
+          try {
+            const newGroup = await db
+              .insert(groupsTable)
+              .values({
+                name: groupName.trim(),
+                description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
+                createdBy: session.user.id,
+                postId: post[0].id,
+                maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+                isActive: 1,
+              })
+              .returning()
+
+            // Add creator as admin member
+            await db
+              .insert(groupMembersTable)
+              .values({
+                groupId: newGroup[0].id,
+                userId: session.user.id,
+                role: "admin",
+              })
+
+            createdGroup = newGroup[0]
+            console.log("✅ AUTO-GROUP CREATED SUCCESSFULLY:", {
+              groupId: createdGroup.id,
+              groupName: createdGroup.name,
+            })
+          } catch (groupError) {
+            console.error("❌ GROUP CREATION FAILED:", groupError)
+            // Don't fail the entire post creation, just log the error
+          }
+        }
       } catch (inviteError) {
         console.error("❌ INVITE CREATION FAILED:", inviteError)
         // Don't fail the entire post creation, just log the error
@@ -520,6 +558,14 @@ export async function POST(request: NextRequest) {
       isLiked: false,
     }
 
+    const response = {
+      post: newPost,
+      group: createdGroup,
+      message: createdGroup 
+        ? "Post and group created successfully" 
+        : "Post created successfully",
+    }
+
     console.log("Final response:", {
       id: newPost.id,
       userId: newPost.userId,
@@ -528,10 +574,11 @@ export async function POST(request: NextRequest) {
       hasVideo: !!newPost.video,
       likes: newPost.likes,
       comments: newPost.comments,
+      hasGroup: !!createdGroup,
     })
 
     console.log("=== POSTS CREATE API DEBUG END ===")
-    return NextResponse.json(newPost)
+    return NextResponse.json(response)
   } catch (error) {
     console.error("❌ POSTS CREATE API ERROR:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")

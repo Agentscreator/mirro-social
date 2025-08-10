@@ -121,6 +121,32 @@ export default function MessagesPage() {
             <NotificationBell />
             <Button
               variant="ghost"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/test-post-creation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: 'Test post', createGroup: true }),
+                  })
+                  const result = await response.json()
+                  console.log('Test result:', result)
+                  toast({
+                    title: response.ok ? "Success" : "Error",
+                    description: result.message || result.error,
+                    variant: response.ok ? "default" : "destructive",
+                  })
+                } catch (error) {
+                  console.error('Test error:', error)
+                }
+              }}
+              className="text-xs text-white hover:bg-gray-800"
+              title="Test Post Creation"
+            >
+              Test
+            </Button>
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => setShowCreateGroup(true)}
               className="rounded-full text-white hover:bg-gray-800"

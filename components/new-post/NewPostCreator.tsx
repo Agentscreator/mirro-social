@@ -74,6 +74,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const handleCreatePost = async () => {
     if (!selectedFile && !previewUrl) return;
     
+    console.log('🚀 Starting post creation...');
     setIsUploading(true);
     try {
       const formData = new FormData();
@@ -85,7 +86,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
       // All posts are invites now, add invite data
       formData.append('isInvite', 'true');
-      formData.append('inviteLimit', isUnlimitedInvites ? '-1' : inviteLimit.toString());
+      formData.append('inviteLimit', isUnlimitedInvites ? '100' : inviteLimit.toString());
       
       // Add auto-accept group data
       if (autoAcceptInvites && groupName.trim()) {
@@ -93,14 +94,36 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         formData.append('groupName', groupName.trim());
       }
       
+      console.log('📤 Sending request to /api/posts with FormData:', {
+        content: caption.substring(0, 50),
+        hasFile: !!selectedFile,
+        isInvite: true,
+        inviteLimit: isUnlimitedInvites ? -1 : inviteLimit,
+        autoAcceptInvites,
+        groupName: groupName.substring(0, 30),
+      });
+
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('📥 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
       });
       
       if (response.ok) {
-        const newPost = await response.json();
-        console.log('✅ Post created successfully:', newPost);
+        const result = await response.json();
+        console.log('✅ Post created successfully:', result);
         
         // Clear any cached feed data to ensure new post appears
         if (typeof window !== 'undefined') {
@@ -114,19 +137,28 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           window.dispatchEvent(new CustomEvent('feedRefresh'));
         }
         
-        onPostCreated?.(newPost);
+        // Pass the post object to the callback
+        onPostCreated?.(result.post || result);
         handleClose();
         
         // Show success message
         console.log('🎉 Post created and feed refresh triggered');
+        if (result.group) {
+          console.log('🎉 Group also created:', result.group.name);
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to create post: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create post. Please try again.');
+      console.error('❌ Error creating post:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        alert('Request timed out. Please check your connection and try again.');
+      } else {
+        alert(error instanceof Error ? error.message : 'Failed to create post. Please try again.');
+      }
     } finally {
+      console.log('🏁 Post creation finished, setting loading to false');
       setIsUploading(false);
     }
   };
