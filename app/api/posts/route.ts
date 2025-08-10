@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable, groupsTable, groupMembersTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
 import { put } from "@vercel/blob"
 
@@ -359,6 +359,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Content or media is required" }, { status: 400 })
     }
 
+    // For now, allow posts without media if content is provided
+    if (!content?.trim()) {
+      console.error("❌ VALIDATION ERROR: Content is required")
+      return NextResponse.json({ error: "Content is required" }, { status: 400 })
+    }
+
     let mediaUrl = null
     let mediaType = null
     if (media) {
@@ -425,9 +431,13 @@ export async function POST(request: NextRequest) {
       content: postData.content,
       image: postData.image,
       video: postData.video,
+      autoAcceptInvites: postData.autoAcceptInvites,
+      groupName: postData.groupName,
     })
 
+    console.log("About to insert post into database...")
     const post = await db.insert(postsTable).values(postData).returning()
+    console.log("✅ Post inserted successfully, ID:", post[0]?.id)
 
     console.log("✅ POST INSERTED SUCCESSFULLY:", {
       id: post[0].id,
@@ -501,24 +511,29 @@ export async function POST(request: NextRequest) {
           participantLimit: inviteEntry[0].participantLimit,
         })
 
-        // Create group if groupName is provided and autoAcceptInvites is enabled
+        // TEMPORARILY DISABLE GROUP CREATION TO ISOLATE THE ISSUE
         if (groupName && autoAcceptInvites) {
-          console.log("=== CREATING AUTO-GROUP ===")
-          console.log("Group data:", {
+          console.log("=== SKIPPING AUTO-GROUP CREATION FOR DEBUGGING ===")
+          console.log("Would create group:", {
             name: groupName.trim(),
             createdBy: session.user.id,
             postId: post[0].id,
             maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
           })
           
+          // TODO: Re-enable group creation after fixing the infinite loading issue
+          /*
           try {
+            console.log("About to insert group into database...")
+            
+            // Create group without postId first to avoid potential circular dependency
             const newGroup = await db
               .insert(groupsTable)
               .values({
                 name: groupName.trim(),
-                description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
+                description: `Group created from post`,
                 createdBy: session.user.id,
-                postId: post[0].id,
+                postId: null, // Set to null initially to avoid foreign key issues
                 maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
                 isActive: 1,
               })
@@ -526,6 +541,7 @@ export async function POST(request: NextRequest) {
 
             console.log("✅ GROUP INSERTED:", newGroup[0])
 
+            console.log("About to add group member...")
             // Add creator as admin member
             await db
               .insert(groupMembersTable)
@@ -537,7 +553,20 @@ export async function POST(request: NextRequest) {
 
             console.log("✅ GROUP MEMBER ADDED")
 
-            createdGroup = newGroup[0]
+            // Now update the group with the postId
+            console.log("About to update group with postId...")
+            const updatedGroup = await db
+              .update(groupsTable)
+              .set({ 
+                postId: post[0].id,
+                description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`
+              })
+              .where(eq(groupsTable.id, newGroup[0].id))
+              .returning()
+
+            console.log("✅ GROUP UPDATED WITH POST ID")
+
+            createdGroup = updatedGroup[0] || newGroup[0]
             console.log("✅ AUTO-GROUP CREATED SUCCESSFULLY:", {
               groupId: createdGroup.id,
               groupName: createdGroup.name,
@@ -551,6 +580,12 @@ export async function POST(request: NextRequest) {
             })
             // Don't fail the entire post creation, just log the error
           }
+          */
+        } else {
+          console.log("⏭️ Skipping group creation:", {
+            hasGroupName: !!groupName,
+            autoAcceptInvites,
+          })
         }
       } catch (inviteError) {
         console.error("❌ INVITE CREATION FAILED:", inviteError)
@@ -568,12 +603,19 @@ export async function POST(request: NextRequest) {
 
     // Return the post with additional fields for consistency
     try {
+      console.log("=== CREATING RESPONSE ===")
       const newPost = {
         ...post[0],
         likes: 0,
         comments: 0,
         isLiked: false,
       }
+
+      console.log("New post object created:", {
+        id: newPost.id,
+        userId: newPost.userId,
+        content: newPost.content?.substring(0, 50),
+      })
 
       const response = {
         post: newPost,
@@ -583,17 +625,13 @@ export async function POST(request: NextRequest) {
           : "Post created successfully",
       }
 
-      console.log("Final response:", {
-        id: newPost.id,
-        userId: newPost.userId,
-        hasContent: !!newPost.content,
-        hasImage: !!newPost.image,
-        hasVideo: !!newPost.video,
-        likes: newPost.likes,
-        comments: newPost.comments,
-        hasGroup: !!createdGroup,
+      console.log("Response object created:", {
+        hasPost: !!response.post,
+        hasGroup: !!response.group,
+        message: response.message,
       })
 
+      console.log("About to return JSON response...")
       console.log("=== POSTS CREATE API DEBUG END ===")
       return NextResponse.json(response)
     } catch (responseError) {

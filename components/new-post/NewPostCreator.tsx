@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { 
   Upload, 
   Camera, 
@@ -98,7 +98,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         content: caption.substring(0, 50),
         hasFile: !!selectedFile,
         isInvite: true,
-        inviteLimit: isUnlimitedInvites ? -1 : inviteLimit,
+        inviteLimit: isUnlimitedInvites ? 100 : inviteLimit,
         autoAcceptInvites,
         groupName: groupName.substring(0, 30),
       });
@@ -124,6 +124,33 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Post created successfully:', result);
+        
+        // If auto-accept is enabled and group name is provided, create the group
+        if (autoAcceptInvites && groupName.trim() && result.post?.id) {
+          console.log('🔄 Creating group for post...');
+          try {
+            const groupResponse = await fetch(`/api/posts/${result.post.id}/create-group`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                groupName: groupName.trim(),
+                maxMembers: isUnlimitedInvites ? 100 : inviteLimit,
+              }),
+            });
+
+            if (groupResponse.ok) {
+              const groupResult = await groupResponse.json();
+              console.log('✅ Group created successfully:', groupResult.group);
+              result.group = groupResult.group; // Add group to result
+            } else {
+              console.error('❌ Failed to create group:', await groupResponse.text());
+            }
+          } catch (groupError) {
+            console.error('❌ Error creating group:', groupError);
+          }
+        }
         
         // Clear any cached feed data to ensure new post appears
         if (typeof window !== 'undefined') {
@@ -352,6 +379,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-md mx-auto h-[100vh] md:h-[90vh] bg-black text-white border-none p-0 flex flex-col md:rounded-3xl">
+        <DialogTitle className="sr-only">
+          {currentStep === 'upload' ? 'Upload Video' : 'Create Post'}
+        </DialogTitle>
+        
         {/* Progress Indicator */}
         <div className="absolute top-0 left-0 right-0 z-50 flex bg-black/80 backdrop-blur-sm md:rounded-t-3xl">
           {['upload', 'details'].map((step, index) => (
