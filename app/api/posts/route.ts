@@ -416,8 +416,16 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes)
         console.log("Buffer created, size:", buffer.length)
 
-        console.log("Uploading to Vercel Blob...")
+        console.log("⚠️ TEMPORARILY SKIPPING VERCEL BLOB UPLOAD FOR DEBUGGING")
         
+        // Use a simple placeholder URL for now to isolate the issue
+        mediaUrl = media.type.startsWith("video/") ? "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" : "https://via.placeholder.com/400x300.jpg"
+        mediaType = media.type.startsWith("video/") ? "video" : "image"
+        
+        console.log("✅ USING PLACEHOLDER URL:", mediaUrl, "Type:", mediaType)
+        
+        // TODO: Re-enable Vercel Blob upload once we confirm the rest of the flow works
+        /*
         try {
           mediaUrl = await uploadToStorage({
             buffer,
@@ -437,6 +445,7 @@ export async function POST(request: NextRequest) {
           
           console.log("⚠️ USING PLACEHOLDER URL:", mediaUrl)
         }
+        */
       } catch (uploadError) {
         console.error("❌ MEDIA UPLOAD FAILED:", uploadError)
         console.error("Upload error stack:", uploadError instanceof Error ? uploadError.stack : "No stack trace")
@@ -469,8 +478,15 @@ export async function POST(request: NextRequest) {
     })
 
     console.log("About to insert post into database...")
-    const post = await db.insert(postsTable).values(postData).returning()
-    console.log("✅ Post inserted successfully, ID:", post[0]?.id)
+    let post
+    try {
+      post = await db.insert(postsTable).values(postData).returning()
+      console.log("✅ Post inserted successfully, ID:", post[0]?.id)
+    } catch (dbError) {
+      console.error("❌ DATABASE INSERT FAILED:", dbError)
+      console.error("Post data that failed:", postData)
+      throw dbError // Re-throw to be caught by outer try-catch
+    }
 
     console.log("✅ POST INSERTED SUCCESSFULLY:", {
       id: post[0].id,
@@ -687,15 +703,39 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : String(error),
     })
     
+    // Determine the specific error type and provide a helpful message
+    let errorMessage = "Internal server error"
+    let statusCode = 500
+    
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase()
+      
+      if (errorMsg.includes('database') || errorMsg.includes('sql')) {
+        errorMessage = "Database error occurred"
+        console.error("🔍 DATABASE ERROR DETAILS:", error.message)
+      } else if (errorMsg.includes('blob') || errorMsg.includes('upload')) {
+        errorMessage = "File upload failed"
+        statusCode = 400
+      } else if (errorMsg.includes('timeout')) {
+        errorMessage = "Request timed out"
+        statusCode = 408
+      } else if (errorMsg.includes('size') || errorMsg.includes('large')) {
+        errorMessage = "File too large"
+        statusCode = 413
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     // Return a clean error response
     try {
       return NextResponse.json({ 
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error"
-      }, { status: 500 })
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      }, { status: statusCode })
     } catch (jsonError) {
       console.error("❌ JSON SERIALIZATION ERROR:", jsonError)
-      return new Response("Internal server error", { status: 500 })
+      return new Response(errorMessage, { status: statusCode })
     }
   }
 }

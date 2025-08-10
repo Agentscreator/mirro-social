@@ -274,55 +274,12 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         amazing post with editing tools and sounds
       </p>
       
-      <div className="flex flex-col gap-4">
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
-        >
-          Choose Video
-        </Button>
-        
-        <Button
-          onClick={async () => {
-            console.log('🧪 Testing text-only post...');
-            try {
-              const formData = new FormData();
-              formData.append('content', 'Test post without media');
-              formData.append('isInvite', 'true');
-              formData.append('inviteLimit', '10');
-              
-              const response = await fetch('/api/posts', {
-                method: 'POST',
-                body: formData,
-              });
-              
-              console.log('Test response:', {
-                status: response.status,
-                ok: response.ok,
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                console.log('✅ Test post created:', result);
-                alert('Test post created successfully!');
-                onPostCreated?.(result.post || result);
-                handleClose();
-              } else {
-                const errorText = await response.text();
-                console.error('❌ Test failed:', errorText);
-                alert('Test failed: ' + errorText.substring(0, 200));
-              }
-            } catch (error) {
-              console.error('❌ Test error:', error);
-              alert('Test error: ' + error);
-            }
-          }}
-          variant="outline"
-          className="text-white border-white hover:bg-white hover:text-black px-6 py-3 rounded-full"
-        >
-          Test Text-Only Post
-        </Button>
-      </div>
+      <Button
+        onClick={() => fileInputRef.current?.click()}
+        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
+      >
+        Choose Video
+      </Button>
       
       <p className="text-gray-500 text-sm mt-4">Max file size: 100MB</p>
     </div>
