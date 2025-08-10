@@ -28,6 +28,10 @@ export default function MessagesPage() {
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
 
+  const handleGroupClick = (groupId: number) => {
+    router.push(`/groups/${groupId}`)
+  }
+
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.nickname?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -49,7 +53,7 @@ export default function MessagesPage() {
 
     setCreatingGroup(true)
     try {
-      await createGroup({
+      const result = await createGroup({
         name: groupName.trim(),
         description: groupDescription.trim() || undefined,
         maxMembers: 10,
@@ -63,6 +67,11 @@ export default function MessagesPage() {
       setShowCreateGroup(false)
       setGroupName("")
       setGroupDescription("")
+
+      // Navigate to the new group chat
+      if (result && result.id) {
+        router.push(`/groups/${result.id}`)
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -121,32 +130,6 @@ export default function MessagesPage() {
             <NotificationBell />
             <Button
               variant="ghost"
-              size="sm"
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/test-post-creation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: 'Test post', createGroup: true }),
-                  })
-                  const result = await response.json()
-                  console.log('Test result:', result)
-                  toast({
-                    title: response.ok ? "Success" : "Error",
-                    description: result.message || result.error,
-                    variant: response.ok ? "default" : "destructive",
-                  })
-                } catch (error) {
-                  console.error('Test error:', error)
-                }
-              }}
-              className="text-xs text-white hover:bg-gray-800"
-              title="Test Post Creation"
-            >
-              Test
-            </Button>
-            <Button
-              variant="ghost"
               size="icon"
               onClick={() => setShowCreateGroup(true)}
               className="rounded-full text-white hover:bg-gray-800"
@@ -194,12 +177,60 @@ export default function MessagesPage() {
 
       {/* Conversations List */}
       <div className="flex-1">
-        {loading ? (
+        {loading || groupsLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
-        ) : filteredConversations.length > 0 ? (
+        ) : (filteredConversations.length > 0 || groups.length > 0) ? (
           <div className="bg-black">
+            {/* Group Chats */}
+            {groups.map((group) => (
+              <div
+                key={`group-${group.id}`}
+                onClick={() => handleGroupClick(group.id)}
+                className="px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage
+                        src={group.image}
+                        alt={group.name}
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white font-semibold">
+                        {group.name[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
+                      <Users className="h-2 w-2 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <h3 className="font-semibold text-white truncate">
+                          {group.name}
+                        </h3>
+                        <span className="text-xs text-green-400 bg-green-400/20 px-2 py-0.5 rounded-full">
+                          GROUP
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-400">
+                          {group.memberCount} members
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-300 truncate leading-tight">
+                      {group.description || "Group chat"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Individual Conversations */}
             {filteredConversations.map((conversation, index) => (
               <div
                 key={conversation.id}
@@ -261,15 +292,24 @@ export default function MessagesPage() {
             <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
               {searchQuery
                 ? 'Try searching for a different name or username.'
-                : 'Start a conversation by discovering new people or messaging someone from your feed.'}
+                : 'Start a conversation by discovering new people, messaging someone from your feed, or creating a group.'}
             </p>
             {!searchQuery && (
-              <Button
-                onClick={() => router.push('/discover')}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
-              >
-                Start Chatting
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => router.push('/discover')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
+                >
+                  Start Chatting
+                </Button>
+                <Button
+                  onClick={() => setShowCreateGroup(true)}
+                  variant="outline"
+                  className="px-6 py-2.5 rounded-full font-medium"
+                >
+                  Create Group
+                </Button>
+              </div>
             )}
           </div>
         )}

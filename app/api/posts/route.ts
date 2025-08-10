@@ -504,6 +504,13 @@ export async function POST(request: NextRequest) {
         // Create group if groupName is provided and autoAcceptInvites is enabled
         if (groupName && autoAcceptInvites) {
           console.log("=== CREATING AUTO-GROUP ===")
+          console.log("Group data:", {
+            name: groupName.trim(),
+            createdBy: session.user.id,
+            postId: post[0].id,
+            maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+          })
+          
           try {
             const newGroup = await db
               .insert(groupsTable)
@@ -517,6 +524,8 @@ export async function POST(request: NextRequest) {
               })
               .returning()
 
+            console.log("✅ GROUP INSERTED:", newGroup[0])
+
             // Add creator as admin member
             await db
               .insert(groupMembersTable)
@@ -526,6 +535,8 @@ export async function POST(request: NextRequest) {
                 role: "admin",
               })
 
+            console.log("✅ GROUP MEMBER ADDED")
+
             createdGroup = newGroup[0]
             console.log("✅ AUTO-GROUP CREATED SUCCESSFULLY:", {
               groupId: createdGroup.id,
@@ -533,6 +544,11 @@ export async function POST(request: NextRequest) {
             })
           } catch (groupError) {
             console.error("❌ GROUP CREATION FAILED:", groupError)
+            console.error("Group error details:", {
+              name: groupError instanceof Error ? groupError.name : "Unknown",
+              message: groupError instanceof Error ? groupError.message : String(groupError),
+              stack: groupError instanceof Error ? groupError.stack : "No stack",
+            })
             // Don't fail the entire post creation, just log the error
           }
         }
@@ -551,34 +567,47 @@ export async function POST(request: NextRequest) {
     console.log("User's total posts after insert:", userPostsCount[0]?.count || 0)
 
     // Return the post with additional fields for consistency
-    const newPost = {
-      ...post[0],
-      likes: 0,
-      comments: 0,
-      isLiked: false,
+    try {
+      const newPost = {
+        ...post[0],
+        likes: 0,
+        comments: 0,
+        isLiked: false,
+      }
+
+      const response = {
+        post: newPost,
+        group: createdGroup,
+        message: createdGroup 
+          ? "Post and group created successfully" 
+          : "Post created successfully",
+      }
+
+      console.log("Final response:", {
+        id: newPost.id,
+        userId: newPost.userId,
+        hasContent: !!newPost.content,
+        hasImage: !!newPost.image,
+        hasVideo: !!newPost.video,
+        likes: newPost.likes,
+        comments: newPost.comments,
+        hasGroup: !!createdGroup,
+      })
+
+      console.log("=== POSTS CREATE API DEBUG END ===")
+      return NextResponse.json(response)
+    } catch (responseError) {
+      console.error("❌ RESPONSE CREATION FAILED:", responseError)
+      return NextResponse.json({
+        post: {
+          ...post[0],
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+        },
+        message: "Post created successfully",
+      })
     }
-
-    const response = {
-      post: newPost,
-      group: createdGroup,
-      message: createdGroup 
-        ? "Post and group created successfully" 
-        : "Post created successfully",
-    }
-
-    console.log("Final response:", {
-      id: newPost.id,
-      userId: newPost.userId,
-      hasContent: !!newPost.content,
-      hasImage: !!newPost.image,
-      hasVideo: !!newPost.video,
-      likes: newPost.likes,
-      comments: newPost.comments,
-      hasGroup: !!createdGroup,
-    })
-
-    console.log("=== POSTS CREATE API DEBUG END ===")
-    return NextResponse.json(response)
   } catch (error) {
     console.error("❌ POSTS CREATE API ERROR:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
@@ -586,6 +615,16 @@ export async function POST(request: NextRequest) {
       name: error instanceof Error ? error.name : "Unknown",
       message: error instanceof Error ? error.message : String(error),
     })
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    
+    // Return a clean error response
+    try {
+      return NextResponse.json({ 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }, { status: 500 })
+    } catch (jsonError) {
+      console.error("❌ JSON SERIALIZATION ERROR:", jsonError)
+      return new Response("Internal server error", { status: 500 })
+    }
   }
 }

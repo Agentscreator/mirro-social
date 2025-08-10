@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { groupsTable, groupMembersTable, usersTable, postsTable } from "@/src/db/schema"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and, desc, sql } from "drizzle-orm"
 
 // GET - Fetch user's groups
 export async function GET(request: NextRequest) {
@@ -43,7 +43,22 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(groupsTable.createdAt))
 
-    return NextResponse.json({ groups: userGroups })
+    // Add member count to each group
+    const groupsWithMemberCount = await Promise.all(
+      userGroups.map(async (group) => {
+        const memberCount = await db
+          .select({ count: sql<number>`COUNT(*)::int` })
+          .from(groupMembersTable)
+          .where(eq(groupMembersTable.groupId, group.id))
+        
+        return {
+          ...group,
+          memberCount: memberCount[0]?.count || 0,
+        }
+      })
+    )
+
+    return NextResponse.json({ groups: groupsWithMemberCount })
   } catch (error) {
     console.error("Error fetching groups:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
