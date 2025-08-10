@@ -14,63 +14,74 @@ export async function GET(request: NextRequest) {
     }
 
     // Get conversations with the last message and unread count
-    const conversations = await db
-      .select({
-        userId: sql<string>`
+    const conversationsQuery = sql`
+      WITH latest_messages AS (
+        SELECT DISTINCT ON (
           CASE 
-            WHEN ${messagesTable.senderId} = ${session.user.id} THEN ${messagesTable.receiverId}
-            ELSE ${messagesTable.senderId}
+            WHEN sender_id = ${session.user.id} THEN receiver_id
+            ELSE sender_id
           END
-        `,
-        username: usersTable.username,
-        nickname: usersTable.nickname,
-        profileImage: usersTable.profileImage,
-        image: usersTable.image,
-        lastMessage: messagesTable.content,
-        lastMessageTime: messagesTable.createdAt,
-        lastMessageSenderId: messagesTable.senderId,
-        unreadCount: sql<number>`
-          (SELECT COUNT(*)::int FROM ${messagesTable} m2 
-           WHERE m2.sender_id != ${session.user.id} 
-           AND m2.receiver_id = ${session.user.id}
-           AND m2.is_read = 0
-           AND (m2.sender_id = ${usersTable.id}))
-        `,
-      })
-      .from(messagesTable)
-      .innerJoin(
-        usersTable,
-        sql`${usersTable.id} = CASE 
-          WHEN ${messagesTable.senderId} = ${session.user.id} THEN ${messagesTable.receiverId}
-          ELSE ${messagesTable.senderId}
-        END`
-      )
-      .where(
-        or(
-          eq(messagesTable.senderId, session.user.id),
-          eq(messagesTable.receiverId, session.user.id)
         )
+        CASE 
+          WHEN sender_id = ${session.user.id} THEN receiver_id
+          ELSE sender_id
+        END as other_user_id,
+        content,
+        created_at,
+        sender_id
+        FROM messages 
+        WHERE sender_id = ${session.user.id} OR receiver_id = ${session.user.id}
+        ORDER BY 
+          CASE 
+            WHEN sender_id = ${session.user.id} THEN receiver_id
+            ELSE sender_id
+          END,
+          created_at DESC
+      ),
+      unread_counts AS (
+        SELECT 
+          sender_id as other_user_id,
+          COUNT(*)::int as unread_count
+        FROM messages 
+        WHERE receiver_id = ${session.user.id} 
+          AND is_read = 0
+        GROUP BY sender_id
       )
-      .orderBy(desc(messagesTable.createdAt))
-      .groupBy(usersTable.id, usersTable.username, usersTable.nickname, usersTable.profileImage, usersTable.image, messagesTable.content, messagesTable.createdAt, messagesTable.senderId)
+      SELECT 
+        u.id as user_id,
+        u.username,
+        u.nickname,
+        u.profile_image,
+        u.image,
+        lm.content as last_message,
+        lm.created_at as last_message_time,
+        lm.sender_id as last_message_sender_id,
+        COALESCE(uc.unread_count, 0) as unread_count
+      FROM latest_messages lm
+      JOIN users u ON u.id = lm.other_user_id
+      LEFT JOIN unread_counts uc ON uc.other_user_id = u.id
+      ORDER BY lm.created_at DESC
+    `
+
+    const conversations = await db.execute(conversationsQuery)
 
     // Format the response
-    const formattedConversations = conversations.map(conv => {
+    const formattedConversations = conversations.rows.map((conv: any) => {
       // Format last message preview
-      let lastMessagePreview = conv.lastMessage
-      if (conv.lastMessageSenderId === session.user.id) {
-        lastMessagePreview = `You: ${conv.lastMessage}`
+      let lastMessagePreview = conv.last_message
+      if (conv.last_message_sender_id === session.user.id) {
+        lastMessagePreview = `You: ${conv.last_message}`
       }
 
       return {
-        id: conv.userId,
-        userId: conv.userId,
+        id: conv.user_id,
+        userId: conv.user_id,
         username: conv.username,
         nickname: conv.nickname,
-        profileImage: conv.profileImage || conv.image,
+        profileImage: conv.profile_image || conv.image,
         lastMessage: lastMessagePreview,
-        lastMessageTime: conv.lastMessageTime,
-        unreadCount: conv.unreadCount,
+        lastMessageTime: conv.last_message_time,
+        unreadCount: conv.unread_count,
         isOnline: false, // TODO: Implement real-time online status
       }
     })

@@ -10,89 +10,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Send, Phone, Video, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import dynamic from 'next/dynamic'
-import { useStreamContext } from "@/components/providers/StreamProvider"
-
-interface Message {
-  id: string
-  content: string
-  senderId: string
-  timestamp: Date
-  isRead: boolean
-}
-
-interface ChatUser {
-  id: string
-  username: string
-  nickname?: string
-  profileImage?: string
-  isOnline: boolean
-  lastSeen?: Date
-}
-
-// Import Stream Chat components
-const StreamChatMessages = dynamic(() => import('@/components/StreamChatMessages').then(mod => ({ default: mod.StreamChatMessages })), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-    </div>
-  )
-})
+import { useMessages } from "@/hooks/use-messages"
+import { MessageComposer } from "@/components/messages/MessageComposer"
 
 export default function ChatPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const userId = params?.userId as string
-  const { client, isReady } = useStreamContext()
   
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const [chatUser, setChatUser] = useState<ChatUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Temporarily disable Stream Chat to fix loading issue
-  const useStreamChat = false
-
-  // Fetch messages and user data from API
-  const fetchMessages = async () => {
-    if (!userId) return;
-    
-    try {
-      const response = await fetch(`/api/messages/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setChatUser(data.user);
-        setMessages(data.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.createdAt),
-          isRead: msg.isRead === 1
-        })));
-      } else {
-        console.error('Failed to fetch messages');
-        setChatUser(null);
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      setChatUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (userId && session?.user?.id) {
-      fetchMessages();
-    } else {
-      setLoading(false);
-    }
-  }, [userId, session?.user?.id])
+  const { messages, chatUser, loading, sendMessage } = useMessages(userId)
 
   useEffect(() => {
     scrollToBottom()
@@ -102,65 +33,8 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending || !userId) return
-
-    setSending(true)
-    const messageContent = newMessage.trim()
-    setNewMessage("") // Clear input immediately for better UX
-    
-    // Auto-resize textarea
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto'
-    }
-    
-    try {
-      const response = await fetch(`/api/messages/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: messageContent,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newMessage: Message = {
-          id: data.message.id.toString(),
-          content: data.message.content,
-          senderId: data.message.senderId,
-          timestamp: new Date(data.message.createdAt),
-          isRead: false
-        };
-        setMessages(prev => [...prev, newMessage]);
-      } else {
-        console.error('Failed to send message');
-        setNewMessage(messageContent); // Restore message on error
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setNewMessage(messageContent); // Restore message on error
-    } finally {
-      setSending(false);
-    }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewMessage(e.target.value)
-    
-    // Auto-resize textarea
-    const textarea = e.target
-    textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
+  const handleSendMessage = async (content: string) => {
+    return await sendMessage(content, userId)
   }
 
   const formatMessageTime = (date: Date) => {
@@ -200,11 +74,6 @@ export default function ChatPage() {
       </div>
     )
   }
-
-  // Temporarily disabled Stream Chat to fix loading issue
-  // if (useStreamChat) {
-  //   return <StreamChatMessages selectedUserId={userId} />
-  // }
 
   if (loading) {
     return (
@@ -249,7 +118,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black">
+    <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm">
         <div className="flex items-center gap-3">
@@ -403,54 +272,10 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 bg-gray-900 border-t border-gray-700">
-        <div className="flex items-end gap-3">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full text-gray-400 hover:text-gray-300">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-          </div>
-          
-          <div className="flex-1 relative">
-            <Textarea
-              ref={inputRef}
-              placeholder="Message..."
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
-              disabled={sending}
-              rows={1}
-            />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-gray-400 hover:text-gray-300"
-            >
-              <Smile className="h-5 w-5" />
-            </Button>
-          </div>
-          
-          {newMessage.trim() ? (
-            <Button
-              onClick={handleSendMessage}
-              disabled={sending}
-              size="icon"
-              className="rounded-full bg-blue-500 hover:bg-blue-600 text-white w-11 h-11 flex-shrink-0"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full text-gray-400 hover:text-gray-300 w-11 h-11 flex-shrink-0"
-            >
-              <Mic className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-      </div>
+      <MessageComposer 
+        onSendMessage={handleSendMessage}
+        placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
+      />
 
       {/* User Profile Modal */}
       <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { NewPostCreator } from "@/components/new-post/NewPostCreator"
 import { toast } from "@/hooks/use-toast"
+import { MessageBadge } from "@/components/messages/MessageBadge"
 
 export function Navigation() {
   const pathname = usePathname()
@@ -94,13 +95,14 @@ export function Navigation() {
               key={route.href}
               href={route.href}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10",
+                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 relative",
                 route.active && "bg-white/20",
               )}
               aria-label={route.label}
             >
               <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
               <span className="sr-only">{route.label}</span>
+              {route.href === "/messages" && <MessageBadge />}
             </Link>
           ))}
         </div>
@@ -153,11 +155,12 @@ export function Navigation() {
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  "flex h-10 w-10 items-center justify-center rounded-full relative",
                   route.active && "bg-white/20",
                 )}
               >
                 <route.icon className="h-5 w-5" />
+                {route.href === "/messages" && <MessageBadge />}
               </div>
               <span className="mt-0.5 text-[10px] font-medium">{route.label}</span>
             </Link>

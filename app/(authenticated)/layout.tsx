@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { StreamProvider } from '@/components/providers/StreamProvider'
 import { ErrorBoundary } from '@/components/providers/ErrorBoundary'
 import { StreamVideoProvider } from "@/components/providers/StreamVideoProvider"
+import { MessageNotifications } from "@/components/messages/MessageNotifications"
 
 export default function AuthenticatedLayout({
   children,
@@ -33,6 +34,9 @@ export default function AuthenticatedLayout({
                 {children}
               </div>
             </main>
+            
+            {/* Message Notifications */}
+            <MessageNotifications />
           </div>
         </StreamVideoProvider>
       </StreamProvider>

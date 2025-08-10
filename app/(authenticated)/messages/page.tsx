@@ -9,58 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Pin } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { StreamChatMessages } from "@/components/StreamChatMessages"
-import { useStreamContext } from "@/components/providers/StreamProvider"
-
-interface Conversation {
-  id: string
-  userId: string
-  username: string
-  nickname?: string
-  profileImage?: string
-  lastMessage: string
-  lastMessageTime: string
-  unreadCount: number
-  isOnline: boolean
-}
+import { useMessages } from "@/hooks/use-messages"
 
 export default function MessagesPage() {
   const { data: session } = useSession()
   const router = useRouter()
-  const { client, isReady } = useStreamContext()
-  const [conversations, setConversations] = useState<Conversation[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [loading, setLoading] = useState(true)
-
-  // Always use API for now to avoid infinite loading
-  const useStreamChat = false // Temporarily disabled
-
-  // Fetch conversations from API
-  const fetchConversations = async () => {
-    try {
-      console.log('🔄 Fetching conversations...')
-      const response = await fetch('/api/messages');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Conversations fetched:', data.conversations?.length || 0)
-        setConversations(data.conversations || []);
-      } else {
-        console.error('❌ Failed to fetch conversations:', response.status);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchConversations();
-    } else {
-      setLoading(false);
-    }
-  }, [session?.user?.id])
+  
+  const { conversations, loading } = useMessages()
 
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,13 +54,8 @@ export default function MessagesPage() {
     )
   }
 
-  // Temporarily disabled Stream Chat to fix loading issue
-  // if (useStreamChat) {
-  //   return <StreamChatMessages />
-  // }
-
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8">
       {/* Header */}
       <div className="bg-black border-b border-gray-800 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
