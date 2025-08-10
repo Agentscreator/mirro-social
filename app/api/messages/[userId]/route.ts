@@ -110,14 +110,16 @@ export async function POST(
 
     const { userId } = await params
     const body = await request.json()
-    const { content } = body
+    const { content, messageType, attachmentUrl, attachmentName, attachmentType, attachmentSize } = body
 
     console.log("Sending message from:", session.user.id, "to:", userId)
     console.log("Message content:", content?.substring(0, 100))
+    console.log("Message type:", messageType)
+    console.log("Attachment:", attachmentUrl ? "Yes" : "No")
 
-    // Validate input
-    if (!content || content.trim().length === 0) {
-      return NextResponse.json({ error: "Content is required" }, { status: 400 })
+    // Validate input - either content or attachment is required
+    if ((!content || content.trim().length === 0) && !attachmentUrl) {
+      return NextResponse.json({ error: "Content or attachment is required" }, { status: 400 })
     }
 
     if (content.length > 1000) {
@@ -141,7 +143,12 @@ export async function POST(
       .values({
         senderId: session.user.id,
         receiverId: userId,
-        content: content.trim(),
+        content: content?.trim() || null,
+        messageType: messageType || 'text',
+        attachmentUrl: attachmentUrl || null,
+        attachmentName: attachmentName || null,
+        attachmentType: attachmentType || null,
+        attachmentSize: attachmentSize || null,
         isRead: 0,
       })
       .returning()

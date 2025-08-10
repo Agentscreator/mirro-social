@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ArrowLeft, Send, Phone, Video, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useRealtimeMessages } from "@/hooks/use-realtime-messages"
-import { MessageComposer } from "@/components/messages/MessageComposer"
+import { EnhancedMessageComposer } from "@/components/messages/EnhancedMessageComposer"
 import { NewMessageIndicator } from "@/components/messages/NewMessageIndicator"
 import { useTypingIndicator } from "@/hooks/use-typing-indicator"
+import { MessageBubble } from "@/components/messages/MessageBubble"
 
 export default function ChatPage() {
   const { data: session } = useSession()
@@ -35,8 +36,8 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const handleSendMessage = async (content: string) => {
-    return await sendMessage(content, userId)
+  const handleSendMessage = async (content: string, attachment?: { url: string; name: string; type: string; size: number }) => {
+    return await sendMessage(content, attachment, userId)
   }
 
   const formatMessageTime = (date: Date) => {
@@ -204,47 +205,16 @@ export default function ChatPage() {
                   </div>
                 )}
                 
-                <div className={`flex items-end gap-2 mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  {!isMe && (
-                    <div className="w-8 h-8 flex-shrink-0">
-                      {showAvatar && (
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={chatUser.profileImage} alt={chatUser.username} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
-                            {(chatUser.nickname || chatUser.username)[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className={`max-w-[75%] ${isMe ? 'order-1' : ''}`}>
-                    <div
-                      className={`px-4 py-2 rounded-2xl break-words ${
-                        isMe
-                          ? 'bg-blue-500 text-white rounded-br-md'
-                          : 'bg-gray-800 text-white rounded-bl-md shadow-sm border border-gray-700'
-                      }`}
-                    >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                    
-                    <div className={`flex items-center gap-1 mt-1 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <span className="text-xs text-gray-400">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      {isMe && (
-                        <div className="text-gray-400">
-                          {message.isRead ? (
-                            <CheckCheck className="h-3 w-3" />
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <MessageBubble
+                  message={message}
+                  isMe={isMe}
+                  showAvatar={showAvatar}
+                  senderInfo={chatUser ? {
+                    username: chatUser.username,
+                    nickname: chatUser.nickname,
+                    profileImage: chatUser.profileImage
+                  } : undefined}
+                />
               </div>
             )
           })}
@@ -280,7 +250,7 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input */}
-      <MessageComposer 
+      <EnhancedMessageComposer 
         onSendMessage={handleSendMessage}
         placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
         onStartTyping={startTyping}

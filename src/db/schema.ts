@@ -247,7 +247,7 @@ export const postSharesTable = pgTable("post_shares", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
-// Messages (NEW TABLE)
+// Messages (ENHANCED TABLE)
 export const messagesTable = pgTable("messages", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   senderId: uuid("sender_id")
@@ -256,7 +256,13 @@ export const messagesTable = pgTable("messages", {
   receiverId: uuid("receiver_id")
     .notNull()
     .references(() => usersTable.id),
-  content: text().notNull(),
+  content: text(), // Made nullable for attachment-only messages
+  messageType: varchar("message_type", { length: 20 }).notNull().default("text"), // text, image, audio, file
+  attachmentUrl: text("attachment_url"),
+  attachmentType: varchar("attachment_type", { length: 50 }), // image/jpeg, audio/mp3, etc.
+  attachmentName: varchar("attachment_name", { length: 255 }),
+  attachmentSize: integer("attachment_size"), // in bytes
+  duration: integer(), // for audio messages in seconds
   isRead: integer("is_read").notNull().default(0), // 0 = unread, 1 = read
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

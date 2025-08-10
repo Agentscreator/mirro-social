@@ -13,79 +13,100 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get conversations with the last message and unread count
-    const conversationsQuery = sql`
-      WITH latest_messages AS (
-        SELECT DISTINCT ON (
-          CASE 
-            WHEN sender_id = ${session.user.id} THEN receiver_id
-            ELSE sender_id
-          END
-        )
-        CASE 
-          WHEN sender_id = ${session.user.id} THEN receiver_id
-          ELSE sender_id
-        END as other_user_id,
-        content,
-        created_at,
-        sender_id
-        FROM messages 
-        WHERE sender_id = ${session.user.id} OR receiver_id = ${session.user.id}
-        ORDER BY 
-          CASE 
-            WHEN sender_id = ${session.user.id} THEN receiver_id
-            ELSE sender_id
-          END,
-          created_at DESC
-      ),
-      unread_counts AS (
-        SELECT 
-          sender_id as other_user_id,
-          COUNT(*)::int as unread_count
-        FROM messages 
-        WHERE receiver_id = ${session.user.id} 
-          AND is_read = 0
-        GROUP BY sender_id
-      )
-      SELECT 
-        u.id as user_id,
-        u.username,
-        u.nickname,
-        u.profile_image,
-        u.image,
-        lm.content as last_message,
-        lm.created_at as last_message_time,
-        lm.sender_id as last_message_sender_id,
-        COALESCE(uc.unread_count, 0) as unread_count
-      FROM latest_messages lm
-      JOIN users u ON u.id = lm.other_user_id
-      LEFT JOIN unread_counts uc ON uc.other_user_id = u.id
-      ORDER BY lm.created_at DESC
-    `
+    console.log("Fetching conversations for user:", session.user.id)
 
-    const conversations = await db.execute(conversationsQuery)
+    // First, let's try a simpler approach to debug
+    const allMessages = await db
+      .select({
+        id: messagesTable.id,
+        senderId: messagesTable.senderId,
+        receiverId: messagesTable.receiverId,
+        content: messagesTable.content,
+        createdAt: messagesTable.createdAt,
+        isRead: messagesTable.isRead,
+      })
+      .from(messagesTable)
+      .where(
+        sql`${messagesTable.senderId} = ${session.user.id} OR ${messagesTable.receiverId} = ${session.user.id}`
+      )
+      .orderBy(sql`${messagesTable.createdAt} DESC`)
+
+    console.log("Found messages:", allMessages.length)
+
+    if (allMessages.length === 0) {
+      return NextResponse.json({ conversations: [] })
+    }
+
+    // Group messages by conversation partner
+    const conversationMap = new Map()
+
+    for (const message of allMessages) {
+      const otherUserId = message.senderId === session.user.id ? message.receiverId : message.senderId
+
+      if (!conversationMap.has(otherUserId)) {
+        conversationMap.set(otherUserId, {
+          otherUserId,
+          lastMessage: message,
+          unreadCount: 0,
+        })
+      }
+
+      // Count unread messages from this user
+      if (message.receiverId === session.user.id && message.isRead === 0) {
+        const conv = conversationMap.get(otherUserId)
+        conv.unreadCount++
+      }
+    }
+
+    // Get user details for each conversation
+    const conversationUserIds = Array.from(conversationMap.keys())
+
+    if (conversationUserIds.length === 0) {
+      return NextResponse.json({ conversations: [] })
+    }
+
+    const users = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        profileImage: usersTable.profileImage,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(sql`${usersTable.id} IN (${conversationUserIds.map(id => `'${id}'`).join(',')})`)
+
+    console.log("Found users:", users.length)
 
     // Format the response
-    const formattedConversations = conversations.rows.map((conv: any) => {
-      // Format last message preview
-      let lastMessagePreview = conv.last_message
-      if (conv.last_message_sender_id === session.user.id) {
-        lastMessagePreview = `You: ${conv.last_message}`
+    const formattedConversations = users.map(user => {
+      const conv = conversationMap.get(user.id)
+      const lastMessage = conv.lastMessage
+
+      let lastMessagePreview = lastMessage.content
+      if (lastMessage.senderId === session.user.id) {
+        lastMessagePreview = `You: ${lastMessage.content}`
       }
 
       return {
-        id: conv.user_id,
-        userId: conv.user_id,
-        username: conv.username,
-        nickname: conv.nickname,
-        profileImage: conv.profile_image || conv.image,
+        id: user.id,
+        userId: user.id,
+        username: user.username,
+        nickname: user.nickname,
+        profileImage: user.profileImage || user.image,
         lastMessage: lastMessagePreview,
-        lastMessageTime: conv.last_message_time,
-        unreadCount: conv.unread_count,
-        isOnline: false, // TODO: Implement real-time online status
+        lastMessageTime: lastMessage.createdAt,
+        unreadCount: conv.unreadCount,
+        isOnline: false,
       }
     })
 
+    // Sort by last message time
+    formattedConversations.sort((a, b) =>
+      new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+    )
+
+    console.log("Returning conversations:", formattedConversations.length)
     return NextResponse.json({ conversations: formattedConversations })
   } catch (error) {
     console.error("Error fetching conversations:", error)

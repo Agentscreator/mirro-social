@@ -11,6 +11,11 @@ interface Message {
   receiverId: string
   timestamp: Date
   isRead: boolean
+  messageType?: string
+  attachmentUrl?: string
+  attachmentName?: string
+  attachmentType?: string
+  attachmentSize?: number
 }
 
 interface ChatUser {
@@ -111,21 +116,34 @@ export function useRealtimeMessages(userId?: string) {
     }
   }, [session?.user?.id])
 
-  // Send message with optimistic update
-  const sendMessage = useCallback(async (content: string, targetUserId?: string) => {
+  // Send message with optimistic update (supports attachments)
+  const sendMessage = useCallback(async (content: string, attachment?: { url: string; name: string; type: string; size: number }, targetUserId?: string) => {
     const recipientId = targetUserId || userId
-    if (!content.trim() || sending || !recipientId) return false
+    if ((!content.trim() && !attachment) || sending || !recipientId) return false
 
     setSending(true)
+    
+    // Determine message type
+    let messageType = 'text'
+    if (attachment) {
+      if (attachment.type.startsWith('image/')) messageType = 'image'
+      else if (attachment.type.startsWith('audio/')) messageType = 'audio'
+      else messageType = 'file'
+    }
     
     // Optimistic update - add message immediately
     const optimisticMessage: Message = {
       id: `temp-${Date.now()}`,
-      content: content.trim(),
+      content: content.trim() || '',
       senderId: session?.user?.id || '',
       receiverId: recipientId,
       timestamp: new Date(),
-      isRead: false
+      isRead: false,
+      messageType,
+      attachmentUrl: attachment?.url,
+      attachmentName: attachment?.name,
+      attachmentType: attachment?.type,
+      attachmentSize: attachment?.size,
     }
     
     setMessages(prev => [...prev, optimisticMessage])
@@ -137,7 +155,12 @@ export function useRealtimeMessages(userId?: string) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: content.trim(),
+          content: content.trim() || null,
+          messageType,
+          attachmentUrl: attachment?.url,
+          attachmentName: attachment?.name,
+          attachmentType: attachment?.type,
+          attachmentSize: attachment?.size,
         }),
       })
 
@@ -149,7 +172,12 @@ export function useRealtimeMessages(userId?: string) {
           senderId: data.message.senderId,
           receiverId: data.message.receiverId,
           timestamp: new Date(data.message.createdAt),
-          isRead: false
+          isRead: false,
+          messageType: data.message.messageType || 'text',
+          attachmentUrl: data.message.attachmentUrl,
+          attachmentName: data.message.attachmentName,
+          attachmentType: data.message.attachmentType,
+          attachmentSize: data.message.attachmentSize,
         }
         
         // Replace optimistic message with actual message

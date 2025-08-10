@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from "date-fns"
+import { InviteRequestNotification } from "./InviteRequestNotification"
 
 interface Notification {
   id: number
@@ -200,55 +201,69 @@ export function NotificationBell({ theme = 'light' }: NotificationBellProps) {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 hover:bg-gray-50 transition-colors ${
-                    notification.isRead === 0 ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {notification.title}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      {notification.isRead === 0 && (
+              {notifications.map((notification) => {
+                // Special handling for invite requests
+                if (notification.type === 'invite_request' && notification.isRead === 0) {
+                  return (
+                    <InviteRequestNotification
+                      key={notification.id}
+                      notification={notification}
+                      onUpdate={fetchNotifications}
+                    />
+                  )
+                }
+
+                // Regular notification display
+                return (
+                  <div
+                    key={notification.id}
+                    className={`p-3 hover:bg-gray-50 transition-colors ${
+                      notification.isRead === 0 ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {notification.isRead === 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notification.id)}
+                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                            title="Mark as read"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markAsRead(notification.id)}
-                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-                          title="Mark as read"
+                          onClick={() => deleteNotification(notification.id)}
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                          title="Delete"
                         >
-                          <Check className="h-3 w-3" />
+                          <X className="h-3 w-3" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
-                        title="Delete"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </ScrollArea>
