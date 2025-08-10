@@ -9,9 +9,11 @@ interface MessageComposerProps {
   onSendMessage: (content: string) => Promise<boolean>
   disabled?: boolean
   placeholder?: string
+  onStartTyping?: () => void
+  onStopTyping?: () => void
 }
 
-export function MessageComposer({ onSendMessage, disabled = false, placeholder = "Message..." }: MessageComposerProps) {
+export function MessageComposer({ onSendMessage, disabled = false, placeholder = "Message...", onStartTyping, onStopTyping }: MessageComposerProps) {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -23,6 +25,13 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
     const textarea = e.target
     textarea.style.height = 'auto'
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
+    
+    // Trigger typing indicator
+    if (e.target.value.trim() && onStartTyping) {
+      onStartTyping()
+    } else if (!e.target.value.trim() && onStopTyping) {
+      onStopTyping()
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -38,6 +47,11 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
     setSending(true)
     const messageContent = message.trim()
     setMessage("") // Clear input immediately for better UX
+    
+    // Stop typing indicator
+    if (onStopTyping) {
+      onStopTyping()
+    }
     
     // Auto-resize textarea
     if (textareaRef.current) {

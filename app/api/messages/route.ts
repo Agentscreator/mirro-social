@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { messagesTable, usersTable } from "@/src/db/schema"
-import { desc, eq, or, sql } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 // GET - Fetch conversations for the current user
 export async function GET(request: NextRequest) {

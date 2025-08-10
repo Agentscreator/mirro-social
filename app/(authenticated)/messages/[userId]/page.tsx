@@ -10,8 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Send, Phone, Video, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { useMessages } from "@/hooks/use-messages"
+import { useRealtimeMessages } from "@/hooks/use-realtime-messages"
 import { MessageComposer } from "@/components/messages/MessageComposer"
+import { NewMessageIndicator } from "@/components/messages/NewMessageIndicator"
+import { useTypingIndicator } from "@/hooks/use-typing-indicator"
 
 export default function ChatPage() {
   const { data: session } = useSession()
@@ -20,10 +22,10 @@ export default function ChatPage() {
   const userId = params?.userId as string
   
   const [showUserProfile, setShowUserProfile] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const { messages, chatUser, loading, sendMessage } = useMessages(userId)
+  const { messages, chatUser, loading, sendMessage } = useRealtimeMessages(userId)
+  const { isOtherUserTyping, startTyping, stopTyping } = useTypingIndicator(userId)
 
   useEffect(() => {
     scrollToBottom()
@@ -172,7 +174,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
+      <div className="flex-1 overflow-y-auto px-4 py-2 relative">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
@@ -247,7 +249,7 @@ export default function ChatPage() {
             )
           })}
           
-          {isTyping && (
+          {isOtherUserTyping && (
             <div className="flex items-end gap-2 mb-1">
               <div className="w-8 h-8 flex-shrink-0">
                 <Avatar className="w-8 h-8">
@@ -268,13 +270,21 @@ export default function ChatPage() {
           )}
           </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} data-messages-end />
+        
+        {/* New Message Indicator */}
+        <NewMessageIndicator 
+          messageCount={messages.length}
+          onScrollToBottom={scrollToBottom}
+        />
       </div>
 
       {/* Message Input */}
       <MessageComposer 
         onSendMessage={handleSendMessage}
         placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
+        onStartTyping={startTyping}
+        onStopTyping={stopTyping}
       />
 
       {/* User Profile Modal */}

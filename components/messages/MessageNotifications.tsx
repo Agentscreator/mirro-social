@@ -61,9 +61,9 @@ export function MessageNotifications() {
       }
     }
 
-    // Check immediately and then every 30 seconds
+    // Check immediately and then every 10 seconds
     checkForNewMessages()
-    const interval = setInterval(checkForNewMessages, 30000)
+    const interval = setInterval(checkForNewMessages, 10000)
 
     return () => clearInterval(interval)
   }, [session?.user?.id, lastCheck, router])

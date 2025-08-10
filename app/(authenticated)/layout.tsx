@@ -8,6 +8,8 @@ import { StreamProvider } from '@/components/providers/StreamProvider'
 import { ErrorBoundary } from '@/components/providers/ErrorBoundary'
 import { StreamVideoProvider } from "@/components/providers/StreamVideoProvider"
 import { MessageNotifications } from "@/components/messages/MessageNotifications"
+import { useEffect } from "react"
+import { requestNotificationPermission } from "@/utils/sound"
 
 export default function AuthenticatedLayout({
   children,
@@ -16,6 +18,11 @@ export default function AuthenticatedLayout({
 }) {
   const pathname = usePathname()
   const isFeedPage = pathname === '/feed'
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [])
 
   return (
     <ErrorBoundary>

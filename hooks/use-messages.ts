@@ -61,29 +61,44 @@ export function useMessages(userId?: string) {
   }, [session?.user?.id])
 
   // Fetch messages for specific user
-  const fetchMessages = useCallback(async (targetUserId: string) => {
+  const fetchMessages = useCallback(async (targetUserId: string, silent = false) => {
     if (!targetUserId || !session?.user?.id) return
 
     try {
-      setLoading(true)
-      const response = await fetch(`/api/messages/${targetUserId}`)
+      if (!silent) setLoading(true)
+      
+      const response = await fetch(`/api/messages/${targetUserId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
         setChatUser(data.user)
-        setMessages(data.messages.map((msg: any) => ({
+        const newMessages = data.messages.map((msg: any) => ({
           ...msg,
           timestamp: new Date(msg.createdAt),
           isRead: msg.isRead === 1
-        })))
+        }))
+        
+        // Only update if messages have actually changed
+        setMessages(prevMessages => {
+          if (JSON.stringify(prevMessages) !== JSON.stringify(newMessages)) {
+            return newMessages
+          }
+          return prevMessages
+        })
       } else {
-        console.error('Failed to fetch messages')
-        setChatUser(null)
+        console.error('Failed to fetch messages:', response.status)
+        if (!silent) setChatUser(null)
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
-      setChatUser(null)
+      if (!silent) setChatUser(null)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [session?.user?.id])
 
@@ -158,11 +173,11 @@ export function useMessages(userId?: string) {
     }
   }, [userId, fetchConversations])
 
-  // Auto-refresh messages every 5 seconds when in a chat
+  // Auto-refresh messages every 2 seconds when in a chat
   useEffect(() => {
     if (userId && session?.user?.id) {
-      fetchMessages(userId)
-      const interval = setInterval(() => fetchMessages(userId), 5000)
+      fetchMessages(userId, false) // Initial load with loading state
+      const interval = setInterval(() => fetchMessages(userId, true), 2000) // Silent updates
       return () => clearInterval(interval)
     }
   }, [userId, session?.user?.id, fetchMessages])
