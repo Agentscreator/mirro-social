@@ -22,6 +22,13 @@
       "when": 1754602256956,
       "tag": "0002_fluffy_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754806301619,
+      "tag": "0003_massive_rogue",
+      "breakpoints": true
     }
   ]
 }

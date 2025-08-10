@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, postInvitesTable } from "@/src/db/schema"
+import { postsTable, postInvitesTable, groupsTable, groupMembersTable } from "@/src/db/schema"
 
 // POST - Create a new post
 export async function POST(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { content, image, video, duration, inviteLimit, editedVideoData } = body
+    const { content, image, video, duration, inviteLimit, editedVideoData, autoAcceptInvites, groupName } = body
 
     // Validate input
     if (!content || content.trim().length === 0) {
@@ -61,8 +61,12 @@ export async function POST(request: NextRequest) {
         video: video?.trim() || null,
         duration: duration || null,
         editedVideoData: editedVideoData ? JSON.stringify(editedVideoData) : null,
+        autoAcceptInvites: autoAcceptInvites ? 1 : 0,
+        groupName: groupName?.trim() || null,
       })
       .returning()
+
+    let createdGroup = null
 
     // Create invite if limit is specified
     if (inviteLimit && inviteLimit > 0) {
@@ -73,11 +77,40 @@ export async function POST(request: NextRequest) {
           participantLimit: Math.min(Math.max(inviteLimit, 1), 100), // Clamp between 1-100
           currentParticipants: 0,
         })
+
+      // Create group if groupName is provided and autoAcceptInvites is enabled
+      if (groupName && autoAcceptInvites) {
+        const newGroup = await db
+          .insert(groupsTable)
+          .values({
+            name: groupName.trim(),
+            description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
+            createdBy: session.user.id,
+            postId: newPost[0].id,
+            maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+            isActive: 1,
+          })
+          .returning()
+
+        // Add creator as admin member
+        await db
+          .insert(groupMembersTable)
+          .values({
+            groupId: newGroup[0].id,
+            userId: session.user.id,
+            role: "admin",
+          })
+
+        createdGroup = newGroup[0]
+      }
     }
 
     return NextResponse.json({
       post: newPost[0],
-      message: "Post created successfully",
+      group: createdGroup,
+      message: createdGroup 
+        ? "Post and group created successfully" 
+        : "Post created successfully",
     })
   } catch (error) {
     console.error("Error creating post:", error)

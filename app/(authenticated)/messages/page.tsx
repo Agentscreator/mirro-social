@@ -7,16 +7,26 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Pin } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Users } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
+import { useGroups } from "@/hooks/use-groups"
+import { GroupStories } from "@/components/messages/GroupStories"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { toast } from "@/hooks/use-toast"
 
 export default function MessagesPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [groupName, setGroupName] = useState("")
+  const [groupDescription, setGroupDescription] = useState("")
+  const [creatingGroup, setCreatingGroup] = useState(false)
   
   const { conversations, loading } = useMessages()
+  const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
 
   const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -25,6 +35,43 @@ export default function MessagesPage() {
 
   const handleConversationClick = (userId: string) => {
     router.push(`/messages/${userId}`)
+  }
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) {
+      toast({
+        title: "Error",
+        description: "Group name is required",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setCreatingGroup(true)
+    try {
+      await createGroup({
+        name: groupName.trim(),
+        description: groupDescription.trim() || undefined,
+        maxMembers: 10,
+      })
+
+      toast({
+        title: "Success",
+        description: "Group created successfully!",
+      })
+
+      setShowCreateGroup(false)
+      setGroupName("")
+      setGroupDescription("")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create group",
+        variant: "destructive",
+      })
+    } finally {
+      setCreatingGroup(false)
+    }
   }
 
   const formatTime = (timeStr: string) => {
@@ -71,11 +118,22 @@ export default function MessagesPage() {
             <h1 className="text-2xl font-bold text-white">Chats</h1>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowCreateGroup(true)}
+              className="rounded-full text-white hover:bg-gray-800"
+              title="Create Group"
+            >
+              <Users className="h-5 w-5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/discover')}
               className="rounded-full text-white hover:bg-gray-800"
+              title="New Chat"
             >
               <Plus className="h-5 w-5" />
             </Button>
@@ -102,6 +160,11 @@ export default function MessagesPage() {
           />
         </div>
       </div>
+
+      {/* Group Stories */}
+      {!groupsLoading && groups.length > 0 && (
+        <GroupStories groups={groups} onRefresh={refetchGroups} />
+      )}
 
       {/* Conversations List */}
       <div className="flex-1">
@@ -185,6 +248,61 @@ export default function MessagesPage() {
           </div>
         )}
       </div>
+
+      {/* Create Group Dialog */}
+      <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
+        <DialogContent className="max-w-md bg-gray-900 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-center">Create New Group</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                Group Name *
+              </label>
+              <Input
+                placeholder="Enter group name"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="bg-gray-800 border-gray-600 text-white"
+                maxLength={100}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                Description (Optional)
+              </label>
+              <Textarea
+                placeholder="What's this group about?"
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                className="bg-gray-800 border-gray-600 text-white"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCreateGroup(false)}
+                disabled={creatingGroup}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-blue-500 hover:bg-blue-600"
+                onClick={handleCreateGroup}
+                disabled={creatingGroup || !groupName.trim()}
+              >
+                {creatingGroup ? "Creating..." : "Create Group"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

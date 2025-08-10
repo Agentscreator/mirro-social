@@ -405,7 +405,83 @@ export const postLocationsTable = pgTable("post_locations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
-// Notifications (NEW TABLE)
+// Groups (NEW TABLE)
+export const groupsTable = pgTable("groups", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  image: varchar("image", { length: 500 }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => usersTable.id),
+  postId: integer("post_id")
+    .references(() => postsTable.id), // Reference to the post that created this group
+  isActive: integer("is_active").notNull().default(1), // 0 = inactive, 1 = active
+  maxMembers: integer("max_members").default(10),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Group Members (NEW TABLE)
+export const groupMembersTable = pgTable("group_members", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id")
+    .notNull()
+    .references(() => groupsTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  role: varchar("role", { length: 20 }).notNull().default("member"), // "admin", "member"
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+})
+
+// Group Messages (NEW TABLE)
+export const groupMessagesTable = pgTable("group_messages", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id")
+    .notNull()
+    .references(() => groupsTable.id),
+  senderId: uuid("sender_id")
+    .notNull()
+    .references(() => usersTable.id),
+  content: text(),
+  messageType: varchar("message_type", { length: 20 }).notNull().default("text"),
+  attachmentUrl: text("attachment_url"),
+  attachmentType: varchar("attachment_type", { length: 50 }),
+  attachmentName: varchar("attachment_name", { length: 255 }),
+  attachmentSize: integer("attachment_size"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+// Group Stories (NEW TABLE)
+export const groupStoriesTable = pgTable("group_stories", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id")
+    .notNull()
+    .references(() => groupsTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  content: text(),
+  image: varchar("image", { length: 500 }),
+  video: varchar("video", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+})
+
+// Group Story Views (NEW TABLE)
+export const groupStoryViewsTable = pgTable("group_story_views", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  storyId: integer("story_id")
+    .notNull()
+    .references(() => groupStoriesTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+})
+
+// Notifications (ENHANCED TABLE)
 export const notificationsTable = pgTable("notifications", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id")
@@ -413,10 +489,11 @@ export const notificationsTable = pgTable("notifications", {
     .references(() => usersTable.id), // The user who receives the notification
   fromUserId: uuid("from_user_id")
     .references(() => usersTable.id), // The user who triggered the notification (optional)
-  type: varchar("type", { length: 50 }).notNull(), // "invite_accepted", "invite_request", etc.
+  type: varchar("type", { length: 50 }).notNull(), // "invite_accepted", "invite_request", "group_invite", etc.
   title: varchar("title", { length: 200 }).notNull(),
   message: text().notNull(),
   data: text("data"), // JSON data for additional notification context
   isRead: integer("is_read").notNull().default(0), // 0 = unread, 1 = read
+  actionUrl: varchar("action_url", { length: 500 }), // URL to navigate to when notification is clicked
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })

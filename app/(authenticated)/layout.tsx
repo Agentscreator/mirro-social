@@ -33,7 +33,7 @@ export default function AuthenticatedLayout({
             {/* Top header with notifications - hidden on feed page */}
             {!isFeedPage && (
               <div className="fixed top-0 right-0 z-40 p-4 md:ml-16">
-                <NotificationBell theme="dark" />
+                <NotificationBell />
               </div>
             )}
             <main className="flex-1 pb-20 md:ml-16 md:pb-0 pt-16 md:pt-safe-top px-safe-left px-safe-right bg-black">

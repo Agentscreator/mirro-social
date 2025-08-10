@@ -27,14 +27,18 @@ export async function POST(request: NextRequest) {
 
     // Validate file type
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a',
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
+      'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac',
+      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov',
       'application/pdf', 'text/plain',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ]
 
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "File type not allowed" }, { status: 400 })
+      return NextResponse.json({ 
+        error: `File type '${file.type}' not allowed. Supported types: images, audio, video, PDF, text, and Office documents.` 
+      }, { status: 400 })
     }
 
     // Create upload directory if it doesn't exist
