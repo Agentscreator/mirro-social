@@ -539,8 +539,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let createdGroup = null
-
     // Create invite entry if this is an invite post
     if (isInvite) {
       console.log("=== CREATING INVITE ENTRY ===")
@@ -668,10 +666,8 @@ export async function POST(request: NextRequest) {
 
       const response = {
         post: newPost,
-        group: createdGroup,
-        message: createdGroup 
-          ? "Post and group created successfully" 
-          : "Post created successfully",
+        group: null, // Groups are now created separately
+        message: "Post created successfully",
       }
 
       console.log("Response object created:", {

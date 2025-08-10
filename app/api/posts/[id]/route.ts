@@ -4,7 +4,7 @@ import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { postsTable, usersTable } from "@/src/db/schema"
 import { eq, and, sql } from "drizzle-orm"
-import { postCommentsTable, postLikesTable } from "@/src/db/schema"
+import { postCommentsTable, postLikesTable, postInvitesTable } from "@/src/db/schema"
 import { put } from "@vercel/blob"
 
 // GET - Fetch a single post
@@ -248,12 +248,15 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     console.log("Post found, proceeding with deletion")
 
     try {
-      // Delete associated comments and likes first
+      // Delete associated data first
       console.log("Deleting associated comments...")
       await db.delete(postCommentsTable).where(eq(postCommentsTable.postId, postId))
 
       console.log("Deleting associated likes...")
       await db.delete(postLikesTable).where(eq(postLikesTable.postId, postId))
+
+      console.log("Deleting associated invites...")
+      await db.delete(postInvitesTable).where(eq(postInvitesTable.postId, postId))
 
       // Delete the post
       console.log("Deleting the post...")

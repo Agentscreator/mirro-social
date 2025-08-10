@@ -118,17 +118,11 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         groupName: groupName.substring(0, 30),
       });
 
-      // Add timeout to prevent infinite loading
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch('/api/posts', {
+      // Temporarily use minimal test endpoint
+      const response = await fetch('/api/test-posts-minimal', {
         method: 'POST',
         body: formData,
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       console.log('📥 Response received:', {
         status: response.status,
@@ -227,11 +221,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       }
     } catch (error) {
       console.error('❌ Error creating post:', error);
-      if (error instanceof Error && error.name === 'AbortError') {
-        alert('Request timed out. Please check your connection and try again.');
-      } else {
-        alert(error instanceof Error ? error.message : 'Failed to create post. Please try again.');
-      }
+      alert(error instanceof Error ? error.message : 'Failed to create post. Please try again.');
     } finally {
       console.log('🏁 Post creation finished, setting loading to false');
       setIsUploading(false);
