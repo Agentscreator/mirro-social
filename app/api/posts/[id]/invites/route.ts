@@ -253,6 +253,7 @@ export async function POST(
             postId: postId,
             inviteRequestId: newRequest[0].id,
           }),
+          actionUrl: `/posts/${postId}`,
         }).returning()
         
         console.log("✅ Manual invite request notification created:", notification[0])
@@ -301,6 +302,7 @@ export async function POST(
             postId: postId,
             inviteRequestId: newRequest[0].id,
           }),
+          actionUrl: `/posts/${postId}`,
         }).returning()
         
         console.log("✅ Auto-acceptance notification created:", notification[0])

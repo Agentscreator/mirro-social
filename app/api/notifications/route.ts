@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         data: notificationsTable.data,
         isRead: notificationsTable.isRead,
         createdAt: notificationsTable.createdAt,
+        actionUrl: notificationsTable.actionUrl,
         fromUser: {
           id: usersTable.id,
           username: usersTable.username,
@@ -54,6 +55,15 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit)
       .offset(offset)
+
+    console.log(`Found ${notifications.length} notifications for user ${session.user.id}`)
+    console.log('Sample notification:', notifications[0] ? {
+      id: notifications[0].id,
+      type: notifications[0].type,
+      title: notifications[0].title,
+      isRead: notifications[0].isRead,
+      fromUser: notifications[0].fromUser?.username
+    } : 'None')
 
     return NextResponse.json({ 
       notifications,

@@ -39,21 +39,18 @@ export async function POST(request: NextRequest) {
     // For now, we'll create a mock video URL
     const videoUrl = `https://example.com/videos/${project.id}.mp4`
 
-    // Create post with edited video data
-    const createPostResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/posts/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward the authorization header
-        ...(request.headers.get('authorization') && {
-          authorization: request.headers.get('authorization')!
-        })
-      },
-      body: JSON.stringify({
+    // Create post directly in database instead of making internal API call
+    const { db } = await import("@/src/db")
+    const { postsTable } = await import("@/src/db/schema")
+
+    const newPost = await db
+      .insert(postsTable)
+      .values({
+        userId: session.user.id,
         content: content.trim(),
         video: videoUrl,
         duration: Math.ceil(project.timeline.duration),
-        editedVideoData: {
+        editedVideoData: JSON.stringify({
           projectId: project.id,
           projectName: project.name,
           canvas: project.canvas,
@@ -67,16 +64,11 @@ export async function POST(request: NextRequest) {
           watermark: project.watermark,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,
-        }
+        }),
       })
-    })
+      .returning()
 
-    if (!createPostResponse.ok) {
-      const error = await createPostResponse.json()
-      return NextResponse.json({ error: error.error || "Failed to create post" }, { status: 500 })
-    }
-
-    const postResult = await createPostResponse.json()
+    const postResult = { post: newPost[0] }
 
     return NextResponse.json({
       success: true,
