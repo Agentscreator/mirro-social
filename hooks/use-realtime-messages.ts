@@ -71,7 +71,12 @@ export function useRealtimeMessages(userId?: string) {
         const newMessages = data.messages.map((msg: any) => ({
           ...msg,
           timestamp: new Date(msg.createdAt),
-          isRead: msg.isRead === 1
+          isRead: msg.isRead === 1,
+          messageType: msg.messageType || 'text',
+          attachmentUrl: msg.attachmentUrl,
+          attachmentName: msg.attachmentName,
+          attachmentType: msg.attachmentType,
+          attachmentSize: msg.attachmentSize,
         }))
         
         // Check if we have new messages

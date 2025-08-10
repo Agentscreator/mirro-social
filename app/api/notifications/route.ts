@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Get unread count first
     const unreadCountResult = await db
-      .select({ count: notificationsTable.id })
+      .select({ count: sql<number>`COUNT(*)::int` })
       .from(notificationsTable)
       .where(
         and(
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         )
       )
     
-    const unreadCount = unreadCountResult.length
+    const unreadCount = unreadCountResult[0]?.count || 0
 
     // Get notifications with all required fields
     const notifications = await db

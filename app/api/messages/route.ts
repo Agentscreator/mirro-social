@@ -65,16 +65,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conversations: [] })
     }
 
-    const users = await db
-      .select({
-        id: usersTable.id,
-        username: usersTable.username,
-        nickname: usersTable.nickname,
-        profileImage: usersTable.profileImage,
-        image: usersTable.image,
-      })
-      .from(usersTable)
-      .where(sql`${usersTable.id} IN (${conversationUserIds.map(id => `'${id}'`).join(',')})`)
+    const users = []
+    for (const userId of conversationUserIds) {
+      const user = await db
+        .select({
+          id: usersTable.id,
+          username: usersTable.username,
+          nickname: usersTable.nickname,
+          profileImage: usersTable.profileImage,
+          image: usersTable.image,
+        })
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1)
+
+      if (user.length > 0) {
+        users.push(user[0])
+      }
+    }
 
     console.log("Found users:", users.length)
 
@@ -83,9 +91,9 @@ export async function GET(request: NextRequest) {
       const conv = conversationMap.get(user.id)
       const lastMessage = conv.lastMessage
 
-      let lastMessagePreview = lastMessage.content
+      let lastMessagePreview = lastMessage.content || 'Attachment'
       if (lastMessage.senderId === session.user.id) {
-        lastMessagePreview = `You: ${lastMessage.content}`
+        lastMessagePreview = `You: ${lastMessage.content || 'Attachment'}`
       }
 
       return {

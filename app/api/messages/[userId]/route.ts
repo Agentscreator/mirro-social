@@ -47,6 +47,11 @@ export async function GET(
         receiverId: messagesTable.receiverId,
         isRead: messagesTable.isRead,
         createdAt: messagesTable.createdAt,
+        messageType: messagesTable.messageType,
+        attachmentUrl: messagesTable.attachmentUrl,
+        attachmentName: messagesTable.attachmentName,
+        attachmentType: messagesTable.attachmentType,
+        attachmentSize: messagesTable.attachmentSize,
       })
       .from(messagesTable)
       .where(

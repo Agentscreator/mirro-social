@@ -13,9 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("Marking all notifications as read for user:", session.user.id)
-
-    const updatedNotifications = await db
+    // Mark all notifications as read for this user
+    await db
       .update(notificationsTable)
       .set({ isRead: 1 })
       .where(
@@ -24,16 +23,10 @@ export async function POST(request: NextRequest) {
           eq(notificationsTable.isRead, 0)
         )
       )
-      .returning()
 
-    console.log(`✅ Marked ${updatedNotifications.length} notifications as read`)
-
-    return NextResponse.json({
-      message: "All notifications marked as read",
-      count: updatedNotifications.length,
-    })
+    return NextResponse.json({ message: "All notifications marked as read" })
   } catch (error) {
-    console.error("❌ MARK ALL NOTIFICATIONS READ ERROR:", error)
+    console.error("Error marking all notifications as read:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, Send, Phone, Video, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
+import { ArrowLeft, Send, MoreVertical, Info, Smile, Paperclip, Mic, Check, CheckCheck, MessageCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useRealtimeMessages } from "@/hooks/use-realtime-messages"
-import { EnhancedMessageComposer } from "@/components/messages/EnhancedMessageComposer"
+import { SimpleMessageComposer } from "@/components/messages/SimpleMessageComposer"
 import { NewMessageIndicator } from "@/components/messages/NewMessageIndicator"
 import { useTypingIndicator } from "@/hooks/use-typing-indicator"
 import { MessageBubble } from "@/components/messages/MessageBubble"
@@ -163,12 +163,6 @@ export default function ChatPage() {
 
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
-            <Video className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
             <Info className="h-5 w-5" />
           </Button>
         </div>
@@ -250,7 +244,7 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input */}
-      <EnhancedMessageComposer 
+      <SimpleMessageComposer 
         onSendMessage={handleSendMessage}
         placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
         onStartTyping={startTyping}

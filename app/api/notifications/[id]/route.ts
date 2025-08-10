@@ -18,13 +18,13 @@ export async function PUT(
 
     const { id } = await params
     const notificationId = parseInt(id)
+
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 })
     }
 
-    console.log("Marking notification as read:", notificationId)
-
-    const updatedNotification = await db
+    // Mark notification as read
+    await db
       .update(notificationsTable)
       .set({ isRead: 1 })
       .where(
@@ -33,17 +33,10 @@ export async function PUT(
           eq(notificationsTable.userId, session.user.id)
         )
       )
-      .returning()
 
-    if (updatedNotification.length === 0) {
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 })
-    }
-
-    console.log("✅ Notification marked as read")
-
-    return NextResponse.json(updatedNotification[0])
+    return NextResponse.json({ message: "Notification marked as read" })
   } catch (error) {
-    console.error("❌ MARK NOTIFICATION READ ERROR:", error)
+    console.error("Error marking notification as read:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -61,13 +54,13 @@ export async function DELETE(
 
     const { id } = await params
     const notificationId = parseInt(id)
+
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 })
     }
 
-    console.log("Deleting notification:", notificationId)
-
-    const deletedNotification = await db
+    // Delete notification
+    await db
       .delete(notificationsTable)
       .where(
         and(
@@ -75,17 +68,10 @@ export async function DELETE(
           eq(notificationsTable.userId, session.user.id)
         )
       )
-      .returning()
 
-    if (deletedNotification.length === 0) {
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 })
-    }
-
-    console.log("✅ Notification deleted")
-
-    return NextResponse.json({ message: "Notification deleted successfully" })
+    return NextResponse.json({ message: "Notification deleted" })
   } catch (error) {
-    console.error("❌ DELETE NOTIFICATION ERROR:", error)
+    console.error("Error deleting notification:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
