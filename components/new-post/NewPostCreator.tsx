@@ -75,6 +75,21 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     if (!selectedFile && !previewUrl) return;
     
     console.log('🚀 Starting post creation...');
+    
+    // Check file size before uploading
+    if (selectedFile) {
+      const maxSize = selectedFile.type.startsWith('video/') ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB for video, 10MB for images
+      if (selectedFile.size > maxSize) {
+        alert(`File too large. Maximum size is ${selectedFile.type.startsWith('video/') ? '100MB for videos' : '10MB for images'}.`);
+        return;
+      }
+      console.log('✅ File size check passed:', {
+        size: selectedFile.size,
+        maxSize,
+        type: selectedFile.type,
+      });
+    }
+    
     setIsUploading(true);
     try {
       const formData = new FormData();
@@ -174,8 +189,41 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           console.log('🎉 Group also created:', result.group.name);
         }
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to create post: ${response.status}`);
+        console.error('❌ Post creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+        });
+
+        let errorMessage = `Failed to create post: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          console.error('❌ Failed to parse error response as JSON:', jsonError);
+          
+          try {
+            const errorText = await response.text();
+            console.error('❌ Error response text:', errorText.substring(0, 500));
+            
+            // Check if it's a common error
+            if (errorText.includes('Request Entity Too Large')) {
+              errorMessage = 'File too large. Please choose a smaller file.';
+            } else if (errorText.includes('413')) {
+              errorMessage = 'Request too large. Please reduce file size.';
+            } else if (errorText.includes('timeout')) {
+              errorMessage = 'Request timed out. Please try again.';
+            } else {
+              errorMessage = 'Server error. Please try again.';
+            }
+          } catch (textError) {
+            console.error('❌ Failed to parse error response as text:', textError);
+            errorMessage = 'Unknown server error. Please try again.';
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('❌ Error creating post:', error);
@@ -226,12 +274,55 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         amazing post with editing tools and sounds
       </p>
       
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
-      >
-        Choose Video
-      </Button>
+      <div className="flex flex-col gap-4">
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform transition-all duration-200 hover:scale-105"
+        >
+          Choose Video
+        </Button>
+        
+        <Button
+          onClick={async () => {
+            console.log('🧪 Testing text-only post...');
+            try {
+              const formData = new FormData();
+              formData.append('content', 'Test post without media');
+              formData.append('isInvite', 'true');
+              formData.append('inviteLimit', '10');
+              
+              const response = await fetch('/api/posts', {
+                method: 'POST',
+                body: formData,
+              });
+              
+              console.log('Test response:', {
+                status: response.status,
+                ok: response.ok,
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Test post created:', result);
+                alert('Test post created successfully!');
+                onPostCreated?.(result.post || result);
+                handleClose();
+              } else {
+                const errorText = await response.text();
+                console.error('❌ Test failed:', errorText);
+                alert('Test failed: ' + errorText.substring(0, 200));
+              }
+            } catch (error) {
+              console.error('❌ Test error:', error);
+              alert('Test error: ' + error);
+            }
+          }}
+          variant="outline"
+          className="text-white border-white hover:bg-white hover:text-black px-6 py-3 rounded-full"
+        >
+          Test Text-Only Post
+        </Button>
+      </div>
       
       <p className="text-gray-500 text-sm mt-4">Max file size: 100MB</p>
     </div>
