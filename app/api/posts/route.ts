@@ -416,6 +416,16 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes)
         console.log("Buffer created, size:", buffer.length)
 
+        console.log("⚠️ TEMPORARILY SKIPPING VERCEL BLOB UPLOAD FOR DEBUGGING")
+        
+        // Use a simple placeholder URL for now to isolate the issue
+        mediaUrl = media.type.startsWith("video/") ? "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" : "https://via.placeholder.com/400x300.jpg"
+        mediaType = media.type.startsWith("video/") ? "video" : "image"
+        
+        console.log("✅ USING PLACEHOLDER URL:", mediaUrl, "Type:", mediaType)
+        
+        // TODO: Re-enable Vercel Blob upload once we confirm the rest of the flow works
+        /*
         try {
           mediaUrl = await uploadToStorage({
             buffer,
@@ -428,8 +438,14 @@ export async function POST(request: NextRequest) {
           console.log("✅ MEDIA UPLOADED SUCCESSFULLY:", mediaUrl, "Type:", mediaType)
         } catch (blobError) {
           console.error("❌ BLOB UPLOAD FAILED:", blobError)
-          return NextResponse.json({ error: "Failed to upload media" }, { status: 500 })
+          
+          // Use a placeholder URL for now to prevent the entire operation from failing
+          mediaUrl = `https://placeholder.com/media/${Date.now()}.${media.type.startsWith("video/") ? "mp4" : "jpg"}`
+          mediaType = media.type.startsWith("video/") ? "video" : "image"
+          
+          console.log("⚠️ USING PLACEHOLDER URL:", mediaUrl)
         }
+        */
       } catch (uploadError) {
         console.error("❌ MEDIA UPLOAD FAILED:", uploadError)
         console.error("Upload error stack:", uploadError instanceof Error ? uploadError.stack : "No stack trace")
@@ -542,7 +558,82 @@ export async function POST(request: NextRequest) {
           participantLimit: inviteEntry[0].participantLimit,
         })
 
-        // Group creation is handled separately via /api/posts/[id]/create-group endpoint
+        // TEMPORARILY DISABLE GROUP CREATION TO ISOLATE THE ISSUE
+        if (groupName && autoAcceptInvites) {
+          console.log("=== SKIPPING AUTO-GROUP CREATION FOR DEBUGGING ===")
+          console.log("Would create group:", {
+            name: groupName.trim(),
+            createdBy: session.user.id,
+            postId: post[0].id,
+            maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+          })
+          
+          // TODO: Re-enable group creation after fixing the infinite loading issue
+          /*
+          try {
+            console.log("About to insert group into database...")
+            
+            // Create group without postId first to avoid potential circular dependency
+            const newGroup = await db
+              .insert(groupsTable)
+              .values({
+                name: groupName.trim(),
+                description: `Group created from post`,
+                createdBy: session.user.id,
+                postId: null, // Set to null initially to avoid foreign key issues
+                maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+                isActive: 1,
+              })
+              .returning()
+
+            console.log("✅ GROUP INSERTED:", newGroup[0])
+
+            console.log("About to add group member...")
+            // Add creator as admin member
+            await db
+              .insert(groupMembersTable)
+              .values({
+                groupId: newGroup[0].id,
+                userId: session.user.id,
+                role: "admin",
+              })
+
+            console.log("✅ GROUP MEMBER ADDED")
+
+            // Now update the group with the postId
+            console.log("About to update group with postId...")
+            const updatedGroup = await db
+              .update(groupsTable)
+              .set({ 
+                postId: post[0].id,
+                description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`
+              })
+              .where(eq(groupsTable.id, newGroup[0].id))
+              .returning()
+
+            console.log("✅ GROUP UPDATED WITH POST ID")
+
+            createdGroup = updatedGroup[0] || newGroup[0]
+            console.log("✅ AUTO-GROUP CREATED SUCCESSFULLY:", {
+              groupId: createdGroup.id,
+              groupName: createdGroup.name,
+            })
+          } catch (groupError) {
+            console.error("❌ GROUP CREATION FAILED:", groupError)
+            console.error("Group error details:", {
+              name: groupError instanceof Error ? groupError.name : "Unknown",
+              message: groupError instanceof Error ? groupError.message : String(groupError),
+              stack: groupError instanceof Error ? groupError.stack : "No stack",
+            })
+            // Don't fail the entire post creation, just log the error
+          }
+          */
+        } else {
+          console.log("⏭️ Skipping group creation:", {
+            hasGroupName: !!groupName,
+            autoAcceptInvites,
+          })
+        }
       } catch (inviteError) {
         console.error("❌ INVITE CREATION FAILED:", inviteError)
         // Don't fail the entire post creation, just log the error
