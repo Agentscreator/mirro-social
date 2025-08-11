@@ -21,7 +21,8 @@
       "Bash(git push:*)",
       "Bash(yarn run build)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(xcode-select:*)"
     ],
     "deny": []
   }
