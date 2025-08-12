@@ -2,6 +2,41 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:App.xcodeproj">
+      location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:AppDelegate.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Assets.xcassets">
+   </FileRef>
+   <Group
+      location = "group:Base.lproj"
+      name = "Base.lproj">
+      <FileRef
+         location = "group:LaunchScreen.storyboard">
+      </FileRef>
+      <FileRef
+         location = "group:Main.storyboard">
+      </FileRef>
+   </Group>
+   <FileRef
+      location = "group:capacitor.config.json">
+   </FileRef>
+   <FileRef
+      location = "group:config.xml">
+   </FileRef>
+   <FileRef
+      location = "group:Info.plist">
+   </FileRef>
+   <Group
+      location = "group:public"
+      name = "public">
+      <FileRef
+         location = "group:cordova.js">
+      </FileRef>
+      <FileRef
+         location = "group:cordova_plugins.js">
+      </FileRef>
+   </Group>
 </Workspace>
