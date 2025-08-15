@@ -1,11 +1,11 @@
 PODS:
-  - Capacitor (6.2.1):
+  - Capacitor (7.4.2):
     - CapacitorCordova
   - CapacitorApp (6.0.2):
     - Capacitor
   - CapacitorCamera (6.1.2):
     - Capacitor
-  - CapacitorCordova (6.2.1)
+  - CapacitorCordova (7.4.2)
   - CapacitorDevice (6.0.2):
     - Capacitor
   - CapacitorFilesystem (6.0.3):
@@ -69,10 +69,10 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
-  Capacitor: c95400d761e376be9da6be5a05f226c0e865cebf
+  Capacitor: 9d9e481b79ffaeacaf7a85d6a11adec32bd33b59
   CapacitorApp: e1e6b7d05e444d593ca16fd6d76f2b7c48b5aea7
   CapacitorCamera: 9bc7b005d0e6f1d5f525b8137045b60cffffce79
-  CapacitorCordova: 8d93e14982f440181be7304aa9559ca631d77fff
+  CapacitorCordova: 5e58d04631bc5094894ac106e2bf1da18a9e6151
   CapacitorDevice: 9efd479d71d1baad74b75df531184c3f730eaa48
   CapacitorFilesystem: 59270a63c60836248812671aa3b15df673fbaf74
   CapacitorHaptics: 4fc15afe22b123d093e6ace24d95e8e3b1f261b9
@@ -83,6 +83,6 @@ SPEC CHECKSUMS:
   CapacitorSplashScreen: fd8bf1bf9081d9aa8817b7cd37d740d1bdaf2fb2
   CapacitorStatusBar: b16799a26320ffa52f6c8b01737d5a95bbb8f3eb
 
-PODFILE CHECKSUM: 292b01cca458ef2f973daf54cef9bb7a5363c95e
+PODFILE CHECKSUM: 3a1f46f140bccf21f8db6650f6b3cf4535f964b6
 
 COCOAPODS: 1.16.2

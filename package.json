@@ -1,6 +1,6 @@
 {
   "name": "mirro-social",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -29,12 +29,10 @@
     "@capacitor/android": "^6.1.2",
     "@capacitor/app": "^6.0.1",
     "@capacitor/camera": "^6.0.2",
-    "@capacitor/cli": "^6.1.2",
-    "@capacitor/core": "^6.1.2",
     "@capacitor/device": "^6.0.1",
     "@capacitor/filesystem": "^6.0.1",
     "@capacitor/haptics": "^6.0.1",
-    "@capacitor/ios": "^6.1.2",
+    "@capacitor/ios": "^7.4.2",
     "@capacitor/keyboard": "^6.0.2",
     "@capacitor/network": "^6.0.2",
     "@capacitor/preferences": "^6.0.2",
@@ -111,13 +109,15 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "@types/busboy": "^1.5.4",
     "@types/lodash": "^4.17.17",
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
-    "drizzle-kit": "^0.31.1",
+    "drizzle-kit": "^0.31.4",
     "eslint": "^8.0.0",
     "eslint-config-next": "14.0.0",
     "postcss": "^8",
