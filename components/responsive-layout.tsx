@@ -41,8 +41,8 @@ export function ResponsiveLayout({ children, className }: ResponsiveLayoutProps)
         <Navigation />
         <main className={cn(
           "min-h-screen bg-black text-white",
-          "md:ml-16", // Account for desktop sidebar
-          "pb-16 md:pb-0", // Account for mobile bottom nav
+          "lg:ml-16", // Account for desktop sidebar
+          "pb-16 lg:pb-0", // Account for mobile bottom nav
           className
         )}>
           {children}
