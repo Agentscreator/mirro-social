@@ -62,18 +62,41 @@ export function SimpleMessageComposer({
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
+    console.log("=== FILE UPLOAD START ===")
+    console.log("File details:", {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    })
+
     setUploading(true)
     try {
+      // Validate file size before uploading
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Maximum file size is 10MB",
+          variant: "destructive",
+        })
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
 
+      console.log("Uploading to /api/messages/upload...")
       const response = await fetch('/api/messages/upload', {
         method: 'POST',
         body: formData,
       })
 
+      console.log("Upload response status:", response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("Upload response data:", data)
+        
         setAttachment({
           url: data.url,
           name: data.name,
@@ -84,23 +107,34 @@ export function SimpleMessageComposer({
           title: "File uploaded",
           description: "Your file is ready to send",
         })
+        console.log("✅ Upload successful")
       } else {
-        const error = await response.json()
+        const errorText = await response.text()
+        console.error("Upload failed:", response.status, errorText)
+        
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText || "Unknown error" }
+        }
+        
         toast({
           title: "Upload failed",
-          description: error.error || "Failed to upload file",
+          description: errorData.error || `HTTP ${response.status}: ${response.statusText}`,
           variant: "destructive",
         })
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('❌ Upload error:', error)
       toast({
         title: "Upload failed",
-        description: "An error occurred while uploading",
+        description: error instanceof Error ? error.message : "An error occurred while uploading",
         variant: "destructive",
       })
     } finally {
       setUploading(false)
+      console.log("=== FILE UPLOAD END ===")
     }
   }
 
@@ -236,7 +270,7 @@ export function SimpleMessageComposer({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.pdf,.txt,.doc,.docx"
+        accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.xls,.xlsx"
         onChange={handleFileSelect}
         className="hidden"
       />
