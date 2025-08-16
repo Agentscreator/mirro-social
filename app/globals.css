@@ -8,6 +8,28 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden;
+    /* Hide browser UI elements */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* Hide browser address bar and navigation */
+  body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
+  }
+  
+  /* Ensure content fills the screen */
+  #__next, 
+  [data-nextjs-container] {
+    height: 100vh;
+    height: 100dvh;
+    overflow: auto;
   }
   
   /* FORCE HIDE desktop navigation on mobile and tablets */

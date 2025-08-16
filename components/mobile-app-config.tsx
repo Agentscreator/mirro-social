@@ -44,6 +44,40 @@ export function MobileAppConfig() {
         )
       }
 
+      // Request fullscreen for mobile browsers
+      const requestFullscreen = () => {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen()
+        } else if ((document.documentElement as any).webkitRequestFullscreen) {
+          (document.documentElement as any).webkitRequestFullscreen()
+        } else if ((document.documentElement as any).mozRequestFullScreen) {
+          (document.documentElement as any).mozRequestFullScreen()
+        } else if ((document.documentElement as any).msRequestFullscreen) {
+          (document.documentElement as any).msRequestFullscreen()
+        }
+      }
+
+      // Auto-hide address bar on scroll (mobile browsers)
+      let ticking = false
+      const hideAddressBar = () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            window.scrollTo(0, 1)
+            ticking = false
+          })
+          ticking = true
+        }
+      }
+
+      // Hide address bar on load and orientation change
+      window.addEventListener('load', hideAddressBar)
+      window.addEventListener('orientationchange', () => {
+        setTimeout(hideAddressBar, 100)
+      })
+
+      // Hide address bar on user interaction
+      document.addEventListener('touchstart', hideAddressBar, { once: true })
+
       // Add mobile app class to body
       document.body.classList.add('mobile-app')
 
