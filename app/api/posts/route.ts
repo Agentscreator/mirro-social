@@ -345,6 +345,7 @@ export async function POST(request: NextRequest) {
     const content = formData.get("content") as string
     const media = formData.get("media") as File | null
     const isInvite = formData.get("isInvite") === "true"
+    const inviteDescription = formData.get("inviteDescription") as string
     const inviteLimit = formData.get("inviteLimit") ? parseInt(formData.get("inviteLimit") as string) : 10
     
     // Location data
@@ -547,6 +548,7 @@ export async function POST(request: NextRequest) {
           .insert(postInvitesTable)
           .values({
             postId: post[0].id,
+            inviteDescription: inviteDescription?.trim() || null,
             participantLimit: inviteLimit,
             currentParticipants: 0,
           })

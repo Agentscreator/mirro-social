@@ -200,6 +200,7 @@ export const postInvitesTable = pgTable("post_invites", {
   postId: integer("post_id")
     .notNull()
     .references(() => postsTable.id),
+  inviteDescription: text("invite_description"), // What the user is inviting people to do
   participantLimit: integer("participant_limit").notNull().default(10),
   currentParticipants: integer("current_participants").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
