@@ -8,6 +8,7 @@ import { useState } from "react"
 import { NewPostCreator } from "@/components/new-post/NewPostCreator"
 import { toast } from "@/hooks/use-toast"
 import { MessageBadge } from "@/components/messages/MessageBadge"
+import { WatchNavigation } from "@/components/watch-navigation"
 
 export function Navigation() {
   const pathname = usePathname()
@@ -167,6 +168,9 @@ export function Navigation() {
           ))}
         </div>
       </div>
+
+      {/* Apple Watch Navigation */}
+      <WatchNavigation />
 
       {/* New Post Creator */}
       <NewPostCreator

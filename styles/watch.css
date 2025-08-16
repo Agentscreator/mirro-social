@@ -1,0 +1,321 @@
+/* Apple Watch Specific Styles */
+
+/* Watch-specific utility classes */
+@media (max-width: 272px) {
+  .watch-hidden {
+    display: none !important;
+  }
+  
+  .watch-block {
+    display: block !important;
+  }
+  
+  .watch-flex {
+    display: flex !important;
+  }
+  
+  .watch-grid {
+    display: grid !important;
+  }
+  
+  /* Watch-optimized text sizes */
+  .watch-text-xs {
+    font-size: 10px !important;
+    line-height: 12px !important;
+  }
+  
+  .watch-text-sm {
+    font-size: 12px !important;
+    line-height: 14px !important;
+  }
+  
+  .watch-text-base {
+    font-size: 14px !important;
+    line-height: 16px !important;
+  }
+  
+  .watch-text-lg {
+    font-size: 16px !important;
+    line-height: 18px !important;
+  }
+  
+  /* Watch-optimized spacing */
+  .watch-p-1 {
+    padding: 4px !important;
+  }
+  
+  .watch-p-2 {
+    padding: 8px !important;
+  }
+  
+  .watch-p-3 {
+    padding: 12px !important;
+  }
+  
+  .watch-m-1 {
+    margin: 4px !important;
+  }
+  
+  .watch-m-2 {
+    margin: 8px !important;
+  }
+  
+  /* Watch-optimized button sizes */
+  .watch-btn {
+    min-height: 32px !important;
+    min-width: 32px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-radius: 16px !important;
+  }
+  
+  /* Watch-optimized navigation */
+  .watch-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 40px !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 4px !important;
+  }
+  
+  .watch-nav-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    border-radius: 16px !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .watch-nav-item:hover,
+  .watch-nav-item.active {
+    background: rgba(59, 130, 246, 0.3) !important;
+  }
+  
+  .watch-nav-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  
+  /* Watch-optimized cards */
+  .watch-card {
+    border-radius: 12px !important;
+    padding: 8px !important;
+    margin: 4px 0 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  /* Watch-optimized scrolling */
+  .watch-scroll {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .watch-scroll::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  /* Watch-optimized layout */
+  .watch-container {
+    max-width: 100% !important;
+    padding: 8px !important;
+    margin: 0 !important;
+  }
+  
+  .watch-full-height {
+    height: calc(100vh - 40px) !important; /* Account for navigation */
+  }
+  
+  /* Watch-optimized forms */
+  .watch-input {
+    height: 32px !important;
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+  
+  .watch-input:focus {
+    outline: none !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  }
+  
+  /* Watch-optimized typography */
+  .watch-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 18px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .watch-subtitle {
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 14px !important;
+    opacity: 0.8 !important;
+  }
+  
+  /* Watch-optimized grid layouts */
+  .watch-grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px !important;
+  }
+  
+  .watch-grid-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 4px !important;
+  }
+  
+  /* Watch-optimized flex layouts */
+  .watch-flex-col {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+  
+  .watch-flex-row {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    align-items: center !important;
+  }
+  
+  /* Watch-optimized animations */
+  .watch-fade-in {
+    animation: watchFadeIn 0.3s ease-out !important;
+  }
+  
+  @keyframes watchFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Watch-optimized modal/dialog */
+  .watch-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px !important;
+    z-index: 1000 !important;
+  }
+  
+  .watch-modal-content {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    max-width: 100% !important;
+    max-height: 90% !important;
+    overflow-y: auto !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  /* Watch-optimized status indicators */
+  .watch-status-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    display: inline-block !important;
+  }
+  
+  .watch-status-online {
+    background: #10b981 !important;
+  }
+  
+  .watch-status-offline {
+    background: #6b7280 !important;
+  }
+  
+  .watch-status-busy {
+    background: #f59e0b !important;
+  }
+  
+  /* Watch-optimized avatar */
+  .watch-avatar {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+  }
+  
+  .watch-avatar-lg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  /* Watch-optimized badges */
+  .watch-badge {
+    position: absolute !important;
+    top: -2px !important;
+    right: -2px !important;
+    background: #ef4444 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 12px !important;
+    height: 12px !important;
+    font-size: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+  }
+}
+
+/* Additional responsive breakpoints for different watch sizes */
+@media (max-width: 242px) {
+  /* Apple Watch 41mm specific adjustments */
+  .watch-text-base {
+    font-size: 13px !important;
+    line-height: 15px !important;
+  }
+  
+  .watch-btn {
+    min-height: 28px !important;
+    min-width: 28px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  
+  .watch-nav {
+    height: 36px !important;
+  }
+  
+  .watch-nav-item {
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .watch-nav-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}

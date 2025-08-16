@@ -18,6 +18,16 @@ const config: Config = {
         "2xl": "1400px",
       },
     },
+    screens: {
+      'watch': '272px', // Apple Watch Series 7+ (45mm)
+      'watch-sm': '242px', // Apple Watch Series 7+ (41mm)
+      'xs': '475px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "sans-serif"],

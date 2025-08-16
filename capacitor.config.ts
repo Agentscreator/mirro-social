@@ -30,6 +30,21 @@ const config: CapacitorConfig = {
     },
     App: {
       initialPath: "/login"
+    },
+    // Apple Watch specific configurations
+    Device: {
+      watchSupport: true
+    },
+    Haptics: {
+      watchHaptics: true
+    }
+  },
+  // Apple Watch specific settings
+  ios: {
+    scheme: "MirroSocial",
+    watchApp: {
+      bundleId: "com.mirro2.app.watchkitapp",
+      displayName: "Mirro Watch"
     }
   }
 };

@@ -23,7 +23,12 @@
     "ios:dev": "next build && npx cap sync ios && npx cap run ios",
     "ios:sync": "npx cap sync ios",
     "mobile:sync": "npx cap sync",
-    "mobile:build": "next build && npx cap sync"
+    "mobile:build": "next build && npx cap sync",
+    "watch:check": "node scripts/watch-dev.js check",
+    "watch:test": "node scripts/watch-dev.js test",
+    "watch:build": "node scripts/watch-dev.js build",
+    "watch:sync": "node scripts/watch-dev.js sync",
+    "watch:dev": "node scripts/watch-dev.js dev"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
