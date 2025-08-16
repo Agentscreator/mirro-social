@@ -6,7 +6,8 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, Send, MoreVertical, Info, Users, Settings } from "lucide-react"
+import { ArrowLeft, Send, MoreVertical, Info, Users, Settings, Camera } from "lucide-react"
+import { ImageUpload } from "@/components/image-upload"
 import { SimpleMessageComposer } from "@/components/messages/SimpleMessageComposer"
 import { MessageBubble } from "@/components/messages/MessageBubble"
 import { toast } from "@/hooks/use-toast"
@@ -70,6 +71,10 @@ export default function GroupChatPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [showGroupInfo, setShowGroupInfo] = useState(false)
+  const [editingGroupImage, setEditingGroupImage] = useState(false)
+  const [newGroupImage, setNewGroupImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [updating, setUpdating] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const fetchGroup = async () => {
@@ -166,6 +171,77 @@ export default function GroupChatPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
+
+  const handleImageChange = (file: File | null) => {
+    setNewGroupImage(file)
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setImagePreview(null)
+    }
+  }
+
+  const uploadGroupImage = async () => {
+    if (!newGroupImage || !group) return
+
+    setUpdating(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', newGroupImage)
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const uploadData = await uploadResponse.json()
+      
+      // Update group with new image
+      const updateResponse = await fetch(`/api/groups/${groupId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: group.name,
+          description: group.description,
+          image: uploadData.url,
+        }),
+      })
+
+      if (updateResponse.ok) {
+        await fetchGroup() // Refresh group data
+        setEditingGroupImage(false)
+        setNewGroupImage(null)
+        setImagePreview(null)
+        toast({
+          title: "Success",
+          description: "Group image updated successfully",
+        })
+      } else {
+        throw new Error('Failed to update group')
+      }
+    } catch (error) {
+      console.error('Error updating group image:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update group image",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const isUserAdmin = group?.userRole === 'admin'
 
   const formatMessageTime = (date: Date) => {
     const now = new Date()
@@ -350,20 +426,64 @@ export default function GroupChatPage() {
           
           <div className="space-y-4">
             <div className="flex flex-col items-center">
-              <Avatar className="w-20 h-20 mb-3">
-                <AvatarImage src={group.image} alt={group.name} />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
-                  {group.name[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative group">
+                <Avatar className="w-20 h-20 mb-3">
+                  <AvatarImage src={group.image} alt={group.name} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+                    {group.name[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {isUserAdmin && !editingGroupImage && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute -bottom-2 -right-2 bg-gray-700 hover:bg-gray-600 rounded-full p-1 h-8 w-8"
+                    onClick={() => setEditingGroupImage(true)}
+                  >
+                    <Camera className="h-4 w-4 text-white" />
+                  </Button>
+                )}
+              </div>
               
-              <h3 className="text-xl font-semibold text-white">{group.name}</h3>
-              {group.description && (
-                <p className="text-gray-400 text-center mt-2">{group.description}</p>
+              {editingGroupImage && isUserAdmin ? (
+                <div className="w-full space-y-3">
+                  <ImageUpload
+                    onImageChange={handleImageChange}
+                    imagePreview={imagePreview}
+                  />
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      onClick={uploadGroupImage}
+                      disabled={!newGroupImage || updating}
+                    >
+                      {updating ? "Updating..." : "Update"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingGroupImage(false)
+                        setNewGroupImage(null)
+                        setImagePreview(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-xl font-semibold text-white">{group.name}</h3>
+                  {group.description && (
+                    <p className="text-gray-400 text-center mt-2">{group.description}</p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
+                    Created by {group.creator.nickname || group.creator.username}
+                  </p>
+                </>
               )}
-              <p className="text-sm text-gray-500 mt-1">
-                Created by {group.creator.nickname || group.creator.username}
-              </p>
             </div>
 
             <div>
