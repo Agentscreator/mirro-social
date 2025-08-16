@@ -487,7 +487,7 @@ const VideoFeedItem = ({
 
 
       {/* Right Side Actions - Minimal Design */}
-      <div className="absolute right-4 bottom-32 md:bottom-28 flex flex-col space-y-4 z-20">
+      <div className="absolute right-4 bottom-36 md:bottom-28 flex flex-col space-y-4 z-20">
         <div className="flex flex-col items-center">
           <Button 
             variant="ghost" 
@@ -528,7 +528,7 @@ const VideoFeedItem = ({
       </div>
 
       {/* Bottom Content - Clean & Elegant */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-8">
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-20 md:pb-8">
         {/* User Info */}
         <div className="flex items-center space-x-3 mb-4">
           <Avatar 

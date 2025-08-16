@@ -84,25 +84,19 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
       if (response.ok) {
         const data = await response.json()
         
-        if (data.autoAccepted) {
-          toast({
-            title: "Welcome to the community!",
-            description: data.groupId 
-              ? "You've been added to the community chat."
-              : "You've joined this community.",
-          })
-          
-          // Navigate to group if one was created
-          if (data.groupId) {
-            setTimeout(() => {
-              router.push(`/groups/${data.groupId}`)
-            }, 1500)
-          }
-        } else {
-          toast({
-            title: "Request Sent!",
-            description: "The host will review your request soon.",
-          })
+        // Always show welcome message since we auto-join
+        toast({
+          title: "Welcome to the community!",
+          description: data.groupId 
+            ? "You've been added to the community chat."
+            : "You've joined this community.",
+        })
+        
+        // Navigate to group if one was created
+        if (data.groupId) {
+          setTimeout(() => {
+            router.push(`/groups/${data.groupId}`)
+          }, 1500)
         }
         
         // Refresh invite data
@@ -136,10 +130,9 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
 
     const { userRequest, post, invite } = inviteData
     const isAtLimit = invite.currentParticipants >= invite.participantLimit
-    const hasCommunityName = !!post.communityName
 
     if (!userRequest) {
-      // No request sent yet - always auto-accept for communities
+      // No request sent yet - always auto-join
       return {
         text: "Join",
         variant: "default" as const,
@@ -151,14 +144,6 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
 
     // User has sent a request
     switch (userRequest.status) {
-      case "pending":
-        return {
-          text: "Request Sent",
-          variant: "outline" as const,
-          className: "bg-yellow-500/20 border-yellow-500 text-yellow-400",
-          disabled: true,
-          icon: Users,
-        }
       case "accepted":
         return {
           text: "Joined",
@@ -166,23 +151,14 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
           disabled: true,
           icon: MessageCircle,
         }
-      case "denied":
-        return {
-          text: "Request Again",
-          variant: "outline" as const,
-          className: "bg-gray-500/20 border-gray-500 text-gray-400",
-          disabled: false,
-          onClick: handleInviteRequest,
-          icon: Users,
-        }
       default:
+        // For all other cases (pending, denied), allow re-joining
         return {
-          text: "Request to Join",
+          text: "Join",
           variant: "default" as const,
-          className: "bg-blue-500 hover:bg-blue-600 text-white",
-          disabled: false,
+          disabled: isAtLimit,
           onClick: handleInviteRequest,
-          icon: Users,
+          icon: MessageCircle,
         }
     }
   }

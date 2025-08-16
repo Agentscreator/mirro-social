@@ -70,10 +70,14 @@ export async function POST(
 
     if (existingRequest.length > 0) {
       const status = existingRequest[0].status
-      if (status === "pending") {
-        return NextResponse.json({ error: "You already have a pending request for this invite" }, { status: 400 })
-      } else if (status === "accepted") {
+      if (status === "accepted") {
         return NextResponse.json({ error: "You have already joined this invite" }, { status: 400 })
+      }
+      // Allow re-joining for pending or denied requests by deleting old request
+      if (status === "pending" || status === "denied") {
+        await db
+          .delete(inviteRequestsTable)
+          .where(eq(inviteRequestsTable.id, existingRequest[0].id))
       }
     }
 
