@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserCard } from "@/components/user-card"
 import { TypingAnimation } from "@/components/typing-animation"
-import { HamburgerMenu } from "@/components/hamburger-menu"
 import type { RecommendedUser } from "@/src/lib/recommendationService"
 import { fetchRecommendations, generateExplanation } from "@/src/lib/apiServices"
 import type { RecommendedUser as ApiRecommendedUser } from "@/src/lib/apiServices"
@@ -512,7 +511,6 @@ export default function DiscoverPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-light text-white">Discover</h1>
-          <HamburgerMenu />
         </div>
 
         <div className="relative mb-8">

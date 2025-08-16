@@ -9,11 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Users } from "lucide-react"
+import { Search, MessageCircle, Plus, Users } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
 import { CommunityStories } from "@/components/messages/CommunityStories"
-import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { toast } from "@/hooks/use-toast"
 
@@ -113,50 +112,6 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
-      {/* Header */}
-      <div className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-800/50 px-6 py-5 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push('/feed')}
-              className="md:hidden -ml-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-light text-white">Messages</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowCreateGroup(true)}
-              className="rounded-full text-white hover:bg-gray-800"
-              title="Create Group"
-            >
-              <Users className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push('/discover')}
-              className="rounded-full text-white hover:bg-gray-800"
-              title="New Chat"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-white hover:bg-gray-800"
-            >
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Stories Feed */}
       <StoriesFeed />
