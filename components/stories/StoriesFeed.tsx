@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Plus, Camera } from "lucide-react"
+import { Plus, Camera, Users } from "lucide-react"
 import { StoriesViewer } from "./StoriesViewer"
 import { toast } from "@/hooks/use-toast"
 
@@ -33,13 +33,12 @@ interface Story {
   } | null
 }
 
-interface UserStories {
-  userId: string
-  user: {
+interface CommunityStories {
+  communityId: string
+  community: {
     id: string
-    username: string
-    nickname?: string
-    profileImage?: string
+    name: string
+    image?: string
   }
   stories: Story[]
   hasUnviewed: boolean
@@ -47,7 +46,7 @@ interface UserStories {
 
 export function StoriesFeed() {
   const { data: session } = useSession()
-  const [userStories, setUserStories] = useState<UserStories[]>([])
+  const [communityStories, setCommunityStories] = useState<CommunityStories[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStories, setSelectedStories] = useState<Story[]>([])
   const [showViewer, setShowViewer] = useState(false)
@@ -67,9 +66,9 @@ export function StoriesFeed() {
       if (response.ok) {
         const data = await response.json()
         
-        // Group stories by user
-        const groupedStories = groupStoriesByUser(data.stories || [])
-        setUserStories(groupedStories)
+        // Group stories by community
+        const groupedStories = groupStoriesByCommunity(data.stories || [])
+        setCommunityStories(groupedStories)
       }
     } catch (error) {
       console.error('Error fetching stories:', error)
@@ -83,35 +82,34 @@ export function StoriesFeed() {
     }
   }
 
-  const groupStoriesByUser = (stories: Story[]): UserStories[] => {
-    const grouped = stories.reduce((acc, story) => {
-      const userId = story.userId
-      if (!acc[userId]) {
-        acc[userId] = {
-          userId,
-          user: story.user,
+  const groupStoriesByCommunity = (stories: Story[]): CommunityStories[] => {
+    // Filter for community stories only
+    const communityStories = stories.filter(story => story.type === 'community' && story.community)
+    
+    const grouped = communityStories.reduce((acc, story) => {
+      const communityId = story.communityId!
+      if (!acc[communityId]) {
+        acc[communityId] = {
+          communityId,
+          community: story.community!,
           stories: [],
           hasUnviewed: false
         }
       }
-      acc[userId].stories.push(story)
+      acc[communityId].stories.push(story)
       if (!story.isViewed) {
-        acc[userId].hasUnviewed = true
+        acc[communityId].hasUnviewed = true
       }
       return acc
-    }, {} as Record<string, UserStories>)
+    }, {} as Record<string, CommunityStories>)
 
-    // Convert to array and sort (own stories first, then by most recent)
+    // Convert to array and sort by most recent and unviewed status
     const sortedStories = Object.values(grouped).sort((a, b) => {
-      // Current user's stories first
-      if (a.userId === session?.user?.id) return -1
-      if (b.userId === session?.user?.id) return 1
-      
-      // Then by unviewed stories
+      // Unviewed stories first
       if (a.hasUnviewed && !b.hasUnviewed) return -1
       if (!a.hasUnviewed && b.hasUnviewed) return 1
       
-      // Finally by most recent story
+      // Then by most recent story
       const aLatest = Math.max(...a.stories.map(s => new Date(s.createdAt).getTime()))
       const bLatest = Math.max(...b.stories.map(s => new Date(s.createdAt).getTime()))
       return bLatest - aLatest
@@ -120,56 +118,12 @@ export function StoriesFeed() {
     return sortedStories
   }
 
-  const handleStoryClick = (userStory: UserStories, storyIndex = 0) => {
-    setSelectedStories(userStory.stories)
+  const handleStoryClick = (communityStory: CommunityStories, storyIndex = 0) => {
+    setSelectedStories(communityStory.stories)
     setInitialStoryIndex(storyIndex)
     setShowViewer(true)
   }
 
-  const handleCreateStory = () => {
-    // Navigate to story creation or show create story dialog
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*,video/*'
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        await uploadStory(file)
-      }
-    }
-    input.click()
-  }
-
-  const uploadStory = async (file: File) => {
-    try {
-      const formData = new FormData()
-      formData.append('media', file)
-      formData.append('type', 'personal')
-
-      const response = await fetch('/api/stories', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Story uploaded successfully!",
-        })
-        fetchStories() // Refresh stories
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to upload story')
-      }
-    } catch (error) {
-      console.error('Error uploading story:', error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to upload story",
-        variant: "destructive",
-      })
-    }
-  }
 
   if (loading) {
     return (
@@ -186,33 +140,13 @@ export function StoriesFeed() {
     )
   }
 
-  if (userStories.length === 0) {
+  if (communityStories.length === 0) {
     return (
       <div className="px-6 py-4 bg-gray-950">
-        <div className="flex items-center gap-4">
-          {/* Your story - create new */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-2">
-            <div className="relative">
-              <Avatar className="w-16 h-16 border-2 border-gray-600">
-                <AvatarImage src={session?.user?.image || undefined} />
-                <AvatarFallback className="bg-gray-700 text-white">
-                  {session?.user?.name?.[0]?.toUpperCase() || 'Y'}
-                </AvatarFallback>
-              </Avatar>
-              <Button
-                onClick={handleCreateStory}
-                size="icon"
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 border-2 border-gray-950"
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-            </div>
-            <span className="text-xs text-gray-400 text-center">Your story</span>
-          </div>
-          
-          <div className="flex-1 text-center py-4">
-            <p className="text-gray-500 text-sm">No stories to show</p>
-            <p className="text-gray-600 text-xs mt-1">Follow friends to see their stories</p>
+        <div className="flex items-center justify-center py-4">
+          <div className="text-center">
+            <p className="text-gray-500 text-sm">No group stories to show</p>
+            <p className="text-gray-600 text-xs mt-1">Join groups to see their stories</p>
           </div>
         </div>
       </div>
@@ -223,89 +157,35 @@ export function StoriesFeed() {
     <>
       <div className="px-6 py-4 bg-gray-950 border-b border-gray-800/50">
         <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide pb-2">
-          {/* Your story - first if you have stories, otherwise create new */}
-          {userStories.find(us => us.userId === session?.user?.id) ? (
-            userStories
-              .filter(us => us.userId === session?.user?.id)
-              .map((userStory) => (
-                <div key={userStory.userId} className="flex-shrink-0 flex flex-col items-center gap-2">
-                  <div 
-                    className="relative cursor-pointer group"
-                    onClick={() => handleStoryClick(userStory)}
-                  >
-                    <div className={`p-0.5 rounded-full ${userStory.hasUnviewed ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-gray-600'}`}>
-                      <Avatar className="w-16 h-16 border-2 border-gray-950">
-                        <AvatarImage src={userStory.user.profileImage} />
-                        <AvatarFallback className="bg-gray-700 text-white">
-                          {(userStory.user.nickname || userStory.user.username)[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleCreateStory()
-                      }}
-                      size="icon"
-                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 border-2 border-gray-950"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <span className="text-xs text-gray-300 text-center max-w-[60px] truncate">
-                    Your story
-                  </span>
+          {/* Community Stories */}
+          {communityStories.map((communityStory) => (
+            <div key={communityStory.communityId} className="flex-shrink-0 flex flex-col items-center gap-2">
+              <div 
+                className="relative cursor-pointer group"
+                onClick={() => handleStoryClick(communityStory)}
+              >
+                <div className={`p-0.5 rounded-full ${communityStory.hasUnviewed ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-gray-600'} group-hover:scale-105 transition-transform`}>
+                  <Avatar className="w-16 h-16 border-2 border-gray-950">
+                    <AvatarImage src={communityStory.community.image} />
+                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white font-semibold">
+                      {communityStory.community.name[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
-              ))
-          ) : (
-            <div className="flex-shrink-0 flex flex-col items-center gap-2">
-              <div className="relative">
-                <Avatar className="w-16 h-16 border-2 border-gray-600">
-                  <AvatarImage src={session?.user?.image || undefined} />
-                  <AvatarFallback className="bg-gray-700 text-white">
-                    {session?.user?.name?.[0]?.toUpperCase() || 'Y'}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  onClick={handleCreateStory}
-                  size="icon"
-                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 border-2 border-gray-950"
-                >
-                  <Plus className="w-3 h-3" />
-                </Button>
+                {communityStory.stories.length > 1 && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white font-bold">{communityStory.stories.length}</span>
+                  </div>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-green-500 border-2 border-gray-950 rounded-full flex items-center justify-center">
+                  <Users className="h-2 w-2 text-white" />
+                </div>
               </div>
-              <span className="text-xs text-gray-400 text-center">Your story</span>
+              <span className="text-xs text-gray-300 text-center max-w-[60px] truncate">
+                {communityStory.community.name}
+              </span>
             </div>
-          )}
-
-          {/* Other users' stories */}
-          {userStories
-            .filter(us => us.userId !== session?.user?.id)
-            .map((userStory) => (
-              <div key={userStory.userId} className="flex-shrink-0 flex flex-col items-center gap-2">
-                <div 
-                  className="relative cursor-pointer group"
-                  onClick={() => handleStoryClick(userStory)}
-                >
-                  <div className={`p-0.5 rounded-full ${userStory.hasUnviewed ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-gray-600'} group-hover:scale-105 transition-transform`}>
-                    <Avatar className="w-16 h-16 border-2 border-gray-950">
-                      <AvatarImage src={userStory.user.profileImage} />
-                      <AvatarFallback className="bg-gray-700 text-white">
-                        {(userStory.user.nickname || userStory.user.username)[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  {userStory.stories.length > 1 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">{userStory.stories.length}</span>
-                    </div>
-                  )}
-                </div>
-                <span className="text-xs text-gray-300 text-center max-w-[60px] truncate">
-                  {userStory.user.nickname || userStory.user.username}
-                </span>
-              </div>
-            ))}
+          ))}
         </div>
       </div>
 

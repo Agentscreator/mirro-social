@@ -35,9 +35,24 @@ export async function GET(request: NextRequest) {
 
     const userCommunityIds = userCommunitiesQuery.map((c) => c.communityId)
 
+    // Get communities that friends are members of
+    const friendsCommunitiesQuery = await db
+      .select({ communityId: communityMembersTable.communityId })
+      .from(communityMembersTable)
+      .where(
+        followedUserIds.length > 0 
+          ? inArray(communityMembersTable.userId, followedUserIds)
+          : sql`false`
+      )
+
+    const friendsCommunityIds = friendsCommunitiesQuery.map((c) => c.communityId)
+    
+    // Combine all community IDs (user's communities + friends' communities)
+    const allCommunityIds = Array.from(new Set([...userCommunityIds, ...friendsCommunityIds]))
+
     // Fetch active stories (not expired) from:
     // 1. Personal stories from followed users and self
-    // 2. Community stories from communities the user is a member of
+    // 2. Community stories from communities the user is a member of + friends' communities
     const storiesQuery = await db
       .select({
         id: storiesTable.id,
@@ -78,10 +93,10 @@ export async function GET(request: NextRequest) {
               eq(storiesTable.type, "personal"),
               allUserIds.length > 0 ? inArray(storiesTable.userId, allUserIds) : sql`false`
             ),
-            // Community stories from user's communities
+            // Community stories from user's communities + friends' communities
             and(
               eq(storiesTable.type, "community"),
-              userCommunityIds.length > 0 ? inArray(storiesTable.communityId, userCommunityIds) : sql`false`
+              allCommunityIds.length > 0 ? inArray(storiesTable.communityId, allCommunityIds) : sql`false`
             )
           )
         )
