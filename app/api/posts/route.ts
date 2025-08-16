@@ -558,17 +558,41 @@ export async function POST(request: NextRequest) {
           participantLimit: inviteEntry[0].participantLimit,
         })
 
-        // TEMPORARILY DISABLE GROUP CREATION TO ISOLATE THE ISSUE
+        // Create group if auto-accept is enabled and group name is provided
         if (groupName && autoAcceptInvites) {
-          console.log("=== SKIPPING AUTO-GROUP CREATION FOR DEBUGGING ===")
-          console.log("Would create group:", {
+          console.log("=== CREATING AUTO-GROUP ===")
+          console.log("Group details:", {
             name: groupName.trim(),
             createdBy: session.user.id,
             postId: post[0].id,
             maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
           })
           
-          // TODO: Re-enable group creation after fixing the infinite loading issue
+          try {
+            // Call the create-group API endpoint
+            const groupResponse = await fetch(`${request.url.replace('/api/posts', '')}/api/posts/${post[0].id}/create-group`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Cookie': request.headers.get('Cookie') || '',
+              },
+              body: JSON.stringify({
+                groupName: groupName.trim(),
+                maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+              }),
+            })
+
+            if (groupResponse.ok) {
+              const groupResult = await groupResponse.json()
+              console.log("✅ Group created successfully:", groupResult.group)
+              // Note: We don't return the group in the response to keep it simple
+            } else {
+              const errorText = await groupResponse.text()
+              console.error("❌ Failed to create group:", errorText)
+            }
+          } catch (groupError) {
+            console.error("❌ Error creating group:", groupError)
+          }
           /*
           try {
             console.log("About to insert group into database...")

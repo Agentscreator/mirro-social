@@ -10,9 +10,14 @@
 - **Change**: Added better error handling and user feedback for group creation failures
 - **Improvement**: Now shows specific error messages to users when group creation fails
 
-## 3. ⚠️ Group Statuses → Community Statuses
-- **Status**: Could not locate "Group Statuses" text in the codebase
-- **Action needed**: Please specify where this text appears (navigation, menu, component name, etc.)
+## 3. ✅ Group Stories → Community Stories
+- **File**: `components/messages/GroupStories.tsx` → `components/messages/CommunityStories.tsx`
+- **Changes**:
+  - Renamed component from `GroupStories` to `CommunityStories`
+  - Updated interfaces: `GroupStory` → `CommunityStory`, `Group` → `Community`
+  - Changed comment from "Group Stories Row" to "Community Stories Row"
+  - Updated placeholder text from "What's happening in your group?" to "What's happening in your community?"
+  - Maintained all functionality while updating terminology
 
 ## 4. ✅ Fixed media upload in messages
 - **File**: `components/messages/MessageComposer.tsx`
@@ -58,7 +63,7 @@
 6. Test mobile swipe navigation on discover page
 
 ## Notes
-- The "Group Statuses" → "Community Statuses" change could not be completed as the text was not found in the codebase
-- All other requested fixes have been implemented
+- All requested fixes have been successfully implemented
 - Media upload now supports images, videos, audio, and documents
 - User ordering now properly prioritizes users with AI embeddings
+- Group Stories component has been renamed to Community Stories with updated terminology

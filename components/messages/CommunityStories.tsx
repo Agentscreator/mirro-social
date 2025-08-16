@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Camera, Video, X } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
-interface GroupStory {
+interface CommunityStory {
   id: number
   content?: string
   image?: string
@@ -27,23 +27,23 @@ interface GroupStory {
   hasViewed: boolean
 }
 
-interface Group {
+interface Community {
   id: number
   name: string
   image?: string
   memberCount: number
-  stories?: GroupStory[]
+  stories?: CommunityStory[]
 }
 
-interface GroupStoriesProps {
-  groups: Group[]
+interface CommunityStoriesProps {
+  groups: Community[]
   onRefresh: () => void
 }
 
-export function GroupStories({ groups, onRefresh }: GroupStoriesProps) {
+export function CommunityStories({ groups, onRefresh }: CommunityStoriesProps) {
   const { data: session } = useSession()
   const [showCreateStory, setShowCreateStory] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
+  const [selectedGroup, setSelectedGroup] = useState<Community | null>(null)
   const [storyContent, setStoryContent] = useState("")
   const [storyMedia, setStoryMedia] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -151,7 +151,7 @@ export function GroupStories({ groups, onRefresh }: GroupStoriesProps) {
 
   return (
     <>
-      {/* Group Stories Row */}
+      {/* Community Stories Row */}
       <div className="px-4 py-3 bg-gray-900 border-b border-gray-800">
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
           {groups.map((group) => (
@@ -230,7 +230,7 @@ export function GroupStories({ groups, onRefresh }: GroupStoriesProps) {
 
             {/* Content Input */}
             <Textarea
-              placeholder="What's happening in your group?"
+              placeholder="What's happening in your community?"
               value={storyContent}
               onChange={(e) => setStoryContent(e.target.value)}
               className="bg-gray-800 border-gray-600 text-white"

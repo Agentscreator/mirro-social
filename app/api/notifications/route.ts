@@ -120,22 +120,50 @@ export async function POST(request: NextRequest) {
 // PUT - Mark notifications as read
 export async function PUT(request: NextRequest) {
   try {
+    console.log("=== MARK NOTIFICATIONS AS READ API START ===")
+    
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
+      console.log("❌ Unauthorized: No session or user ID")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    console.log("✅ Session valid, user ID:", session.user.id)
 
     const body = await request.json()
     const { notificationIds } = body
 
+    console.log("Request body:", { notificationIds })
+
     if (!notificationIds || !Array.isArray(notificationIds)) {
+      console.log("❌ Invalid notification IDs:", notificationIds)
       return NextResponse.json({ 
         error: "Notification IDs array is required" 
       }, { status: 400 })
     }
 
+    console.log("Marking notifications as read:", notificationIds)
+
+    // First, check which notifications exist and belong to the user
+    const existingNotifications = await db
+      .select({ id: notificationsTable.id, isRead: notificationsTable.isRead })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.userId, session.user.id),
+          sql`${notificationsTable.id} = ANY(${notificationIds})`
+        )
+      )
+
+    console.log("Existing notifications found:", existingNotifications)
+
+    if (existingNotifications.length === 0) {
+      console.log("⚠️ No matching notifications found for user")
+      return NextResponse.json({ message: "No notifications found to update" })
+    }
+
     // Mark notifications as read
-    await db
+    const updateResult = await db
       .update(notificationsTable)
       .set({ isRead: 1 })
       .where(
@@ -144,10 +172,32 @@ export async function PUT(request: NextRequest) {
           sql`${notificationsTable.id} = ANY(${notificationIds})`
         )
       )
+      .returning({ id: notificationsTable.id })
 
-    return NextResponse.json({ message: "Notifications marked as read" })
+    console.log("Update result:", updateResult)
+
+    // Verify the update worked
+    const verifyUpdate = await db
+      .select({ id: notificationsTable.id, isRead: notificationsTable.isRead })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.userId, session.user.id),
+          sql`${notificationsTable.id} = ANY(${notificationIds})`
+        )
+      )
+
+    console.log("Verification after update:", verifyUpdate)
+
+    console.log("=== MARK NOTIFICATIONS AS READ API END ===")
+    return NextResponse.json({ 
+      message: "Notifications marked as read",
+      updated: updateResult.length,
+      notificationIds: updateResult.map(n => n.id)
+    })
   } catch (error) {
-    console.error("Error updating notifications:", error)
+    console.error("❌ Error updating notifications:", error)
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack")
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

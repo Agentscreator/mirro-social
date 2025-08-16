@@ -118,8 +118,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         groupName: groupName.substring(0, 30),
       });
 
-      // Temporarily use minimal test endpoint
-      const response = await fetch('/api/test-posts-minimal', {
+      // Use the main posts API endpoint
+      const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
       });

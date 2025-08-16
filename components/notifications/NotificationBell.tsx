@@ -50,6 +50,8 @@ export function NotificationBell() {
   }
 
   const markAsRead = async (notificationIds: number[]) => {
+    console.log('Marking notifications as read:', notificationIds)
+    
     try {
       const response = await fetch('/api/notifications', {
         method: 'PUT',
@@ -59,7 +61,13 @@ export function NotificationBell() {
         body: JSON.stringify({ notificationIds }),
       })
 
+      console.log('Mark as read response status:', response.status)
+      
       if (response.ok) {
+        const responseData = await response.json()
+        console.log('Mark as read response:', responseData)
+        
+        // Update local state immediately
         setNotifications(prev => 
           prev.map(notif => 
             notificationIds.includes(notif.id) 
@@ -72,9 +80,10 @@ export function NotificationBell() {
         // Refresh notifications to ensure server state is synced
         setTimeout(() => {
           fetchNotifications()
-        }, 500)
+        }, 1000)
       } else {
-        console.error('Failed to mark notifications as read:', response.status)
+        const errorText = await response.text()
+        console.error('Failed to mark notifications as read:', response.status, errorText)
         // Refresh notifications to get current state
         fetchNotifications()
       }
