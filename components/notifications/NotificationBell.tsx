@@ -80,7 +80,7 @@ export function NotificationBell() {
         // Refresh notifications to ensure server state is synced
         setTimeout(() => {
           fetchNotifications()
-        }, 1000)
+        }, 500)
       } else {
         const errorText = await response.text()
         console.error('Failed to mark notifications as read:', response.status, errorText)
@@ -94,9 +94,60 @@ export function NotificationBell() {
     }
   }
 
+  const markAllAsRead = async () => {
+    console.log('Marking all notifications as read')
+    
+    try {
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('Mark all as read response status:', response.status)
+      
+      if (response.ok) {
+        const responseData = await response.json()
+        console.log('Mark all as read response:', responseData)
+        
+        // Update local state immediately
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, isRead: 1 }))
+        )
+        setUnreadCount(0)
+        
+        // Refresh notifications to ensure server state is synced
+        setTimeout(() => {
+          fetchNotifications()
+        }, 500)
+      } else {
+        const errorText = await response.text()
+        console.error('Failed to mark all notifications as read:', response.status, errorText)
+        // Refresh notifications to get current state
+        fetchNotifications()
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+      // Refresh notifications to get current state
+      fetchNotifications()
+    }
+  }
+
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if unread
+    // Mark as read if unread - do this immediately for better UX
     if (notification.isRead === 0) {
+      // Update UI immediately
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notification.id 
+            ? { ...notif, isRead: 1 }
+            : notif
+        )
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      
+      // Then update server
       await markAsRead([notification.id])
     }
 
@@ -105,9 +156,13 @@ export function NotificationBell() {
       window.location.href = notification.actionUrl
     } else if (notification.type === 'invite_request') {
       // Handle invite request - could open a modal or navigate
-      const data = notification.data ? JSON.parse(notification.data) : {}
-      if (data.postId) {
-        window.location.href = `/posts/${data.postId}`
+      try {
+        const data = notification.data ? JSON.parse(notification.data) : {}
+        if (data.postId) {
+          window.location.href = `/posts/${data.postId}`
+        }
+      } catch (error) {
+        console.error('Error parsing notification data:', error)
       }
     }
   }
@@ -145,8 +200,15 @@ export function NotificationBell() {
         })
         
         // Mark notification as read and refresh
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif.id === notificationId 
+              ? { ...notif, isRead: 1 }
+              : notif
+          )
+        )
+        setUnreadCount(prev => Math.max(0, prev - 1))
         await markAsRead([notificationId])
-        await fetchNotifications()
       } else {
         const error = await response.json()
         toast({
@@ -218,7 +280,7 @@ export function NotificationBell() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => markAsRead(notifications.filter(n => n.isRead === 0).map(n => n.id))}
+                  onClick={markAllAsRead}
                   className="text-blue-400 hover:text-blue-300"
                 >
                   Mark all read
