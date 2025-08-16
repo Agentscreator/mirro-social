@@ -928,56 +928,63 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+          <p className="text-sm text-gray-400">Loading profile...</p>
+        </div>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-400">User not found</h2>
+      <div className="text-center py-20">
+        <div className="w-16 h-16 bg-gray-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <User className="h-8 w-8 text-gray-600" />
+        </div>
+        <h2 className="text-xl font-light text-gray-300 mb-2">User not found</h2>
+        <p className="text-sm text-gray-500">This profile doesn't exist or has been removed</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Profile Header */}
-      <div className="relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-2xl sm:rounded-3xl"></div>
-        <div className="relative p-4 sm:p-6 lg:p-8">
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-950/90 to-black rounded-3xl border border-gray-800/50"></div>
+        <div className="relative p-6 sm:p-8 lg:p-10">
           {/* Add Hamburger Menu */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8">
+          <div className="absolute top-6 right-6 sm:top-8 sm:right-8">
             <HamburgerMenu />
           </div>
 
-          <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
-            <div className="flex flex-col items-center mb-4 sm:mb-0 sm:flex-shrink-0">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
+            <div className="flex flex-col items-center mb-6 sm:mb-0 sm:flex-shrink-0">
               <div className="relative group">
-                <div className="relative h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 overflow-hidden rounded-full bg-gradient-to-br from-blue-400 to-blue-600 p-1 shadow-xl">
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32 lg:h-36 lg:w-36 overflow-hidden rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 p-0.5 shadow-2xl ring-2 ring-gray-700/50">
                   <div className="h-full w-full overflow-hidden rounded-full bg-gray-800">
                     <Image
                       src={user.profileImage || user.image || "/placeholder.svg?height=150&width=150"}
                       alt={user.username}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 640px) 96px, (max-width: 1024px) 112px, 128px"
+                      sizes="(max-width: 640px) 112px, (max-width: 1024px) 128px, 144px"
                     />
                   </div>
                 </div>
                 {isOwnProfile && (
                   <label
                     className={cn(
-                      "absolute bottom-0 right-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg cursor-pointer flex items-center justify-center transition-all",
+                      "absolute bottom-1 right-1 h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl cursor-pointer flex items-center justify-center transition-all ring-2 ring-gray-950",
                       profileImageUploading && "opacity-50 cursor-not-allowed",
                     )}
                   >
                     {profileImageUploading ? (
                       <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
                     ) : (
-                      <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
                     <input
                       type="file"
@@ -990,70 +997,70 @@ export default function ProfilePage() {
                 )}
               </div>
               {user.nickname && (
-                <div className="mt-2 sm:mt-3">
-                  <span className="text-lg sm:text-xl font-medium text-white">{user.nickname}</span>
+                <div className="mt-3 sm:mt-4">
+                  <span className="text-xl sm:text-2xl font-light text-white">{user.nickname}</span>
                 </div>
               )}
             </div>
 
             <div className="flex-1 w-full">
               <div className="flex flex-col items-center sm:items-start">
-                <div className="mb-3 sm:mb-4">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1">{user.username}</h1>
-                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4 text-xs sm:text-sm text-gray-300">
+                <div className="mb-4 sm:mb-6">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-white mb-3">{user.username}</h1>
+                  <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-6 text-sm sm:text-base text-gray-300">
                     <button
                       onClick={handleViewFollowers}
-                      className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+                      className="flex items-center gap-2 hover:text-blue-400 transition-colors group"
                     >
-                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <UserPlus className="h-4 w-4 group-hover:scale-110 transition-transform" />
                       <span className="font-medium">{user.followers || 0}</span>
-                      <span>followers</span>
+                      <span className="hidden sm:inline">followers</span>
                     </button>
                     <button
                       onClick={handleViewFollowing}
-                      className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+                      className="flex items-center gap-2 hover:text-blue-400 transition-colors group"
                     >
-                      <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Users className="h-4 w-4 group-hover:scale-110 transition-transform" />
                       <span className="font-medium">{user.following || 0}</span>
-                      <span>following</span>
+                      <span className="hidden sm:inline">following</span>
                     </button>
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
                       <span className="font-medium">{user.visitors || 0}</span>
-                      <span>views</span>
+                      <span className="hidden sm:inline">views</span>
                     </div>
                   </div>
                 </div>
 
                 {!isOwnProfile && (
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="flex gap-3 w-full sm:w-auto">
                     <Button
                       onClick={handleFollowToggle}
                       className={cn(
-                        "flex-1 sm:flex-none rounded-full px-4 sm:px-6 text-sm font-medium",
+                        "flex-1 sm:flex-none h-12 rounded-xl px-6 sm:px-8 text-sm font-medium transition-all",
                         isFollowing
-                          ? "bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                          : "bg-blue-600 hover:bg-blue-700 text-white",
+                          ? "bg-gray-800/50 border border-gray-600 text-white hover:bg-gray-700 hover:border-gray-500"
+                          : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl",
                       )}
                     >
                       {isFollowing ? (
                         <>
-                          <Check className="h-4 w-4 mr-1 sm:mr-2" />
+                          <Check className="h-4 w-4 mr-2" />
                           Following
                         </>
                       ) : (
                         <>
-                          <UserPlus className="h-4 w-4 mr-1 sm:mr-2" />
+                          <UserPlus className="h-4 w-4 mr-2" />
                           Follow
                         </>
                       )}
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1 sm:flex-none rounded-full border-gray-600 hover:bg-gray-700 text-white px-4 sm:px-6 text-sm bg-transparent"
+                      className="flex-1 sm:flex-none h-12 rounded-xl border border-gray-600 hover:bg-gray-800 hover:border-gray-500 text-white px-6 sm:px-8 text-sm bg-gray-900/50 backdrop-blur-sm transition-all"
                       onClick={handleMessage}
                     >
-                      <MessageCircle className="h-4 w-4 mr-1 sm:mr-2" />
+                      <MessageCircle className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">Message</span>
                       <span className="sm:hidden">Chat</span>
                     </Button>
@@ -1064,37 +1071,35 @@ export default function ProfilePage() {
           </div>
 
           {/* About Section */}
-          <div className="mt-4 sm:mt-6">
+          <div className="mt-6 sm:mt-8">
             {isEditingAbout ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Textarea
                   value={editedAbout}
                   onChange={(e) => setEditedAbout(e.target.value)}
-                  className="min-h-[80px] sm:min-h-[100px] rounded-xl sm:rounded-2xl border-gray-600 bg-gray-800/80 backdrop-blur-sm resize-none text-sm sm:text-base text-white placeholder-gray-400 focus:text-white"
+                  className="min-h-[100px] sm:min-h-[120px] rounded-2xl border border-gray-600 bg-gray-800/50 backdrop-blur-sm resize-none text-base text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   placeholder="Tell us about yourself..."
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3">
                   <Button
                     variant="outline"
                     onClick={() => setIsEditingAbout(false)}
-                    className="rounded-full px-4 text-sm text-white border-gray-600 hover:bg-gray-700 hover:text-white"
-                    size="sm"
+                    className="h-10 rounded-xl px-5 text-sm text-gray-300 border-gray-600 hover:bg-gray-800 hover:text-white transition-colors"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSaveAbout}
-                    className="rounded-full px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                    size="sm"
+                    className="h-10 rounded-xl px-5 bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors"
                   >
-                    Save
+                    Save Changes
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="relative group">
-                <div className="rounded-xl sm:rounded-2xl bg-gray-800/80 backdrop-blur-sm border border-gray-700 p-4 sm:p-6 shadow-sm">
-                  <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
+                <div className="rounded-2xl bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
+                  <p className="text-gray-300 leading-relaxed text-base sm:text-lg">
                     {user.about || "No bio available"}
                   </p>
                 </div>
@@ -1102,10 +1107,10 @@ export default function ProfilePage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 opacity-70 group-hover:opacity-100 transition-opacity rounded-full hover:bg-gray-700 h-8 w-8 sm:h-10 sm:w-10"
+                    className="absolute top-3 right-3 opacity-60 group-hover:opacity-100 transition-all rounded-xl hover:bg-gray-700/50 h-9 w-9 sm:h-10 sm:w-10"
                     onClick={() => setIsEditingAbout(true)}
                   >
-                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                    <Edit className="h-4 w-4 text-white" />
                   </Button>
                 )}
               </div>
@@ -1220,38 +1225,43 @@ export default function ProfilePage() {
 
       {/* Posts Section */}
       <div className="w-full">
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-6 sm:space-y-8">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-xl sm:text-2xl font-light text-white">
               {isOwnProfile ? "Your Posts" : `${user.username}'s Posts`}
             </h2>
+            <div className="text-sm text-gray-400">
+              {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+            </div>
           </div>
 
           {/* Posts Grid */}
-          <div className="grid grid-cols-3 gap-1 sm:gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {posts.length > 0 ? (
               posts.map((post) => (
                 <div
                   key={post.id}
-                  className="aspect-square bg-blue-50 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative group"
+                  className="aspect-square bg-gray-800 rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 relative group shadow-lg"
                   onClick={() => handlePostClick(post)}
                 >
                   {post.video ? (
                     <div className="relative w-full h-full">
                       <video src={post.video} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Play className="h-6 w-6 text-white" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                          <Play className="h-6 w-6 text-white" />
+                        </div>
                       </div>
                     </div>
                   ) : post.image ? (
-                    <Image src={post.image || "/placeholder.svg"} alt="Post" fill className="object-cover" />
+                    <Image src={post.image || "/placeholder.svg"} alt="Post" fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-2">
-                      <p className="text-xs text-white text-center line-clamp-4" style={{ color: 'white' }}>{post.content}</p>
+                    <div className="w-full h-full bg-gradient-to-br from-blue-600/80 to-purple-600/80 flex items-center justify-center p-3">
+                      <p className="text-xs text-white text-center line-clamp-4 font-medium">{post.content}</p>
                     </div>
                   )}
                   {isOwnProfile && (
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1259,22 +1269,25 @@ export default function ProfilePage() {
                           e.stopPropagation()
                           handleDeletePost(post.id)
                         }}
-                        className="h-6 w-6 rounded-full bg-red-500/80 hover:bg-red-600 text-white"
+                        className="h-7 w-7 rounded-full bg-red-500/90 hover:bg-red-600 text-white backdrop-blur-sm"
                         title="Delete post"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   )}
                 </div>
               ))
             ) : (
-              <div className="col-span-3 text-center py-12 text-gray-500">
-                <div className="text-sm sm:text-base">
-                  {isOwnProfile ? "You haven't posted anything yet." : "No posts to show."}
+              <div className="col-span-2 sm:col-span-3 text-center py-16 text-gray-500">
+                <div className="w-16 h-16 bg-gray-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="h-8 w-8 text-gray-600" />
+                </div>
+                <div className="text-base sm:text-lg font-light mb-2">
+                  {isOwnProfile ? "No posts yet" : "No posts to show"}
                 </div>
                 {isOwnProfile && (
-                  <p className="text-xs sm:text-sm mt-2 text-gray-400">Share your first post to get started!</p>
+                  <p className="text-sm text-gray-400">Share your first post to get started!</p>
                 )}
               </div>
             )}

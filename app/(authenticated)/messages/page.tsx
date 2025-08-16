@@ -111,9 +111,9 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8">
+    <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
       {/* Header */}
-      <div className="bg-black border-b border-gray-800 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-gray-950/95 backdrop-blur-sm border-b border-gray-800/50 px-6 py-5 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
@@ -124,7 +124,7 @@ export default function MessagesPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-white">Chats</h1>
+            <h1 className="text-2xl font-light text-white">Messages</h1>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -158,12 +158,12 @@ export default function MessagesPage() {
       </div>
 
       {/* Search */}
-      <div className="px-4 py-3 bg-gray-900">
+      <div className="px-6 py-4 bg-gray-950">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
-            placeholder="Search messages..."
-            className="pl-11 rounded-xl border-0 bg-gray-800 text-white placeholder:text-gray-400 focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
+            placeholder="Search conversations..."
+            className="pl-12 h-12 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -182,13 +182,13 @@ export default function MessagesPage() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
         ) : (filteredConversations.length > 0 || groups.length > 0) ? (
-          <div className="bg-black">
+          <div className="bg-gray-950">
             {/* Group Chats */}
             {groups.map((group) => (
               <div
                 key={`group-${group.id}`}
                 onClick={() => handleGroupClick(group.id)}
-                className="px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700"
+                className="mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
