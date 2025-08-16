@@ -30,6 +30,12 @@ interface VideoFeedItemProps {
   isActive?: boolean; // New prop to control autoplay
 }
 
+interface LocationData {
+  hasLocation: boolean;
+  locationName?: string;
+  locationAddress?: string;
+}
+
 const VideoFeedItem = ({ 
   post,
   showInviteButton = false,
@@ -43,12 +49,29 @@ const VideoFeedItem = ({
   const [currentComments, setCurrentComments] = useState(post.comments);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Sync comment count when post prop changes
   useEffect(() => {
     setCurrentComments(post.comments);
   }, [post.comments]);
+
+  // Fetch location data if post has private location
+  useEffect(() => {
+    if (post.hasPrivateLocation) {
+      fetch(`/api/posts/${post.id}/location`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.hasLocation) {
+            setLocationData(data);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching location:', error);
+        });
+    }
+  }, [post.id, post.hasPrivateLocation]);
 
   // Autoplay effect when component becomes active
   useEffect(() => {
@@ -463,105 +486,101 @@ const VideoFeedItem = ({
 
 
 
-      {/* Right Side Actions - TikTok Style */}
-      <div className="absolute right-3 bottom-32 md:bottom-28 flex flex-col space-y-6 z-20">
-        <div className="flex flex-col items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`w-12 h-12 rounded-full transition-all duration-200 ${
-              isLiked 
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                : 'bg-black/40 text-white hover:bg-black/60'
-            } backdrop-blur-sm border border-white/10`}
-          >
-            <Heart className={`w-7 h-7 ${isLiked ? 'fill-current' : ''}`} />
-          </Button>
+      {/* Right Side Actions - Minimal Design */}
+      <div className="absolute right-4 bottom-32 md:bottom-28 flex flex-col space-y-4 z-20">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleLike}
+          disabled={isLiking}
+          className={`w-10 h-10 rounded-full transition-all duration-200 ${
+            isLiked 
+              ? 'bg-white text-black' 
+              : 'bg-white/10 text-white hover:bg-white/20'
+          } backdrop-blur-sm`}
+        >
+          <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+        </Button>
 
-        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => handleComment()}
+          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+        >
+          <MessageCircle className="w-5 h-5" />
+        </Button>
 
-        <div className="flex flex-col items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleComment()}
-            className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all duration-200 border border-white/10"
-          >
-            <MessageCircle className="w-7 h-7" />
-          </Button>
-
-        </div>
-
-        <div className="flex flex-col items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleShare()}
-            className="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all duration-200 border border-white/10"
-          >
-            <Share className="w-7 h-7" />
-          </Button>
-
-        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => handleShare()}
+          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+        >
+          <Share className="w-5 h-5" />
+        </Button>
       </div>
 
-      {/* Bottom Left Content - TikTok Style */}
-      <div className="absolute bottom-20 md:bottom-6 left-4 right-24 z-20">
-        <div className="flex items-center space-x-3 mb-3">
+      {/* Bottom Content - Clean & Elegant */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-8">
+        {/* User Info */}
+        <div className="flex items-center space-x-3 mb-4">
           <Avatar 
-            className="w-10 h-10 border-2 border-white/30 cursor-pointer hover:border-white/60 transition-all duration-200"
+            className="w-12 h-12 border-2 border-white cursor-pointer hover:scale-105 transition-transform duration-200"
             onClick={() => {
-              // Navigate to user profile
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
             <AvatarImage src={getUserAvatar()} alt={getUserDisplayName()} />
-            <AvatarFallback className="bg-primary text-white text-sm">
+            <AvatarFallback className="bg-white text-black font-semibold">
               {getUserDisplayName().charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div 
             className="cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => {
-              // Navigate to user profile
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
-            <h3 className="font-bold text-white text-base drop-shadow-lg">{getUserDisplayName()}</h3>
-            <p className="text-white/70 text-sm drop-shadow-lg">@{post.user.username}</p>
+            <h3 className="font-semibold text-white text-lg">{getUserDisplayName()}</h3>
+            <p className="text-white/60 text-sm">@{post.user.username}</p>
           </div>
         </div>
 
-        <p className="text-white text-sm mb-4 line-clamp-3 drop-shadow-lg leading-relaxed" style={{ color: 'white' }}>
+        {/* Content */}
+        <p className="text-white text-base mb-4 leading-relaxed font-medium">
           {post.content}
         </p>
         
-        <div className="space-y-3">
-          {showInviteButton && (
-            <div>
-              <InviteButton postId={post.id} postUserId={post.user.id} />
-            </div>
-          )}
-          
-          {post.hasPrivateLocation && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleLocationRequest}
-              disabled={isRequestingLocation}
-              className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-sm transition-all duration-200"
-            >
-              {isRequestingLocation ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <MapPin className="h-4 w-4 mr-2" />
-              )}
-              Request Location
-            </Button>
-          )}
-        </div>
+        {/* Invite Section */}
+        {showInviteButton && (
+          <div className="mb-4">
+            <InviteButton postId={post.id} postUserId={post.user.id} />
+          </div>
+        )}
+        
+        {/* Location */}
+        {locationData && (
+          <div className="flex items-center text-white/80 text-sm mb-2">
+            <MapPin className="h-4 w-4 mr-2" />
+            <span>{locationData.locationName || "Location available"}</span>
+            {!locationData.locationAddress && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleLocationRequest}
+                disabled={isRequestingLocation}
+                className="ml-2 text-white hover:text-white hover:bg-white/10 p-1 h-auto"
+              >
+                {isRequestingLocation ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Request Details"
+                )}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Comment Modal */}

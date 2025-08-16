@@ -141,9 +141,8 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
     if (!userRequest) {
       // No request sent yet - always auto-accept for communities
       return {
-        text: "Join Community",
+        text: "Join",
         variant: "default" as const,
-        className: "bg-green-500 hover:bg-green-600 text-white",
         disabled: isAtLimit,
         onClick: handleInviteRequest,
         icon: MessageCircle,
@@ -162,9 +161,8 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         }
       case "accepted":
         return {
-          text: "In Community",
+          text: "Joined",
           variant: "outline" as const,
-          className: "bg-green-500/20 border-green-500 text-green-400",
           disabled: true,
           icon: MessageCircle,
         }
@@ -208,17 +206,30 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
   const IconComponent = buttonConfig.icon || Users
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Description */}
       {inviteData?.invite.inviteDescription && (
-        <p className="text-white/80 text-sm drop-shadow-lg">
-          {inviteData.invite.inviteDescription}
-        </p>
+        <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+          <p className="text-white text-sm font-medium leading-relaxed">
+            {inviteData.invite.inviteDescription}
+          </p>
+        </div>
       )}
+      
+      {/* Location (if available) */}
+      {inviteData?.post.communityName && (
+        <div className="flex items-center text-white/80 text-xs">
+          <div className="w-2 h-2 bg-white/60 rounded-full mr-2"></div>
+          <span>{inviteData.post.communityName}</span>
+        </div>
+      )}
+      
+      {/* Simple Join Button */}
       <Button
-        variant={buttonConfig.variant}
+        variant="default"
         disabled={buttonConfig.disabled || isLoading}
         onClick={buttonConfig.onClick}
-        className={`${buttonConfig.className || ""} ${className || ""} backdrop-blur-sm transition-all duration-200`}
+        className="w-full bg-white text-black hover:bg-gray-100 font-semibold py-3 px-6 rounded-full transition-all duration-200 shadow-lg border-2 border-white"
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -227,7 +238,6 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         )}
         {buttonConfig.text}
       </Button>
-
     </div>
   )
 }

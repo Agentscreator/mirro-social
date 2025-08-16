@@ -273,19 +273,15 @@ export default function FeedPage() {
     <>
       
       <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page">
-        {/* Mobile Top Navigation - More minimal like TikTok */}
-        <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+        {/* Mobile Top Navigation - Minimal & Elegant */}
+        <div className="md:hidden absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
           <div className="flex items-center justify-between p-4 pt-8 pb-6 pointer-events-auto">
             {showSearchBar ? (
               <div className="flex-1 relative mr-3">
-                {loading && searchQuery ? (
-                  <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
-                ) : (
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-                )}
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
                 <Input
-                  placeholder="Search videos..."
-                  className="pl-12 pr-12 py-3 bg-black/40 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base"
+                  placeholder="Search..."
+                  className="pl-12 pr-12 py-3 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-md text-base focus:bg-white/20 transition-all"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus={true}
@@ -293,7 +289,7 @@ export default function FeedPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-8 h-8"
                   onClick={() => {
                     setShowSearchBar(false);
                     setSearchQuery("");
@@ -304,34 +300,28 @@ export default function FeedPage() {
               </div>
             ) : (
               <>
-                <div className="text-white font-bold text-lg tracking-wide drop-shadow-lg">For You</div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/20 rounded-full w-9 h-9 backdrop-blur-sm"
-                    onClick={() => setShowSearchBar(true)}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
+                <div className="text-white font-light text-xl tracking-wider">Discover</div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white hover:bg-white/10 rounded-full w-10 h-10"
+                  onClick={() => setShowSearchBar(true)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
               </>
             )}
           </div>
         </div>
       
-      {/* Desktop Search Icon - Top Right */}
+      {/* Desktop Search - Top Right */}
       <div className="hidden md:block absolute top-6 right-20 xl:right-24 z-40">
         {showSearchBar ? (
-          <div className="relative w-96">
-            {loading && searchQuery ? (
-              <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 animate-spin" />
-            ) : (
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-            )}
+          <div className="relative w-80">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
             <Input
-              placeholder="Search videos..."
-              className="pl-12 pr-12 py-3 bg-white/15 border-white/30 text-white placeholder:text-white/70 rounded-full backdrop-blur-sm"
+              placeholder="Search..."
+              className="pl-12 pr-12 py-3 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-sm focus:bg-white/20 transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus={true}
@@ -339,7 +329,7 @@ export default function FeedPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white rounded-full w-8 h-8"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-8 h-8"
               onClick={() => {
                 setShowSearchBar(false);
                 setSearchQuery("");
@@ -352,7 +342,7 @@ export default function FeedPage() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white hover:bg-white/20 rounded-full bg-black/40 backdrop-blur-sm w-12 h-12"
+            className="text-white hover:bg-white/10 rounded-full w-12 h-12"
             onClick={() => setShowSearchBar(true)}
           >
             <Search className="h-5 w-5" />
@@ -360,25 +350,25 @@ export default function FeedPage() {
         )}
       </div>
 
-      {/* Desktop Navigation Controls - Right side of video */}
-      <div className="hidden md:flex fixed right-4 xl:right-12 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
+      {/* Desktop Navigation Controls - Minimal */}
+      <div className="hidden md:flex fixed right-4 xl:right-12 top-1/2 -translate-y-1/2 z-40 flex-col gap-3">
         <Button
           variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-full bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm"
+          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
           onClick={goToPreviousVideo}
           disabled={currentVideoIndex === 0}
         >
-          <ChevronUp className="h-6 w-6" />
+          <ChevronUp className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-full bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm"
+          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
           onClick={goToNextVideo}
           disabled={currentVideoIndex >= filteredPosts.length - 1 && !hasMore}
         >
-          <ChevronDown className="h-6 w-6" />
+          <ChevronDown className="h-5 w-5" />
         </Button>
       </div>
 
