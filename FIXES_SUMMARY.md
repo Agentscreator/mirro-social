@@ -11,12 +11,15 @@
 - **Improvement**: Now shows specific error messages to users when group creation fails
 
 ## 3. ✅ Group Stories → Community Stories
-- **File**: `components/messages/GroupStories.tsx` → `components/messages/CommunityStories.tsx`
+- **Files**: 
+  - `components/messages/GroupStories.tsx` → `components/messages/CommunityStories.tsx`
+  - `app/(authenticated)/messages/page.tsx` (updated import)
 - **Changes**:
   - Renamed component from `GroupStories` to `CommunityStories`
   - Updated interfaces: `GroupStory` → `CommunityStory`, `Group` → `Community`
   - Changed comment from "Group Stories Row" to "Community Stories Row"
   - Updated placeholder text from "What's happening in your group?" to "What's happening in your community?"
+  - Fixed import in messages page to use new component name
   - Maintained all functionality while updating terminology
 
 ## 4. ✅ Fixed media upload in messages

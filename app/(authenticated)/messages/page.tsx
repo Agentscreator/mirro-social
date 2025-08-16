@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Search, MessageCircle, ArrowLeft, Plus, MoreVertical, Users } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
-import { GroupStories } from "@/components/messages/GroupStories"
+import { CommunityStories } from "@/components/messages/CommunityStories"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { toast } from "@/hooks/use-toast"
 
@@ -170,9 +170,9 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Group Stories */}
+      {/* Community Stories */}
       {!groupsLoading && groups.length > 0 && (
-        <GroupStories groups={groups} onRefresh={refetchGroups} />
+        <CommunityStories groups={groups} onRefresh={refetchGroups} />
       )}
 
       {/* Conversations List */}
