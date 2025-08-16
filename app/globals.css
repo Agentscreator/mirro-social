@@ -31,6 +31,55 @@
     height: 100dvh;
     overflow: auto;
   }
+}
+
+/* Fullscreen mode styles */
+:fullscreen {
+  background-color: #0f172a !important;
+}
+
+:fullscreen body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+:-webkit-full-screen {
+  background-color: #0f172a !important;
+}
+
+:-moz-full-screen {
+  background-color: #0f172a !important;
+}
+
+:-ms-fullscreen {
+  background-color: #0f172a !important;
+}
+
+/* Hide browser UI in standalone mode (PWA) */
+@media (display-mode: standalone) {
+  body {
+    height: 100vh !important;
+    overflow: hidden;
+  }
+}
+
+/* Force minimal UI on mobile browsers */
+@media screen and (max-width: 768px) {
+  html {
+    /* Force minimal UI on mobile Chrome/Safari */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
+  body {
+    /* Prevent pull-to-refresh */
+    overscroll-behavior-y: contain;
+    /* Hide address bar more aggressively */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
   
   /* FORCE HIDE desktop navigation on mobile and tablets */
   .fixed.left-0.top-0.w-16 {

@@ -78,6 +78,54 @@ export function MobileAppConfig() {
       // Hide address bar on user interaction
       document.addEventListener('touchstart', hideAddressBar, { once: true })
 
+      // Request fullscreen on first user interaction
+      const enterFullscreen = () => {
+        if (!document.fullscreenElement) {
+          requestFullscreen()
+        }
+      }
+
+      // Add fullscreen button for easy access
+      const addFullscreenButton = () => {
+        const button = document.createElement('button')
+        button.innerHTML = '⛶'
+        button.style.cssText = `
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 9999;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `
+        button.onclick = enterFullscreen
+        document.body.appendChild(button)
+        
+        // Hide button after 5 seconds
+        setTimeout(() => {
+          if (button.parentNode) {
+            button.parentNode.removeChild(button)
+          }
+        }, 5000)
+      }
+
+      // Show fullscreen button on mobile
+      if (window.innerWidth <= 768) {
+        setTimeout(addFullscreenButton, 1000)
+      }
+
+      // Auto-enter fullscreen on tap (one-time)
+      document.addEventListener('click', enterFullscreen, { once: true })
+      document.addEventListener('touchstart', enterFullscreen, { once: true })
+
       // Add mobile app class to body
       document.body.classList.add('mobile-app')
 
