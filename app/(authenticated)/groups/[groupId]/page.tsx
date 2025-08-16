@@ -193,7 +193,7 @@ export default function GroupChatPage() {
       const formData = new FormData()
       formData.append('file', newGroupImage)
 
-      const uploadResponse = await fetch('/api/upload', {
+      const uploadResponse = await fetch('/api/messages/upload', {
         method: 'POST',
         body: formData,
       })
