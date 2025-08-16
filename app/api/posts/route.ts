@@ -415,16 +415,6 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes)
         console.log("Buffer created, size:", buffer.length)
 
-        console.log("⚠️ TEMPORARILY SKIPPING VERCEL BLOB UPLOAD FOR DEBUGGING")
-        
-        // Use a simple placeholder URL for now to isolate the issue
-        mediaUrl = media.type.startsWith("video/") ? "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" : "https://via.placeholder.com/400x300.jpg"
-        mediaType = media.type.startsWith("video/") ? "video" : "image"
-        
-        console.log("✅ USING PLACEHOLDER URL:", mediaUrl, "Type:", mediaType)
-        
-        // TODO: Re-enable Vercel Blob upload once we confirm the rest of the flow works
-        /*
         try {
           mediaUrl = await uploadToStorage({
             buffer,
@@ -438,13 +428,14 @@ export async function POST(request: NextRequest) {
         } catch (blobError) {
           console.error("❌ BLOB UPLOAD FAILED:", blobError)
           
-          // Use a placeholder URL for now to prevent the entire operation from failing
-          mediaUrl = `https://placeholder.com/media/${Date.now()}.${media.type.startsWith("video/") ? "mp4" : "jpg"}`
+          // Use a working placeholder URL for fallback
+          mediaUrl = media.type.startsWith("video/") 
+            ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            : "https://via.placeholder.com/400x300.jpg"
           mediaType = media.type.startsWith("video/") ? "video" : "image"
           
-          console.log("⚠️ USING PLACEHOLDER URL:", mediaUrl)
+          console.log("⚠️ USING FALLBACK URL:", mediaUrl)
         }
-        */
       } catch (uploadError) {
         console.error("❌ MEDIA UPLOAD FAILED:", uploadError)
         console.error("Upload error stack:", uploadError instanceof Error ? uploadError.stack : "No stack trace")
@@ -560,7 +551,7 @@ export async function POST(request: NextRequest) {
         if (communityName) {
           console.log("=== CREATING AUTO-GROUP ===")
           console.log("Group details:", {
-            name: groupName.trim(),
+            name: communityName.trim(),
             createdBy: session.user.id,
             postId: post[0].id,
             maxMembers: Math.min(Math.max(inviteLimit, 1), 100),

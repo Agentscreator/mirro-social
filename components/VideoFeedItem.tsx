@@ -488,28 +488,34 @@ const VideoFeedItem = ({
 
       {/* Right Side Actions - Minimal Design */}
       <div className="absolute right-4 bottom-32 md:bottom-28 flex flex-col space-y-4 z-20">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleLike}
-          disabled={isLiking}
-          className={`w-10 h-10 rounded-full transition-all duration-200 ${
-            isLiked 
-              ? 'bg-white text-black' 
-              : 'bg-white/10 text-white hover:bg-white/20'
-          } backdrop-blur-sm`}
-        >
-          <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-        </Button>
+        <div className="flex flex-col items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`w-10 h-10 rounded-full transition-all duration-200 ${
+              isLiked 
+                ? 'bg-white text-black' 
+                : 'bg-white/10 text-white hover:bg-white/20'
+            } backdrop-blur-sm`}
+          >
+            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+          </Button>
+          <span className="text-white text-xs font-medium mt-1">{currentLikes}</span>
+        </div>
 
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => handleComment()}
-          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
-        >
-          <MessageCircle className="w-5 h-5" />
-        </Button>
+        <div className="flex flex-col items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleComment()}
+            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+          >
+            <MessageCircle className="w-5 h-5" />
+          </Button>
+          <span className="text-white text-xs font-medium mt-1">{currentComments}</span>
+        </div>
 
         <Button 
           variant="ghost" 
