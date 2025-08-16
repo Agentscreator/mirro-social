@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
-import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X, Cloud } from "lucide-react"
+import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserCard } from "@/components/user-card"
@@ -440,83 +440,58 @@ export default function DiscoverPage() {
   // ThoughtsUploadArea Component
   const ThoughtsUploadArea = () => {
     return (
-      <div className="relative">
-        {/* Cloudy background container */}
-        <div className="relative bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-3xl border border-gray-700 shadow-lg overflow-hidden">
-          {/* Decorative cloud elements */}
-          <div className="absolute top-4 right-4 text-gray-600 opacity-30">
-            <Cloud className="h-8 w-8" />
+      <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+        <div className="text-center mb-4">
+          <h3 className="text-lg font-medium text-white mb-1">Tell us about yourself</h3>
+          <p className="text-sm text-gray-400">Help us find better matches</p>
+        </div>
+
+        {/* Character count */}
+        <div className="text-center mb-4">
+          <span className={`text-xs ${getTotalCharacters() > 7500 ? 'text-red-400' : 'text-gray-500'}`}>
+            {getTotalCharacters()}/8000 characters
+          </span>
+        </div>
+
+        {/* Existing thoughts */}
+        {thoughts.length > 0 && (
+          <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
+            {thoughts.map((thought) => (
+              <div key={thought.id} className="relative bg-gray-800 rounded-lg p-3 group">
+                <p className="text-sm text-gray-200 pr-6">{thought.content}</p>
+                <button
+                  onClick={() => removeThought(thought.id)}
+                  className="absolute top-2 right-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
           </div>
-          <div className="absolute bottom-6 left-6 text-gray-700 opacity-20">
-            <Cloud className="h-6 w-6" />
-          </div>
+        )}
+
+        {/* New thought input */}
+        <div className="space-y-3">
+          <textarea
+            value={newThought}
+            onChange={(e) => setNewThought(e.target.value)}
+            placeholder="What kind of person would you like to meet?"
+            className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            maxLength={1000}
+          />
           
-          <div className="p-6 space-y-4">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-white mb-2">Tell Mirro About You</h3>
-              <p className="text-sm text-gray-300">Share your thoughts to help us find your perfect connections</p>
-            </div>
-
-            {/* Character count display */}
-            <div className="text-center">
-              <span className={`text-xs font-medium ${getTotalCharacters() > 7500 ? 'text-red-400' : 'text-gray-400'}`}>
-                {getTotalCharacters()}/8000 characters
-              </span>
-            </div>
-
-            {/* Existing thoughts */}
-            {thoughts.length > 0 && (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {thoughts.map((thought) => (
-                  <div key={thought.id} className="relative bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 border border-gray-600/50">
-                    <p className="text-sm text-gray-300 pr-6">{thought.content}</p>
-                    <button
-                      onClick={() => removeThought(thought.id)}
-                      className="absolute top-2 right-2 text-gray-500 hover:text-red-400 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                    <div className="text-xs text-gray-500 mt-1">{thought.content.length}/1000</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* New thought input */}
-            <div className="space-y-3">
-              <div className="relative">
-                <textarea
-                  value={newThought}
-                  onChange={(e) => setNewThought(e.target.value)}
-                  placeholder="What kind of person would you like to meet? Share your thoughts..."
-                  className="w-full h-24 p-3 rounded-xl border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  maxLength={1000}
-                  style={{ backgroundColor: '#1f2937', color: 'white' }}
-                />
-                <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                  {newThought.length}/1000
-                </div>
-              </div>
-
-              <Button
-                onClick={addThought}
-                disabled={
-                  !newThought.trim() || 
-                  newThought.length > 1000 || 
-                  getTotalCharacters() + newThought.length > 8000
-                }
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Thought
-              </Button>
-            </div>
-
-            {/* Helper text */}
-            <div className="text-xs text-gray-400 text-center">
-              Each thought can be up to 1,000 characters. You can add multiple thoughts up to 8,000 total characters.
-            </div>
-          </div>
+          <Button
+            onClick={addThought}
+            disabled={
+              !newThought.trim() || 
+              newThought.length > 1000 || 
+              getTotalCharacters() + newThought.length > 8000
+            }
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 disabled:opacity-50 transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Thought
+          </Button>
         </div>
       </div>
     )
@@ -524,7 +499,7 @@ export default function DiscoverPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
+      <div className="flex justify-center items-center min-h-[60vh]">
         <TypingAnimation />
       </div>
     )
@@ -534,17 +509,17 @@ export default function DiscoverPage() {
     <div className="relative">
       {/* Main Content */}
       <div className="w-full">
-        {/* Header with Hamburger Menu */}
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Discover</h1>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-light text-white">Discover</h1>
           <HamburgerMenu />
         </div>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative mb-8">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
-            placeholder="Search for users..."
-            className="pl-10 rounded-full border-gray-600 bg-gray-800 text-white placeholder:text-gray-400"
+            placeholder="Search users..."
+            className="pl-12 h-12 rounded-xl border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={handleSearchFocus}
@@ -554,21 +529,21 @@ export default function DiscoverPage() {
           {/* Search Results Dropdown */}
           {showSearchResults && (
             <div
-              className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+              className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-lg border border-gray-700 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto"
               data-search-dropdown
             >
               {searchLoading ? (
-                <div className="p-4 text-center">
+                <div className="p-6 text-center">
                   <TypingAnimation />
                 </div>
               ) : searchResults.length > 0 ? (
-                <div className="py-2">
+                <div className="p-2">
                   {searchResults.map((user) => {
                     const imageUrl = getBestImageUrl(user)
                     return (
                       <div
                         key={user.id}
-                        className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0"
+                        className="px-4 py-3 hover:bg-gray-800/80 cursor-pointer rounded-lg mx-1 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -601,12 +576,12 @@ export default function DiscoverPage() {
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="ghost"
                               onMouseDown={(e) => {
                                 e.preventDefault()
                                 handleViewProfile(user.id)
                               }}
-                              className="rounded-full text-gray-300 hover:text-white border-gray-500 bg-gray-700 hover:bg-gray-600"
+                              className="h-8 px-3 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
                             >
                               <User className="h-3 w-3 mr-1" />
                               View
@@ -617,11 +592,11 @@ export default function DiscoverPage() {
                                 e.preventDefault()
                                 handleMessage(user.id)
                               }}
-                              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                              className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                               disabled={messagingUser === user.id || !isReady}
                             >
                               {messagingUser === user.id ? (
-                                <div className="h-3 w-3 mr-1 animate-spin rounded-full border-b border-white"></div>
+                                <div className="h-3 w-3 mr-1 animate-spin rounded-full border border-white border-t-transparent"></div>
                               ) : (
                                 <MessageCircle className="h-3 w-3 mr-1" />
                               )}
@@ -634,7 +609,7 @@ export default function DiscoverPage() {
                   })}
                 </div>
               ) : (
-                <div className="p-4 text-center text-gray-300">No users found</div>
+                <div className="p-6 text-center text-gray-400">No users found</div>
               )}
             </div>
           )}
@@ -647,39 +622,42 @@ export default function DiscoverPage() {
               <>
                 {/* Desktop Layout */}
                 <div className="hidden lg:block">
-                  <div className="flex items-center justify-center gap-6 mb-8">
+                  {/* Navigation */}
+                  <div className="flex items-center justify-center gap-8 mb-8">
                     <Button
                       onClick={goToPrevious}
                       disabled={currentIndex === 0}
-                      variant="outline"
+                      variant="ghost"
                       size="lg"
-                      className="rounded-full w-14 h-14 p-0 border-2 border-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:border-gray-300 bg-white shadow-md"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
-                      <ChevronLeft className="h-6 w-6 text-gray-800" />
+                      <ChevronLeft className="h-5 w-5 text-white" />
                     </Button>
 
-                    <div className="text-xl font-bold text-white min-w-[140px] text-center">Discover People</div>
+                    <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
+                      {currentIndex + 1} of {shuffledUsers.length}
+                    </div>
 
                     <Button
                       onClick={goToNext}
                       disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
-                      variant="outline"
+                      variant="ghost"
                       size="lg"
-                      className="rounded-full w-14 h-14 p-0 border-2 border-gray-800 hover:bg-gray-800 hover:text-white disabled:opacity-30 disabled:border-gray-300 bg-white shadow-md"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
                       {loadingMore ? (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-800 border-t-transparent" />
+                        <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
                       ) : (
-                        <ChevronRight className="h-6 w-6 text-gray-800" />
+                        <ChevronRight className="h-5 w-5 text-white" />
                       )}
                     </Button>
                   </div>
 
-                  {/* Desktop: Side by Side Layout */}
-                  <div className="flex gap-6">
-                    {/* Current User Card */}
+                  {/* Main Content Grid */}
+                  <div className="grid grid-cols-3 gap-8">
+                    {/* User Card */}
                     {currentUser && (
-                      <div className="flex-1">
+                      <div className="col-span-2">
                         <UserCard
                           key={currentUser.id}
                           user={{
@@ -698,50 +676,51 @@ export default function DiscoverPage() {
                       </div>
                     )}
                     
-                    {/* Thoughts Section - Desktop */}
-                    <div className="w-80 flex-shrink-0">
+                    {/* Thoughts Section */}
+                    <div className="col-span-1">
                       <ThoughtsUploadArea />
                     </div>
                   </div>
                 </div>
 
-                {/* Mobile Layout - Reimagined */}
-                <div className="lg:hidden">
-                  {/* Mobile Navigation - Thumb Friendly - MOVED ABOVE USER CARD */}
-                  <div className="flex items-center justify-between px-4 mb-6">
+                {/* Mobile Layout */}
+                <div className="lg:hidden space-y-6">
+                  {/* Navigation */}
+                  <div className="flex items-center justify-center gap-6">
                     <Button
                       onClick={goToPrevious}
                       disabled={currentIndex === 0}
-                      variant="outline"
+                      variant="ghost"
                       size="lg"
-                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
-                      <ChevronLeft className="h-5 w-5 text-blue-600" />
+                      <ChevronLeft className="h-5 w-5 text-white" />
                     </Button>
 
                     <div className="text-center">
-                      <p className="text-sm text-gray-400">← Swipe or tap to explore →</p>
+                      <p className="text-sm text-gray-400">{currentIndex + 1} of {shuffledUsers.length}</p>
+                      <p className="text-xs text-gray-500">Swipe to explore</p>
                     </div>
 
                     <Button
                       onClick={goToNext}
                       disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
-                      variant="outline"
+                      variant="ghost"
                       size="lg"
-                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
                       {loadingMore ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                        <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-blue-600" />
+                        <ChevronRight className="h-5 w-5 text-white" />
                       )}
                     </Button>
                   </div>
 
-                  {/* Main User Card */}
+                  {/* User Card */}
                   {currentUser && (
                     <div 
-                      className="mb-6"
+                      className=""
                       onTouchStart={onTouchStart}
                       onTouchMove={onTouchMove}
                       onTouchEnd={onTouchEnd}
@@ -764,63 +743,8 @@ export default function DiscoverPage() {
                     </div>
                   )}
 
-                  {/* Tell Mirro About You - Mobile */}
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                    <div className="text-center mb-3">
-                      <h4 className="text-sm font-semibold text-white">Tell Mirro About You</h4>
-                      <p className="text-xs text-gray-300">Share your thoughts to help us find your perfect connections</p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <textarea
-                          value={newThought}
-                          onChange={(e) => setNewThought(e.target.value)}
-                          placeholder="What kind of person would you like to meet? Share your thoughts..."
-                          className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-900 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                          maxLength={1000}
-                        />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                          {newThought.length}/1000
-                        </div>
-                      </div>
-
-                      <Button
-                        onClick={addThought}
-                        disabled={
-                          !newThought.trim() || 
-                          newThought.length > 1000 || 
-                          getTotalCharacters() + newThought.length > 8000
-                        }
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 px-4 disabled:opacity-50 text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Thought
-                      </Button>
-                    </div>
-
-                    {/* Recent thoughts preview */}
-                    {thoughts.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-gray-700">
-                        <p className="text-xs text-gray-300 mb-2">Your thoughts ({thoughts.length}):</p>
-                        <div className="space-y-1 max-h-16 overflow-y-auto">
-                          {thoughts.slice(0, 2).map((thought) => (
-                            <div key={thought.id} className="text-xs text-gray-300 bg-gray-900 rounded p-2 truncate">
-                              {thought.content}
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mt-2 text-xs text-gray-300 hover:bg-gray-700"
-                          onClick={() => router.push('/discover?section=thoughts')}
-                        >
-                          View all thoughts
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {/* Thoughts Section - Mobile */}
+                  <ThoughtsUploadArea />
                 </div>
 
                 {explanationLoading !== -1 && (
@@ -828,7 +752,10 @@ export default function DiscoverPage() {
                 )}
               </>
             ) : (
-              <div className="text-center py-8 text-gray-500">No matching users found</div>
+              <div className="text-center py-16">
+                <div className="text-gray-400 mb-2">No users found</div>
+                <p className="text-sm text-gray-500">Try adjusting your search or come back later</p>
+              </div>
             )}
           </>
         )}
