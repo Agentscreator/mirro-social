@@ -81,10 +81,7 @@ export async function POST(
       }
     }
 
-    // Check if invite is full
-    if (invite.currentParticipants >= invite.participantLimit) {
-      return NextResponse.json({ error: "This invite is full" }, { status: 400 })
-    }
+    // Check if invite is full (removed limit check to allow unlimited participants)
 
     // Always auto-accept for communities
     if (true) {

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         .insert(postInvitesTable)
         .values({
           postId: newPost[0].id,
-          participantLimit: Math.min(Math.max(inviteLimit, 1), 100), // Clamp between 1-100
+          participantLimit: inviteLimit, // No limit restriction
           currentParticipants: 0,
         })
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
             description: `Group created from post: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`,
             createdBy: session.user.id,
             postId: newPost[0].id,
-            maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
+            maxMembers: inviteLimit,
             isActive: 1,
           })
           .returning()

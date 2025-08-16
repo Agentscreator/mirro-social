@@ -140,7 +140,7 @@ export async function POST(
         .insert(postInvitesTable)
         .values({
           postId,
-          participantLimit: 10, // Default limit
+          participantLimit: 999999, // Effectively unlimited
           currentParticipants: 0,
         })
         .returning()
@@ -194,7 +194,7 @@ export async function POST(
     let initialStatus = "pending"
     let respondedAt = null
 
-    if (settings.inviteMode === "auto" && invite.currentParticipants < invite.participantLimit) {
+    if (settings.inviteMode === "auto") {
       initialStatus = "accepted"
       respondedAt = new Date()
       

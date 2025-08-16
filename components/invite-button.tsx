@@ -129,7 +129,7 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
     }
 
     const { userRequest, post, invite } = inviteData
-    const isAtLimit = invite.currentParticipants >= invite.participantLimit
+    const isAtLimit = false // Removed limit check to allow unlimited participants
 
     if (!userRequest) {
       // No request sent yet - always auto-join

@@ -57,10 +57,7 @@ export async function POST(
       return NextResponse.json({ error: "Cannot request your own invite" }, { status: 400 })
     }
 
-    // Check if invite is full
-    if (inviteData.currentParticipants >= inviteData.participantLimit) {
-      return NextResponse.json({ error: "Invite is full" }, { status: 400 })
-    }
+    // Removed participant limit check to allow unlimited participants
 
     // Check if user already has a pending or accepted request
     const existingRequest = await db

@@ -87,9 +87,7 @@ export async function PUT(
 
       const invite = inviteInfo[0]
 
-      if (invite.currentParticipants >= invite.participantLimit) {
-        return NextResponse.json({ error: "Invite is full" }, { status: 400 })
-      }
+      // Removed participant limit check to allow unlimited participants
 
       // Update participant count
       updatedInvite = await db
