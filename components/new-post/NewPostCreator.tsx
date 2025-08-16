@@ -72,7 +72,19 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   // Create post
   const handleCreatePost = async () => {
-    if (!selectedFile && !previewUrl) return;
+    console.log('🚀 Share Invitation button clicked!', {
+      hasFile: !!selectedFile,
+      hasPreview: !!previewUrl,
+      hasCaption: !!caption.trim(),
+      autoAcceptInvites,
+      hasGroupName: !!groupName.trim(),
+      isUploading
+    });
+
+    if (!selectedFile && !previewUrl && !caption.trim()) {
+      alert('Please add a video or write a caption for your invitation.');
+      return;
+    }
     
     console.log('🚀 Starting post creation...');
     
@@ -118,8 +130,8 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         groupName: groupName.substring(0, 30),
       });
 
-      // Use the main posts API endpoint
-      const response = await fetch('/api/posts', {
+      // Temporarily use test endpoint to isolate issues
+      const response = await fetch('/api/test-posts-minimal', {
         method: 'POST',
         body: formData,
       });
@@ -399,13 +411,18 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       <div className="p-4 md:p-6 bg-gray-900 border-t border-gray-800 flex-shrink-0">
         <Button
           onClick={handleCreatePost}
-          disabled={isUploading || !caption.trim() || (autoAcceptInvites && !groupName.trim())}
+          disabled={isUploading || (autoAcceptInvites && !groupName.trim())}
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white py-3 md:py-4 rounded-full font-bold text-base md:text-lg"
         >
           {isUploading ? (
             <>
               <Loader2 className="w-4 h-4 md:w-5 md:h-5 mr-2 animate-spin" />
               Creating Invitation...
+            </>
+          ) : (autoAcceptInvites && !groupName.trim()) ? (
+            <>
+              <Users className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+              Enter Group Name
             </>
           ) : (
             <>
