@@ -355,9 +355,8 @@ export async function POST(request: NextRequest) {
     const latitude = formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null
     const longitude = formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null
 
-    // Auto-accept group data
-    const autoAcceptInvites = formData.get("autoAcceptInvites") === "true"
-    const groupName = formData.get("groupName") as string
+    // Community data
+    const communityName = formData.get("groupName") as string // Keep same form field name for compatibility
 
     console.log("Form data parsed:", {
       content: content ? `"${content.substring(0, 100)}${content.length > 100 ? "..." : ""}"` : "null",
@@ -373,8 +372,7 @@ export async function POST(request: NextRequest) {
       inviteLimit,
       hasPrivateLocation,
       locationName: locationName?.substring(0, 50),
-      autoAcceptInvites,
-      groupName: groupName?.substring(0, 50),
+      communityName: communityName?.substring(0, 50),
     })
 
     if (!content?.trim() && !media) {
@@ -459,8 +457,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       content: content || "",
       hasPrivateLocation: hasPrivateLocation ? 1 : 0,
-      autoAcceptInvites: autoAcceptInvites ? 1 : 0,
-      groupName: autoAcceptInvites && groupName?.trim() ? groupName.trim() : null,
+      communityName: communityName?.trim() || null,
     }
 
     if (mediaType === "image") {
@@ -474,8 +471,7 @@ export async function POST(request: NextRequest) {
       content: postData.content,
       image: postData.image,
       video: postData.video,
-      autoAcceptInvites: postData.autoAcceptInvites,
-      groupName: postData.groupName,
+      communityName: postData.communityName,
     })
 
     console.log("About to insert post into database...")
@@ -560,8 +556,8 @@ export async function POST(request: NextRequest) {
           participantLimit: inviteEntry[0].participantLimit,
         })
 
-        // Create group if auto-accept is enabled and group name is provided
-        if (groupName && autoAcceptInvites) {
+        // Create community if community name is provided
+        if (communityName) {
           console.log("=== CREATING AUTO-GROUP ===")
           console.log("Group details:", {
             name: groupName.trim(),
@@ -579,7 +575,7 @@ export async function POST(request: NextRequest) {
                 'Cookie': request.headers.get('Cookie') || '',
               },
               body: JSON.stringify({
-                groupName: groupName.trim(),
+                groupName: communityName.trim(),
                 maxMembers: Math.min(Math.max(inviteLimit, 1), 100),
               }),
             })
@@ -655,10 +651,7 @@ export async function POST(request: NextRequest) {
           }
           */
         } else {
-          console.log("⏭️ Skipping group creation:", {
-            hasGroupName: !!groupName,
-            autoAcceptInvites,
-          })
+          console.log("⏭️ Skipping community creation: no community name provided")
         }
       } catch (inviteError) {
         console.error("❌ INVITE CREATION FAILED:", inviteError)

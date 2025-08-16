@@ -82,8 +82,8 @@ export async function POST(
       return NextResponse.json({ error: "This invite is full" }, { status: 400 })
     }
 
-    // Handle auto-accept invites
-    if (post.autoAcceptInvites === 1) {
+    // Always auto-accept for communities
+    if (true) {
       // Auto-accept the request
       const newRequest = await db
         .insert(inviteRequestsTable)
@@ -113,8 +113,8 @@ export async function POST(
         })
         .where(eq(postInvitesTable.id, invite.id))
 
-      // Find or create group if groupName exists
-      if (post.groupName) {
+      // Find or create community if communityName exists
+      if (post.communityName) {
         let group = await db
           .select()
           .from(groupsTable)
@@ -126,8 +126,8 @@ export async function POST(
           const newGroup = await db
             .insert(groupsTable)
             .values({
-              name: post.groupName,
-              description: `Group for: ${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}`,
+              name: post.communityName,
+              description: `Community for: ${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}`,
               createdBy: post.userId,
               postId: postId,
               maxMembers: invite.participantLimit,
@@ -178,13 +178,13 @@ export async function POST(
           fromUserId: session.user.id,
           type: "invite_auto_accepted",
           title: "Someone joined your invite!",
-          message: `A user automatically joined your invite${post.groupName ? ` and was added to "${post.groupName}"` : ''}`,
+          message: `A user automatically joined your invite${post.communityName ? ` and was added to "${post.communityName}"` : ''}`,
           data: JSON.stringify({
             postId,
             inviteId: invite.id,
-            groupName: post.groupName,
+            communityName: post.communityName,
           }),
-          actionUrl: post.groupName ? `/groups/${group?.[0]?.id}` : `/post/${postId}`,
+          actionUrl: post.communityName ? `/groups/${group?.[0]?.id}` : `/post/${postId}`,
         })
 
       return NextResponse.json({
@@ -258,8 +258,7 @@ export async function GET(
           id: postsTable.id,
           userId: postsTable.userId,
           content: postsTable.content,
-          autoAcceptInvites: postsTable.autoAcceptInvites,
-          groupName: postsTable.groupName,
+          communityName: postsTable.communityName,
         },
         postOwner: {
           username: usersTable.username,

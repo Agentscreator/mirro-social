@@ -49,11 +49,10 @@ export default function CreateVideoPage() {
   const [description, setDescription] = useState('')
   const [enableInvites, setEnableInvites] = useState(true)
   const [inviteDescription, setInviteDescription] = useState('')
-  const [groupName, setGroupName] = useState('')
+  const [communityName, setCommunityName] = useState('')
   const [maxParticipants, setMaxParticipants] = useState(10)
   const [hasLocation, setHasLocation] = useState(false)
   const [locationName, setLocationName] = useState('')
-  const [autoAccept, setAutoAccept] = useState(false)
   
   // UI state
   const [isUploading, setIsUploading] = useState(false)
@@ -119,14 +118,14 @@ export default function CreateVideoPage() {
     }
   }
 
-  const generateGroupName = () => {
+  const generateCommunityName = () => {
     if (description.trim()) {
       // Extract first few words from description
       const words = description.trim().split(' ').slice(0, 3)
-      const generatedName = words.join(' ') + ' Group'
-      setGroupName(generatedName)
+      const generatedName = words.join(' ') + ' Community'
+      setCommunityName(generatedName)
     } else {
-      setGroupName('My Video Group')
+      setCommunityName('My Community')
     }
   }
 
@@ -160,10 +159,10 @@ export default function CreateVideoPage() {
       return
     }
 
-    if (enableInvites && autoAccept && !groupName.trim()) {
+    if (enableInvites && !communityName.trim()) {
       toast({
-        title: "Group name required",
-        description: "Please provide a name for your group",
+        title: "Community name required",
+        description: "Please provide a name for your community",
         variant: "destructive",
       })
       return
@@ -181,10 +180,10 @@ export default function CreateVideoPage() {
       if (enableInvites) {
         formData.append('inviteDescription', inviteDescription.trim())
         formData.append('inviteLimit', maxParticipants.toString())
-        formData.append('autoAcceptInvites', autoAccept.toString())
+        formData.append('autoAcceptInvites', 'true') // Always auto-accept for communities
         
-        if (autoAccept && groupName.trim()) {
-          formData.append('groupName', groupName.trim())
+        if (communityName.trim()) {
+          formData.append('groupName', communityName.trim()) // Keep same field name for API compatibility
         }
       }
 
@@ -423,41 +422,31 @@ export default function CreateVideoPage() {
                   />
                 </div>
 
-                {/* Auto-accept and Group Creation */}
+                {/* Community Creation */}
                 <div className="space-y-4 pt-4 border-t border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-sm font-medium">Auto-accept & Create Group</Label>
-                      <p className="text-xs text-gray-400">Automatically accept requests and create a group chat</p>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">Community Name</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={generateCommunityName}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        Generate
+                      </Button>
                     </div>
-                    <Switch
-                      checked={autoAccept}
-                      onCheckedChange={setAutoAccept}
+                    <Input
+                      placeholder="Name your community..."
+                      value={communityName}
+                      onChange={(e) => setCommunityName(e.target.value)}
+                      className="bg-gray-800 border-gray-600 text-white"
+                      maxLength={50}
                     />
+                    <p className="text-xs text-gray-400 mt-1">
+                      People who join will be added to this community chat
+                    </p>
                   </div>
-
-                  {autoAccept && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label className="text-sm font-medium">Group Name</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={generateGroupName}
-                          className="text-xs text-blue-400 hover:text-blue-300"
-                        >
-                          Generate
-                        </Button>
-                      </div>
-                      <Input
-                        placeholder="Enter group name..."
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        maxLength={50}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             )}

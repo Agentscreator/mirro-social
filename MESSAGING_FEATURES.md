@@ -1,7 +1,7 @@
-# TikTok-Style Video Upload with Group Invites
+# TikTok-Style Video Upload with Community Invites
 
 ## Overview
-The app now features a TikTok-style video upload system where users can create short-form video content and invite others to join activities, automatically creating group chats for accepted participants.
+The app now features a TikTok-style video upload system where users can create short-form video content and invite others to join communities, automatically creating community chats for all participants.
 
 ## Key Features
 
@@ -14,24 +14,22 @@ The app now features a TikTok-style video upload system where users can create s
 - **Upload flow**:
   1. Select video from device
   2. Preview with play/pause controls
-  3. Add description and invite settings
+  3. Add description and community settings
   4. Post to feed
 
-### 2. Group Invite System
+### 2. Community Invite System
 - **Invite Description**: Users describe what they're inviting people to do (e.g., "Join me for coffee", "Let's go hiking")
 - **Participant Limits**: Set maximum number of participants (2-50)
-- **Auto-Accept Mode**: 
-  - When enabled, requests are automatically accepted
-  - Automatically creates a group chat
-  - Users are immediately added to the group
-- **Manual Mode**: 
-  - Host manually reviews and accepts/denies requests
-  - Group creation happens after acceptance
+- **Auto-Join Communities**: 
+  - All requests are automatically accepted
+  - Automatically creates a community chat
+  - Users are immediately added to the community
+- **Simple Join Process**: One-click "Join Community" button
 
-### 3. Group Creation
-- **Automatic Group Names**: Generated from video description or custom names
-- **Instant Messaging**: Accepted participants are added to group chat
-- **Group Management**: Host becomes admin, participants are members
+### 3. Community Creation
+- **Custom Community Names**: Users name their communities
+- **Instant Messaging**: All participants are added to community chat
+- **Community Management**: Host becomes admin, participants are members
 
 ### 4. Location Sharing
 - **Private Locations**: Users can add location information
@@ -46,27 +44,27 @@ The app now features a TikTok-style video upload system where users can create s
 
 ## User Flow
 
-### Creating a Video Invite
+### Creating a Video Community
 1. Tap "Create" button in navigation
 2. Select or record video
 3. Add description
 4. Enable invites and describe the activity
 5. Set participant limit
-6. Choose auto-accept or manual review
-7. Optionally add group name and location
+6. Name your community
+7. Optionally add location
 8. Post video
 
-### Joining an Invite
+### Joining a Community
 1. View video in feed
 2. See invite description below video
-3. Tap "Join Group" (auto-accept) or "Request to Join" (manual)
-4. If auto-accepted, immediately join group chat
-5. If manual, wait for host approval
+3. Tap "Join Community"
+4. Immediately join community chat
+5. Start connecting with other members
 
-### Group Chat Experience
-1. Automatic group creation upon first acceptance
+### Community Chat Experience
+1. Automatic community creation upon first join
 2. Host is admin, participants are members
-3. Group name reflects the activity
+3. Community name reflects the activity
 4. Standard messaging features available
 
 ## Technical Implementation
@@ -89,14 +87,16 @@ The app now features a TikTok-style video upload system where users can create s
 
 ## Benefits
 1. **Social Discovery**: Easy way to find and join local activities
-2. **Instant Connection**: Automatic group creation facilitates immediate communication
+2. **Instant Connection**: Automatic community creation facilitates immediate communication
 3. **Visual Appeal**: Video format is more engaging than text posts
 4. **Mobile-First**: Optimized for mobile usage patterns
-5. **Privacy Control**: Users control location and group access
+5. **Simplified Process**: One-click join removes friction
+6. **Community Building**: Focus on building lasting communities around shared interests
 
 ## Future Enhancements
 - Video editing tools integration
 - Live streaming capabilities
-- Event scheduling within groups
-- Location-based invite discovery
-- Push notifications for invite responses
+- Event scheduling within communities
+- Location-based community discovery
+- Push notifications for community updates
+- Community moderation tools

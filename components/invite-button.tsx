@@ -24,8 +24,7 @@ interface InviteData {
     id: number
     userId: string
     content: string
-    autoAcceptInvites: number
-    groupName?: string
+    communityName?: string
   }
   postOwner: {
     username: string
@@ -87,10 +86,10 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         
         if (data.autoAccepted) {
           toast({
-            title: "Welcome to the group!",
+            title: "Welcome to the community!",
             description: data.groupId 
-              ? "You've been automatically added to the group chat."
-              : "You've been accepted to this invite.",
+              ? "You've been added to the community chat."
+              : "You've joined this community.",
           })
           
           // Navigate to group if one was created
@@ -136,30 +135,18 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
     }
 
     const { userRequest, post, invite } = inviteData
-    const isAutoAccept = post.autoAcceptInvites === 1
     const isAtLimit = invite.currentParticipants >= invite.participantLimit
-    const hasGroupName = !!post.groupName
+    const hasCommunityName = !!post.communityName
 
     if (!userRequest) {
-      // No request sent yet
-      if (isAutoAccept && !isAtLimit) {
-        return {
-          text: hasGroupName ? "Join Group" : "Join Now",
-          variant: "default" as const,
-          className: "bg-green-500 hover:bg-green-600 text-white",
-          disabled: false,
-          onClick: handleInviteRequest,
-          icon: hasGroupName ? MessageCircle : Users,
-        }
-      } else {
-        return {
-          text: "Request to Join",
-          variant: "default" as const,
-          className: "bg-blue-500 hover:bg-blue-600 text-white",
-          disabled: isAtLimit,
-          onClick: handleInviteRequest,
-          icon: Users,
-        }
+      // No request sent yet - always auto-accept for communities
+      return {
+        text: "Join Community",
+        variant: "default" as const,
+        className: "bg-green-500 hover:bg-green-600 text-white",
+        disabled: isAtLimit,
+        onClick: handleInviteRequest,
+        icon: MessageCircle,
       }
     }
 
@@ -175,11 +162,11 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         }
       case "accepted":
         return {
-          text: hasGroupName ? "In Group" : "Joined",
+          text: "In Community",
           variant: "outline" as const,
           className: "bg-green-500/20 border-green-500 text-green-400",
           disabled: true,
-          icon: hasGroupName ? MessageCircle : Users,
+          icon: MessageCircle,
         }
       case "denied":
         return {
@@ -240,11 +227,7 @@ export function InviteButton({ postId, postUserId, className }: InviteButtonProp
         )}
         {buttonConfig.text}
       </Button>
-      {inviteData && (
-        <p className="text-white/60 text-xs drop-shadow-lg">
-          {inviteData.invite.currentParticipants}/{inviteData.invite.participantLimit} joined
-        </p>
-      )}
+
     </div>
   )
 }

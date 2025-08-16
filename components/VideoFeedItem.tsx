@@ -479,9 +479,7 @@ const VideoFeedItem = ({
           >
             <Heart className={`w-7 h-7 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
-          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">
-            {currentLikes > 999 ? `${(currentLikes / 1000).toFixed(1)}K` : currentLikes.toLocaleString()}
-          </span>
+
         </div>
 
         <div className="flex flex-col items-center">
@@ -493,9 +491,7 @@ const VideoFeedItem = ({
           >
             <MessageCircle className="w-7 h-7" />
           </Button>
-          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">
-            {currentComments > 999 ? `${(currentComments / 1000).toFixed(1)}K` : currentComments.toLocaleString()}
-          </span>
+
         </div>
 
         <div className="flex flex-col items-center">
@@ -507,7 +503,7 @@ const VideoFeedItem = ({
           >
             <Share className="w-7 h-7" />
           </Button>
-          <span className="text-white text-xs mt-2 font-semibold drop-shadow-lg">Share</span>
+
         </div>
       </div>
 
