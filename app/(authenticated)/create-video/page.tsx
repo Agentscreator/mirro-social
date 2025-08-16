@@ -50,7 +50,7 @@ export default function CreateVideoPage() {
   const [enableInvites, setEnableInvites] = useState(true)
   const [inviteDescription, setInviteDescription] = useState('')
   const [communityName, setCommunityName] = useState('')
-  const [maxParticipants, setMaxParticipants] = useState(10)
+  const [maxParticipants, setMaxParticipants] = useState(999999) // Unlimited participants
   const [hasLocation, setHasLocation] = useState(false)
   const [locationName, setLocationName] = useState('')
   
@@ -410,17 +410,7 @@ export default function CreateVideoPage() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-sm font-medium">Max Participants</Label>
-                  <Input
-                    type="number"
-                    min="2"
-                    max="50"
-                    value={maxParticipants}
-                    onChange={(e) => setMaxParticipants(parseInt(e.target.value) || 10)}
-                    className="bg-gray-800 border-gray-600 text-white mt-2"
-                  />
-                </div>
+                {/* Max Participants removed - unlimited participants allowed */}
 
                 {/* Community Creation */}
                 <div className="space-y-4 pt-4 border-t border-gray-700">

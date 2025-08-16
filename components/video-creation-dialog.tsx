@@ -52,7 +52,7 @@ export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoC
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isInviteMode, setIsInviteMode] = useState(true)
-  const [inviteLimit, setInviteLimit] = useState(5)
+  const [inviteLimit, setInviteLimit] = useState(999999) // Unlimited participants
   const [videoDescription, setVideoDescription] = useState("")
   const [selectedSound, setSelectedSound] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<"upload" | "edit" | "sound" | "details">("upload")
@@ -140,7 +140,7 @@ export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoC
       setSelectedVideo(null)
       setVideoPreview(null)
       setIsInviteMode(true)
-      setInviteLimit(5)
+      setInviteLimit(999999)
       setVideoDescription("")
       setSelectedSound(null)
       setCurrentStep("upload")
@@ -461,26 +461,7 @@ export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoC
                     />
                   </div>
 
-                  {/* Invite Limit */}
-                  {isInviteMode && (
-                    <div>
-                      <Label className="text-white mb-2 block">
-                        Maximum participants: {inviteLimit}
-                      </Label>
-                      <Slider
-                        value={[inviteLimit]}
-                        onValueChange={([value]) => setInviteLimit(value)}
-                        min={2}
-                        max={50}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>2</span>
-                        <span>50</span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Invite Limit removed - unlimited participants allowed */}
 
                   {/* Description */}
                   <div>
@@ -504,7 +485,7 @@ export function VideoCreationDialog({ open, onOpenChange, onCreatePost }: VideoC
                     <h4 className="text-white font-medium mb-2">Summary</h4>
                     <div className="space-y-1 text-sm text-gray-300">
                       <div>Type: {isInviteMode ? "Video Invite" : "Regular Post"}</div>
-                      {isInviteMode && <div>Max participants: {inviteLimit}</div>}
+                      {isInviteMode && <div>Participants: Unlimited</div>}
                       <div>Sound: {selectedSound ? PRESET_SOUNDS.find(s => s.id === selectedSound)?.name : "Original"}</div>
                       <div>Filters: Applied</div>
                     </div>

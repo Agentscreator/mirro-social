@@ -13,7 +13,7 @@ export default function CreateInvitePage() {
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [date, setDate] = useState('')
-  const [maxParticipants, setMaxParticipants] = useState(10)
+  const [maxParticipants, setMaxParticipants] = useState(999999) // Unlimited participants
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,15 +85,7 @@ export default function CreateInvitePage() {
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-            <div>
-              <Input
-                type="number"
-                placeholder="Max participants"
-                value={maxParticipants}
-                onChange={(e) => setMaxParticipants(parseInt(e.target.value))}
-                min="1"
-              />
-            </div>
+            {/* Max participants removed - unlimited participants allowed */}
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? 'Creating...' : 'Create Invite'}
             </Button>
