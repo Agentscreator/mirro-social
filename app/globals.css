@@ -14,22 +14,30 @@
     appearance: none;
   }
   
-  /* Hide browser address bar and navigation */
+  /* Push content down to hide browser navigation */
   body {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height */
+    position: relative;
+    top: -60px; /* Adjust this value to hide the browser nav bar */
+    margin-top: 60px; /* Compensate for the negative top */
+    height: calc(100vh + 60px);
+    height: calc(100dvh + 60px);
   }
   
-  /* Ensure content fills the screen */
+  /* Ensure content container accounts for the offset */
   #__next, 
   [data-nextjs-container] {
-    height: 100vh;
-    height: 100dvh;
+    height: calc(100vh + 60px);
+    height: calc(100dvh + 60px);
     overflow: auto;
+    padding-top: 0;
+  }
+  
+  /* Make sure the main content area is properly positioned */
+  main, 
+  [role="main"],
+  .main-content {
+    min-height: calc(100vh + 60px);
+    min-height: calc(100dvh + 60px);
   }
 }
 
