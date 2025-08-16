@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { storyViewsTable, storiesTable } from "@/src/db/schema"
+import { storyViewsTable, storiesTable, groupStoryViewsTable, groupStoriesTable } from "@/src/db/schema"
 import { eq, and } from "drizzle-orm"
 
 // POST /api/stories/[storyId]/view - Mark story as viewed
@@ -15,6 +15,44 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const userId = session.user.id
     const { storyId: storyIdParam } = await params
+    
+    // Handle group stories (prefixed with "group_")
+    if (storyIdParam.startsWith("group_")) {
+      const groupStoryId = Number.parseInt(storyIdParam.replace("group_", ""))
+      
+      if (isNaN(groupStoryId)) {
+        return NextResponse.json({ error: "Invalid group story ID" }, { status: 400 })
+      }
+
+      // Check if group story exists and is not expired
+      const [groupStory] = await db.select().from(groupStoriesTable).where(eq(groupStoriesTable.id, groupStoryId))
+
+      if (!groupStory) {
+        return NextResponse.json({ error: "Group story not found" }, { status: 404 })
+      }
+
+      if (new Date() > groupStory.expiresAt) {
+        return NextResponse.json({ error: "Group story has expired" }, { status: 410 })
+      }
+
+      // Check if user has already viewed this group story
+      const [existingView] = await db
+        .select()
+        .from(groupStoryViewsTable)
+        .where(and(eq(groupStoryViewsTable.storyId, groupStoryId), eq(groupStoryViewsTable.userId, userId)))
+
+      // If not viewed yet, record the view
+      if (!existingView) {
+        await db.insert(groupStoryViewsTable).values({
+          storyId: groupStoryId,
+          userId,
+        })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Handle regular stories
     const storyId = Number.parseInt(storyIdParam)
 
     if (isNaN(storyId)) {

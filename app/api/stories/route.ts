@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { storiesTable, storyViewsTable, usersTable, followersTable, communitiesTable, communityMembersTable } from "@/src/db/schema"
+import { storiesTable, storyViewsTable, usersTable, followersTable, communitiesTable, communityMembersTable, groupStoriesTable, groupStoryViewsTable, groupsTable, groupMembersTable } from "@/src/db/schema"
 import { eq, and, gt, desc, sql, inArray, or } from "drizzle-orm"
 import { put } from '@vercel/blob'
 import { v4 as uuidv4 } from "uuid"
@@ -49,6 +49,29 @@ export async function GET(request: NextRequest) {
     
     // Combine all community IDs (user's communities + friends' communities)
     const allCommunityIds = Array.from(new Set([...userCommunityIds, ...friendsCommunityIds]))
+
+    // Get groups the user is a member of
+    const userGroupsQuery = await db
+      .select({ groupId: groupMembersTable.groupId })
+      .from(groupMembersTable)
+      .where(eq(groupMembersTable.userId, userId))
+
+    const userGroupIds = userGroupsQuery.map((g) => g.groupId)
+
+    // Get groups that friends are members of
+    const friendsGroupsQuery = await db
+      .select({ groupId: groupMembersTable.groupId })
+      .from(groupMembersTable)
+      .where(
+        followedUserIds.length > 0 
+          ? inArray(groupMembersTable.userId, followedUserIds)
+          : sql`false`
+      )
+
+    const friendsGroupIds = friendsGroupsQuery.map((g) => g.groupId)
+    
+    // Combine all group IDs (user's groups + friends' groups)
+    const allGroupIds = Array.from(new Set([...userGroupIds, ...friendsGroupIds]))
 
     // Fetch active stories (not expired) from:
     // 1. Personal stories from followed users and self
@@ -103,8 +126,47 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(storiesTable.createdAt))
 
-    // Format the response
-    const stories = storiesQuery.map((story) => ({
+    // Fetch group stories separately
+    const groupStoriesQuery = await db
+      .select({
+        id: groupStoriesTable.id,
+        userId: groupStoriesTable.userId,
+        groupId: groupStoriesTable.groupId,
+        content: groupStoriesTable.content,
+        image: groupStoriesTable.image,
+        video: groupStoriesTable.video,
+        createdAt: groupStoriesTable.createdAt,
+        expiresAt: groupStoriesTable.expiresAt,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        profileImage: usersTable.profileImage,
+        groupName: groupsTable.name,
+        groupImage: groupsTable.image,
+        // Check if current user has viewed this group story
+        isViewed: sql<boolean>`EXISTS(
+          SELECT 1 FROM ${groupStoryViewsTable} 
+          WHERE ${groupStoryViewsTable.storyId} = ${groupStoriesTable.id} 
+          AND ${groupStoryViewsTable.userId} = ${userId}
+        )`,
+        // Count total views
+        views: sql<number>`(
+          SELECT COUNT(*) FROM ${groupStoryViewsTable} 
+          WHERE ${groupStoryViewsTable.storyId} = ${groupStoriesTable.id}
+        )`,
+      })
+      .from(groupStoriesTable)
+      .innerJoin(usersTable, eq(groupStoriesTable.userId, usersTable.id))
+      .innerJoin(groupsTable, eq(groupStoriesTable.groupId, groupsTable.id))
+      .where(
+        and(
+          gt(groupStoriesTable.expiresAt, now),
+          allGroupIds.length > 0 ? inArray(groupStoriesTable.groupId, allGroupIds) : sql`false`
+        )
+      )
+      .orderBy(desc(groupStoriesTable.createdAt))
+
+    // Format regular stories
+    const formattedStories = storiesQuery.map((story) => ({
       id: story.id,
       userId: story.userId,
       type: story.type,
@@ -129,7 +191,37 @@ export async function GET(request: NextRequest) {
       } : null,
     }))
 
-    return NextResponse.json({ stories })
+    // Format group stories as community stories for consistent display
+    const formattedGroupStories = groupStoriesQuery.map((story) => ({
+      id: `group_${story.id}`, // Prefix to distinguish from regular stories
+      userId: story.userId,
+      type: "community", // Treat as community type for the frontend
+      communityId: story.groupId?.toString(),
+      content: story.content,
+      image: story.image,
+      video: story.video,
+      createdAt: story.createdAt?.toISOString(),
+      expiresAt: story.expiresAt?.toISOString(),
+      views: story.views || 0,
+      isViewed: story.isViewed || false,
+      user: {
+        id: story.userId,
+        username: story.username,
+        nickname: story.nickname,
+        profileImage: story.profileImage,
+      },
+      community: {
+        id: story.groupId?.toString(),
+        name: story.groupName,
+        image: story.groupImage,
+      },
+    }))
+
+    // Combine all stories and sort by creation date
+    const allStories = [...formattedStories, ...formattedGroupStories]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return NextResponse.json({ stories: allStories })
   } catch (error) {
     console.error("Error fetching stories:", error)
     return NextResponse.json({ error: "Failed to fetch stories" }, { status: 500 })
