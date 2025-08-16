@@ -349,17 +349,49 @@ export default function DiscoverPage() {
     loadInitialData()
   }, [])
 
-  // Filter users based on search query and add randomization
+  // Filter users based on search query and prioritize by tier (users with embeddings first)
   const filteredUsers = users.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()))
   
-  // Add some randomization to prevent the same user always appearing first
-  const shuffledUsers = [...filteredUsers]
-  if (shuffledUsers.length > 1) {
-    // Fisher-Yates shuffle for the first few users to add variety
-    for (let i = Math.min(5, shuffledUsers.length - 1); i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j], shuffledUsers[i]];
+  // Sort users by tier (lower tier number = higher priority) and then by score
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    // First sort by tier (if available)
+    const aTier = (a as any).tier || 3
+    const bTier = (b as any).tier || 3
+    
+    if (aTier !== bTier) {
+      return aTier - bTier // Lower tier number comes first
     }
+    
+    // If same tier, sort by score (higher score first)
+    return (b.score || 0) - (a.score || 0)
+  })
+  
+  // Add some randomization within tiers to prevent the same user always appearing first
+  const shuffledUsers = [...sortedUsers]
+  if (shuffledUsers.length > 1) {
+    // Group by tier and shuffle within each tier
+    const tierGroups: { [key: number]: typeof shuffledUsers } = {}
+    shuffledUsers.forEach(user => {
+      const tier = (user as any).tier || 3
+      if (!tierGroups[tier]) tierGroups[tier] = []
+      tierGroups[tier].push(user)
+    })
+    
+    // Shuffle within each tier
+    Object.values(tierGroups).forEach(tierUsers => {
+      if (tierUsers.length > 1) {
+        for (let i = Math.min(3, tierUsers.length - 1); i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [tierUsers[i], tierUsers[j]] = [tierUsers[j], tierUsers[i]];
+        }
+      }
+    })
+    
+    // Reconstruct the array with shuffled tiers
+    shuffledUsers.length = 0
+    Object.keys(tierGroups).sort((a, b) => Number(a) - Number(b)).forEach(tier => {
+      shuffledUsers.push(...tierGroups[Number(tier)])
+    })
   }
 
   // Save and restore current index position
@@ -675,10 +707,45 @@ export default function DiscoverPage() {
 
                 {/* Mobile Layout - Reimagined */}
                 <div className="lg:hidden">
+                  {/* Mobile Navigation - Thumb Friendly - MOVED ABOVE USER CARD */}
+                  <div className="flex items-center justify-between px-4 mb-6">
+                    <Button
+                      onClick={goToPrevious}
+                      disabled={currentIndex === 0}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-blue-600" />
+                    </Button>
+
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">← Swipe or tap to explore →</p>
+                    </div>
+
+                    <Button
+                      onClick={goToNext}
+                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
+                    >
+                      {loadingMore ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-blue-600" />
+                      )}
+                    </Button>
+                  </div>
 
                   {/* Main User Card */}
                   {currentUser && (
-                    <div className="mb-6">
+                    <div 
+                      className="mb-6"
+                      onTouchStart={onTouchStart}
+                      onTouchMove={onTouchMove}
+                      onTouchEnd={onTouchEnd}
+                    >
                       <UserCard
                         key={currentUser.id}
                         user={{
@@ -696,37 +763,6 @@ export default function DiscoverPage() {
                       />
                     </div>
                   )}
-
-                  {/* Mobile Navigation - Thumb Friendly */}
-                  <div className="flex items-center justify-between px-4 mb-6">
-                    <Button
-                      onClick={goToPrevious}
-                      disabled={currentIndex === 0}
-                      variant="outline"
-                      size="lg"
-                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-blue-600" />
-                    </Button>
-
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600">← Swipe or tap to explore →</p>
-                    </div>
-
-                    <Button
-                      onClick={goToNext}
-                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
-                      variant="outline"
-                      size="lg"
-                      className="rounded-full w-12 h-12 p-0 border-2 border-blue-200 hover:bg-blue-50 disabled:opacity-30"
-                    >
-                      {loadingMore ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-blue-600" />
-                      )}
-                    </Button>
-                  </div>
 
                   {/* Tell Mirro About You - Mobile */}
                   <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">

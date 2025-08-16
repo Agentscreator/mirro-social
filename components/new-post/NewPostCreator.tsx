@@ -154,10 +154,14 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
               console.log('✅ Group created successfully:', groupResult.group);
               result.group = groupResult.group; // Add group to result
             } else {
-              console.error('❌ Failed to create group:', await groupResponse.text());
+              const errorText = await groupResponse.text();
+              console.error('❌ Failed to create group:', errorText);
+              // Show user-friendly error message
+              alert(`Failed to create group: ${errorText || 'Unknown error'}`);
             }
           } catch (groupError) {
             console.error('❌ Error creating group:', groupError);
+            alert('Failed to create group. Please try again.');
           }
         }
         

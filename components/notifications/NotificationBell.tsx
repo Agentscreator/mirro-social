@@ -68,9 +68,20 @@ export function NotificationBell() {
           )
         )
         setUnreadCount(prev => Math.max(0, prev - notificationIds.length))
+        
+        // Refresh notifications to ensure server state is synced
+        setTimeout(() => {
+          fetchNotifications()
+        }, 500)
+      } else {
+        console.error('Failed to mark notifications as read:', response.status)
+        // Refresh notifications to get current state
+        fetchNotifications()
       }
     } catch (error) {
       console.error('Error marking notifications as read:', error)
+      // Refresh notifications to get current state
+      fetchNotifications()
     }
   }
 

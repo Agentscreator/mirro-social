@@ -20,10 +20,10 @@ export function TypingAnimation({ dots = 3, speed = 500 }: TypingAnimationProps)
 
   return (
     <span className="inline-flex items-center">
-      <span className="text-2xl font-light tracking-wider bg-gradient-to-r from-sky-500 via-sky-600 to-sky-700 bg-clip-text text-transparent drop-shadow-sm">
+      <span className="text-2xl font-light tracking-wider bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 bg-clip-text text-transparent drop-shadow-sm">
         Thinking
       </span>
-      <span className="ml-2 text-sky-500">
+      <span className="ml-2 text-blue-500">
         {Array(count)
           .fill(".")
           .map((dot, i) => (

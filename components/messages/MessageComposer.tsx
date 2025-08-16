@@ -3,10 +3,10 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Send, Smile, Paperclip, Mic } from "lucide-react"
+import { Send, Smile, Paperclip, Mic, X } from "lucide-react"
 
 interface MessageComposerProps {
-  onSendMessage: (content: string) => Promise<boolean>
+  onSendMessage: (content: string, attachment?: { url: string; type: string; name: string }) => Promise<boolean>
   disabled?: boolean
   placeholder?: string
   onStartTyping?: () => void
@@ -16,6 +16,8 @@ interface MessageComposerProps {
 export function MessageComposer({ onSendMessage, disabled = false, placeholder = "Message...", onStartTyping, onStopTyping }: MessageComposerProps) {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [attachment, setAttachment] = useState<{ url: string; type: string; name: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -41,12 +43,47 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
     }
   }
 
+  const handleFileUpload = async (file: File) => {
+    if (uploading) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/messages/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setAttachment({
+          url: result.url,
+          type: file.type,
+          name: file.name,
+        })
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to upload file')
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      alert('Failed to upload file')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleSend = async () => {
-    if (!message.trim() || sending || disabled) return
+    if ((!message.trim() && !attachment) || sending || disabled) return
 
     setSending(true)
     const messageContent = message.trim()
+    const messageAttachment = attachment
+    
     setMessage("") // Clear input immediately for better UX
+    setAttachment(null) // Clear attachment
     
     // Stop typing indicator
     if (onStopTyping) {
@@ -58,9 +95,10 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
       textareaRef.current.style.height = 'auto'
     }
     
-    const success = await onSendMessage(messageContent)
+    const success = await onSendMessage(messageContent, messageAttachment || undefined)
     if (!success) {
       setMessage(messageContent) // Restore message on error
+      setAttachment(messageAttachment) // Restore attachment on error
     }
     
     setSending(false)
@@ -77,12 +115,52 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
     <div className="p-4 bg-gray-900 border-t border-gray-700">
       <div className="flex items-end gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full text-gray-400 hover:text-gray-300">
-            <Paperclip className="h-5 w-5" />
+          <input
+            type="file"
+            accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx,.xls,.xlsx"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                handleFileUpload(file)
+              }
+            }}
+            className="hidden"
+            id="message-file-input"
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-gray-400 hover:text-gray-300"
+            onClick={() => document.getElementById('message-file-input')?.click()}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+            ) : (
+              <Paperclip className="h-5 w-5" />
+            )}
           </Button>
         </div>
         
         <div className="flex-1 relative">
+          {/* Attachment Preview */}
+          {attachment && (
+            <div className="mb-2 p-2 bg-gray-700 rounded-lg flex items-center gap-2">
+              <div className="flex-1">
+                <p className="text-sm text-white truncate">{attachment.name}</p>
+                <p className="text-xs text-gray-400">{attachment.type}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAttachment(null)}
+                className="text-gray-400 hover:text-red-400"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
           <Textarea
             ref={textareaRef}
             placeholder={placeholder}
@@ -102,7 +180,7 @@ export function MessageComposer({ onSendMessage, disabled = false, placeholder =
           </Button>
         </div>
         
-        {message.trim() ? (
+        {(message.trim() || attachment) ? (
           <Button
             onClick={handleSend}
             disabled={sending || disabled}
