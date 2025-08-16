@@ -3,11 +3,16 @@
 @tailwind utilities;
 
 /* Mobile fixes for full-screen experience */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden;
+  }
+  
+  /* FORCE HIDE desktop navigation on mobile and tablets */
+  .fixed.left-0.top-0.w-16 {
+    display: none !important;
   }
   
   /* Ensure feed page takes full screen on mobile */

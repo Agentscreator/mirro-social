@@ -60,8 +60,8 @@ export function Navigation() {
 
   return (
     <>
-      {/* Desktop navigation (side) - Hidden on mobile */}
-      <div className="fixed left-0 top-0 z-50 hidden lg:flex lg:flex-col lg:items-center lg:justify-between lg:py-6 h-screen w-16 border-r border-gray-800 bg-black">
+      {/* Desktop navigation (side) - FORCE HIDE on mobile */}
+      <div className="fixed left-0 top-0 z-50 hidden lg:flex lg:flex-col lg:items-center lg:justify-between lg:py-6 h-screen w-16 border-r border-gray-800 bg-black max-lg:!hidden">
         <Link href="/feed" className="flex items-center justify-center">
           <Logo size="md" />
         </Link>
