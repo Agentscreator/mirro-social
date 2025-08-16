@@ -17,17 +17,17 @@
   /* Push content down to hide browser navigation */
   body {
     position: relative;
-    top: -60px; /* Adjust this value to hide the browser nav bar */
-    margin-top: 60px; /* Compensate for the negative top */
-    height: calc(100vh + 60px);
-    height: calc(100dvh + 60px);
+    top: -120px; /* Increased offset to hide more of the browser nav bar */
+    margin-top: 120px; /* Compensate for the negative top */
+    height: calc(100vh + 120px);
+    height: calc(100dvh + 120px);
   }
   
   /* Ensure content container accounts for the offset */
   #__next, 
   [data-nextjs-container] {
-    height: calc(100vh + 60px);
-    height: calc(100dvh + 60px);
+    height: calc(100vh + 120px);
+    height: calc(100dvh + 120px);
     overflow: auto;
     padding-top: 0;
   }
@@ -36,8 +36,8 @@
   main, 
   [role="main"],
   .main-content {
-    min-height: calc(100vh + 60px);
-    min-height: calc(100dvh + 60px);
+    min-height: calc(100vh + 120px);
+    min-height: calc(100dvh + 120px);
   }
 }
 
