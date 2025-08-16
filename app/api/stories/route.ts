@@ -4,8 +4,7 @@ import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { storiesTable, storyViewsTable, usersTable, followersTable, communitiesTable, communityMembersTable } from "@/src/db/schema"
 import { eq, and, gt, desc, sql, inArray, or } from "drizzle-orm"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import { put } from '@vercel/blob'
 import { v4 as uuidv4 } from "uuid"
 
 // GET /api/stories - Fetch stories from followed users and own stories
@@ -175,22 +174,19 @@ export async function POST(request: NextRequest) {
 
       // Determine if it's image or video
       const isVideo = mediaFile.type.startsWith("video/")
-      const uploadDir = isVideo ? "videos" : "images"
+      const pathname = `stories/${isVideo ? 'videos' : 'images'}/${fileName}`
 
-      // Create upload directory if it doesn't exist
-      const uploadPath = join(process.cwd(), "public", "uploads", "stories", uploadDir)
-      await mkdir(uploadPath, { recursive: true })
-
-      // Save file
-      const filePath = join(uploadPath, fileName)
-      await writeFile(filePath, buffer)
+      // Upload to Vercel Blob
+      const blob = await put(pathname, buffer, {
+        access: 'public',
+        contentType: mediaFile.type,
+      })
 
       // Set the URL
-      const fileUrl = `/uploads/stories/${uploadDir}/${fileName}`
       if (isVideo) {
-        videoUrl = fileUrl
+        videoUrl = blob.url
       } else {
-        imageUrl = fileUrl
+        imageUrl = blob.url
       }
     }
 

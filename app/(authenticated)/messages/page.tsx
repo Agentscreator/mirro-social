@@ -14,6 +14,7 @@ import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
 import { CommunityStories } from "@/components/messages/CommunityStories"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { toast } from "@/hooks/use-toast"
 
 export default function MessagesPage() {
@@ -156,6 +157,9 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {/* Stories Feed */}
+      <StoriesFeed />
 
       {/* Search */}
       <div className="px-6 py-4 bg-gray-950">
