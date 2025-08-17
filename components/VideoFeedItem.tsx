@@ -50,6 +50,7 @@ const VideoFeedItem = ({
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Sync comment count when post prop changes
@@ -262,8 +263,15 @@ const VideoFeedItem = ({
   };
 
   const handleShare = async () => {
+    console.log('🚀 Share button clicked!', { isSharing, postId: post.id });
+    if (isSharing) {
+      console.log('⏸️ Already sharing, returning early');
+      return;
+    }
+    
     try {
-      console.log('Sharing post:', post.id);
+      setIsSharing(true);
+      console.log('✅ Started sharing process for post:', post.id);
       
       // Call the share API to get proper share data
       const response = await fetch(`/api/posts/${post.id}/share`, {
@@ -359,6 +367,8 @@ const VideoFeedItem = ({
           description: `Copy this link: ${fallbackUrl}`,
         });
       }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -528,14 +538,21 @@ const VideoFeedItem = ({
           <span className="text-white text-xs font-medium mt-1">{currentComments}</span>
         </div>
 
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => handleShare()}
-          className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
-        >
-          <Share className="w-5 h-5" />
-        </Button>
+        <div className="flex flex-col items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleShare}
+            disabled={isSharing}
+            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+          >
+            {isSharing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Share className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Bottom Content - Clean & Elegant */}
