@@ -352,85 +352,97 @@ export default function SignupPage() {
   const mutableTags = [...TAGS]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-black">
-      <Link href="/" className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-2 z-10">
-        <Logo size="sm" />
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-black via-gray-950 to-black">
+      <Link href="/" className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-2 z-10 group">
+        <div className="transition-all duration-300 group-hover:scale-105">
+          <Logo size="sm" />
+        </div>
       </Link>
 
       {/* Mobile-optimized logo at top */}
-      <div className="mb-6 sm:mb-8">
-        <Logo size="lg" />
+      <div className="mb-8 sm:mb-12 transition-all duration-500 ease-out">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-xl rounded-full scale-150"></div>
+          <div className="relative">
+            <Logo size="lg" />
+          </div>
+        </div>
       </div>
 
-      <Card className="w-full max-w-2xl bg-gray-900/95 border-gray-700 backdrop-blur-sm shadow-2xl">
-        <CardHeader className="space-y-3 px-6 pt-8 pb-6">
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-center text-white tracking-tight">Create your account</CardTitle>
-          <CardDescription className="text-center text-gray-300 text-base leading-relaxed">
+      <Card className="w-full max-w-2xl bg-black/80 border border-gray-800/50 backdrop-blur-xl shadow-2xl ring-1 ring-white/5 transition-all duration-300 hover:shadow-3xl hover:ring-white/10">
+        <CardHeader className="space-y-4 px-8 pt-10 pb-8 relative">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-600/30 to-transparent"></div>
+          <CardTitle className="text-3xl sm:text-4xl font-light text-center text-white tracking-wide">
+            Create your account
+          </CardTitle>
+          <CardDescription className="text-center text-gray-400 text-lg leading-relaxed font-light">
             Step {currentStep} of 5:{" "}
-            {currentStep === 1
-              ? "Basic Information"
-              : currentStep === 2
-                ? "Preferences"
-                : currentStep === 3
-                  ? "Your Interests"
-                  : currentStep === 4
-                    ? "Your Context"
-                    : "Your Intentions"}
+            <span className="text-white font-normal">
+              {currentStep === 1
+                ? "Basic Information"
+                : currentStep === 2
+                  ? "Preferences"
+                  : currentStep === 3
+                    ? "Your Interests"
+                    : currentStep === 4
+                      ? "Your Context"
+                      : "Your Intentions"}
+            </span>
           </CardDescription>
           {locationStatus && (
-            <p className="text-xs text-center text-gray-400">{locationStatus}</p>
+            <p className="text-sm text-center text-gray-500 italic">{locationStatus}</p>
           )}
         </CardHeader>
-        <CardContent className="px-6 pb-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="px-8 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-7">
             {error && (
-              <div className="rounded-lg bg-red-900/20 p-4 border border-red-700/50 backdrop-blur-sm">
-                <p className="text-sm text-red-400 text-center font-medium">{error}</p>
+              <div className="rounded-xl bg-red-900/20 p-5 border border-red-700/30 backdrop-blur-sm ring-1 ring-red-500/20">
+                <p className="text-sm text-red-300 text-center font-medium">{error}</p>
               </div>
             )}
             
             {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username" className="text-white">Username</Label>
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="username" className="text-white font-medium text-sm tracking-wide">Username</Label>
                   <Input
                     id="username"
                     name="username"
-                    placeholder="username"
+                    placeholder="Choose your unique username"
                     value={formData.username}
                     onChange={handleChange}
                     required
-                    className={`bg-gray-800/80 border-gray-600 text-white placeholder:text-gray-400 h-12 text-base rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${usernameError ? "border-red-500" : ""}`}
+                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${usernameError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
                   />
-                  {usernameError && <p className="text-xs text-red-400">{usernameError}</p>}
+                  {usernameError && <p className="text-sm text-red-400 font-medium">{usernameError}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nickname" className="text-white">Nickname</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="nickname" className="text-white font-medium text-sm tracking-wide">Nickname <span className="text-gray-500 font-normal">(optional)</span></Label>
                   <Input
                     id="nickname"
                     name="nickname"
                     placeholder="How you'd like to be called"
                     value={formData.nickname}
                     onChange={handleChange}
-                    className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
+                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-white font-medium text-sm tracking-wide">Email</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="Email address"
+                    placeholder="Enter your email address"
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${emailError ? "border-red-500" : ""}`}
+                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${emailError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
                   />
-                  {emailError && <p className="text-xs text-red-400">{emailError}</p>}
+                  {emailError && <p className="text-sm text-red-400 font-medium">{emailError}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dob" className="text-white">Date of Birth</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="dob" className="text-white font-medium text-sm tracking-wide">Date of Birth</Label>
                   <Input
                     id="dob"
                     name="dob"
@@ -438,41 +450,41 @@ export default function SignupPage() {
                     value={formData.dob}
                     onChange={handleChange}
                     required
-                    className={`bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 ${dobError ? "border-red-500" : ""}`}
+                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${dobError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
                     maxLength={10}
                   />
-                  {dobError && <p className="text-xs text-red-400">{dobError}</p>}
-                  <p className="text-xs text-gray-400">Enter your date of birth (you must be 13+)</p>
+                  {dobError && <p className="text-sm text-red-400 font-medium">{dobError}</p>}
+                  <p className="text-sm text-gray-500">You must be at least 13 years old to join</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white">Password</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="password" className="text-white font-medium text-sm tracking-wide">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       name="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Create a password (min 6 characters)"
+                      placeholder="Create a secure password (min 6 characters)"
                       value={formData.password}
                       onChange={handleChange}
                       required
-                      className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
+                      className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
                       minLength={6}
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                        <EyeOff className="h-5 w-5" />
                       ) : (
-                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                        <Eye className="h-5 w-5" />
                       )}
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="confirmPassword" className="text-white font-medium text-sm tracking-wide">Confirm Password</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -482,32 +494,32 @@ export default function SignupPage() {
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       required
-                      className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 pr-10"
+                      className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                        <EyeOff className="h-5 w-5" />
                       ) : (
-                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                        <Eye className="h-5 w-5" />
                       )}
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-white">Gender</Label>
+                <div className="space-y-4">
+                  <Label className="text-white font-medium text-sm tracking-wide">Gender</Label>
                   <RadioGroup
                     value={formData.gender}
                     onValueChange={(value) => handleSelectChange("gender", value)}
-                    className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                    className="grid grid-cols-2 gap-3 sm:grid-cols-3"
                   >
                     {GENDERS.map((gender) => (
-                      <div key={gender.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={gender.id} id={`gender-${gender.id}`} />
-                        <Label htmlFor={`gender-${gender.id}`} className="text-white">{gender.label}</Label>
+                      <div key={gender.id} className="flex items-center space-x-3 bg-gray-900/40 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600/70 transition-all duration-200">
+                        <RadioGroupItem value={gender.id} id={`gender-${gender.id}`} className="border-gray-600 text-blue-500" />
+                        <Label htmlFor={`gender-${gender.id}`} className="text-white font-medium cursor-pointer flex-1">{gender.label}</Label>
                       </div>
                     ))}
                   </RadioGroup>
@@ -609,13 +621,13 @@ export default function SignupPage() {
               </div>
             )}
 
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between items-center pt-8">
               {currentStep > 1 ? (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handlePrevStep}
-                  className="rounded-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  className="rounded-xl bg-gray-900/60 border border-gray-700/50 text-white hover:bg-gray-800/80 hover:border-gray-600/70 px-8 py-3 h-12 font-medium transition-all duration-300 backdrop-blur-sm"
                 >
                   Back
                 </Button>
@@ -627,7 +639,7 @@ export default function SignupPage() {
                 <Button
                   type="button"
                   onClick={handleNextStep}
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 h-12 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
                   disabled={loading}
                 >
                   Next
@@ -635,7 +647,7 @@ export default function SignupPage() {
               ) : (
                 <Button
                   type="submit"
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 h-12 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
                   disabled={loading}
                 >
                   {loading ? "Creating Account..." : "Create Account"}
@@ -644,21 +656,24 @@ export default function SignupPage() {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm text-gray-400">
+        <CardFooter className="flex flex-col space-y-6 px-8 pb-8 pt-6">
+          <div className="relative">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 leading-relaxed">
             By creating an account, you agree to our{" "}
-            <Link href="/terms" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/terms" className="text-blue-400 hover:text-blue-300 transition-colors duration-200 underline underline-offset-2">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors duration-200 underline underline-offset-2">
               Privacy Policy
             </Link>
           </div>
-          <div className="text-center text-sm text-gray-300">
+          <div className="text-center text-sm text-gray-400">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Log in
+            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-medium underline underline-offset-2">
+              Sign in here
             </Link>
           </div>
         </CardFooter>

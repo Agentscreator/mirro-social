@@ -44,6 +44,8 @@ export default function DiscoverPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [thoughts, setThoughts] = useState<Array<{id: string, title: string, content: string, createdAt: string}>>([])
   const [newThought, setNewThought] = useState("")
+  const [isTypingThought, setIsTypingThought] = useState(false)
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
 
@@ -113,6 +115,24 @@ export default function DiscoverPage() {
 
   const getTotalCharacters = () => {
     return thoughts.map(t => t.content).join("").length
+  }
+
+  // Handle typing state for pausing recommendations
+  const handleThoughtTyping = (value: string) => {
+    setNewThought(value)
+    setIsTypingThought(true)
+    
+    // Clear previous timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout)
+    }
+    
+    // Set new timeout to mark typing as finished after 2 seconds of inactivity
+    const newTimeout = setTimeout(() => {
+      setIsTypingThought(false)
+    }, 2000)
+    
+    setTypingTimeout(newTimeout)
   }
 
   // Helper function to get the best available image URL
@@ -260,8 +280,8 @@ export default function DiscoverPage() {
   const goToNext = async () => {
     if (currentIndex < shuffledUsers.length - 1) {
       setCurrentIndex(currentIndex + 1)
-    } else if (hasMore && !loadingMore) {
-      // Load more users when reaching the end
+    } else if (hasMore && !loadingMore && !isTypingThought) {
+      // Load more users when reaching the end, but not if user is typing
       await loadMore()
       if (currentIndex < users.length - 1) {
         setCurrentIndex(currentIndex + 1)
@@ -271,7 +291,7 @@ export default function DiscoverPage() {
 
   // Load more recommendations
   const loadMore = async () => {
-    if (!hasMore || loadingMore) return
+    if (!hasMore || loadingMore || isTypingThought) return
     try {
       setLoadingMore(true)
       const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 5)
@@ -408,6 +428,15 @@ export default function DiscoverPage() {
     localStorage.setItem('discover-current-index', currentIndex.toString())
   }, [currentIndex])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout)
+      }
+    }
+  }, [typingTimeout])
+
   // Swipe gesture handling
   const minSwipeDistance = 50
 
@@ -443,6 +472,11 @@ export default function DiscoverPage() {
         <div className="text-center mb-4">
           <h3 className="text-lg font-medium text-white mb-1">Tell us about yourself</h3>
           <p className="text-sm text-gray-400">Help us find better matches</p>
+          {isTypingThought && (
+            <p className="text-xs text-blue-400 mt-2 font-medium">
+              ✓ Recommendations paused while typing
+            </p>
+          )}
         </div>
 
         {/* Character count */}
@@ -473,7 +507,7 @@ export default function DiscoverPage() {
         <div className="space-y-3">
           <textarea
             value={newThought}
-            onChange={(e) => setNewThought(e.target.value)}
+            onChange={(e) => handleThoughtTyping(e.target.value)}
             placeholder="What kind of person would you like to meet?"
             className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             maxLength={1000}
