@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -48,6 +48,7 @@ export default function DiscoverPage() {
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
+  const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Touch/swipe state
   const [touchStart, setTouchStart] = useState<number | null>(null)
@@ -74,6 +75,9 @@ export default function DiscoverPage() {
       const totalCharacters = thoughts.map(t => t.content).join("").length + newThought.length
       if (totalCharacters <= 8000) {
         try {
+          // Preserve focus state
+          const wasInputFocused = thoughtInputRef.current === document.activeElement
+          
           const response = await fetch('/api/thoughts', {
             method: 'POST',
             headers: {
@@ -90,6 +94,13 @@ export default function DiscoverPage() {
             const newThoughtData = await response.json()
             setThoughts([newThoughtData, ...thoughts])
             setNewThought("")
+            
+            // Restore focus if it was previously focused
+            if (wasInputFocused && thoughtInputRef.current) {
+              setTimeout(() => {
+                thoughtInputRef.current?.focus()
+              }, 0)
+            }
           }
         } catch (error) {
           console.error('Error saving thought:', error)
@@ -120,17 +131,21 @@ export default function DiscoverPage() {
   // Handle typing state for pausing recommendations
   const handleThoughtTyping = (value: string) => {
     setNewThought(value)
-    setIsTypingThought(true)
+    
+    // Only set typing state if not already typing to prevent unnecessary re-renders
+    if (!isTypingThought) {
+      setIsTypingThought(true)
+    }
     
     // Clear previous timeout
     if (typingTimeout) {
       clearTimeout(typingTimeout)
     }
     
-    // Set new timeout to mark typing as finished after 2 seconds of inactivity
+    // Set new timeout to mark typing as finished after 3 seconds of inactivity (increased from 2)
     const newTimeout = setTimeout(() => {
       setIsTypingThought(false)
-    }, 2000)
+    }, 3000)
     
     setTypingTimeout(newTimeout)
   }
@@ -465,8 +480,8 @@ export default function DiscoverPage() {
   // Get current user to display
   const currentUser = shuffledUsers[currentIndex]
 
-  // ThoughtsUploadArea Component
-  const ThoughtsUploadArea = () => {
+  // Memoized ThoughtsUploadArea Component to prevent unnecessary re-renders
+  const ThoughtsUploadArea = useMemo(() => {
     return (
       <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
         <div className="text-center mb-4">
@@ -506,11 +521,17 @@ export default function DiscoverPage() {
         {/* New thought input */}
         <div className="space-y-3">
           <textarea
+            ref={thoughtInputRef}
             value={newThought}
             onChange={(e) => handleThoughtTyping(e.target.value)}
             placeholder="What kind of person would you like to meet?"
             className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             maxLength={1000}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            data-testid="thought-input"
           />
           
           <Button
@@ -528,7 +549,7 @@ export default function DiscoverPage() {
         </div>
       </div>
     )
-  }
+  }, [thoughts, newThought, isTypingThought])
 
   if (loading) {
     return (
@@ -710,7 +731,7 @@ export default function DiscoverPage() {
                     
                     {/* Thoughts Section */}
                     <div className="col-span-1">
-                      <ThoughtsUploadArea />
+                      {ThoughtsUploadArea}
                     </div>
                   </div>
                 </div>
@@ -776,7 +797,7 @@ export default function DiscoverPage() {
                   )}
 
                   {/* Thoughts Section - Mobile */}
-                  <ThoughtsUploadArea />
+                  {ThoughtsUploadArea}
                 </div>
 
                 {explanationLoading !== -1 && (
