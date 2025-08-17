@@ -22,7 +22,8 @@
       "Bash(yarn run build)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(xcode-select:*)"
+      "Bash(xcode-select:*)",
+      "Bash(npx drizzle-kit:*)"
     ],
     "deny": []
   }

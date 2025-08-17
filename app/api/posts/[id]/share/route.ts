@@ -21,16 +21,14 @@ export async function POST(
     console.log("=== POST SHARE API START ===")
     
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const userId = session?.user?.id || null
 
     const postId = parseInt(params.id)
     if (isNaN(postId)) {
       return NextResponse.json({ error: "Invalid post ID" }, { status: 400 })
     }
 
-    console.log("Creating share link for post:", postId, "by user:", session.user.id)
+    console.log("Creating share link for post:", postId, "by user:", userId)
 
     // Verify the post exists
     const post = await db
@@ -53,14 +51,14 @@ export async function POST(
     }
 
     // Generate a unique share token
-    const shareToken = generateShareToken(postId, session.user.id)
+    const shareToken = generateShareToken(postId, userId || "anonymous")
 
     // Create share record
     const shareRecord = await db
       .insert(postSharesTable)
       .values({
         postId,
-        userId: session.user.id,
+        userId: userId,
       })
       .returning()
 

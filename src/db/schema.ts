@@ -242,7 +242,6 @@ export const postSharesTable = pgTable("post_shares", {
     .notNull()
     .references(() => postsTable.id),
   userId: uuid("user_id")
-    .notNull()
     .references(() => usersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })

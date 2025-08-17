@@ -327,6 +327,17 @@ const VideoFeedItem = ({
       }
     } catch (error) {
       console.error('Error sharing post:', error);
+      
+      // Check if it's a network error or authentication issue
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast({
+          title: "Network Error",
+          description: "Unable to share. Please check your connection.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Fallback to basic sharing
       const fallbackUrl = `${window.location.origin}/post/${post.id}`;
       if (navigator.clipboard && window.isSecureContext) {
