@@ -1,6 +1,6 @@
 
 import { db } from "../db"
-import { usersTable, userTagsTable, tagsTable, thoughtsTable } from "../db/schema"
+import { usersTable, userTagsTable, tagsTable, thoughtsTable, communityMembersTable, communitiesTable } from "../db/schema"
 import { eq, ne, and, sql, isNotNull, desc } from "drizzle-orm"
 import { Pinecone, type ScoredPineconeRecord } from "@pinecone-database/pinecone"
 import { openai } from "../lib/openai" // You'll need to create this
@@ -54,7 +54,7 @@ type TierResults = {
  * Tier 2: Users with embeddings only (narrative explanation possible)  
  * Tier 3: Users without embeddings (database explanation only)
  */
-export async function getRecommendations(userId: string, page = 1, pageSize = 2): Promise<PaginatedRecommendations> {
+export async function getRecommendations(userId: string, page = 1, pageSize = 5): Promise<PaginatedRecommendations> {
   try {
     // Check if current user has embeddings
     const currentUserHasEmbeddings = await userHasEmbeddings(userId)
@@ -177,7 +177,7 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
     
     const user = currentUser[0]
     
-    // Get current user's tags for similarity scoring
+    // Get current user's tags and communities for similarity scoring
     const userTags = await db
       .select({
         tagId: userTagsTable.tagId,
@@ -188,7 +188,15 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
       .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
       .where(eq(userTagsTable.userId, userId))
     
+    const userCommunities = await db
+      .select({
+        communityId: communityMembersTable.communityId,
+      })
+      .from(communityMembersTable)
+      .where(eq(communityMembersTable.userId, userId))
+    
     const userTagIds = userTags.map((tag) => tag.tagId)
+    const userCommunityIds = userCommunities.map((community) => community.communityId)
     
     // Build gender preference filter
     let genderFilter = sql`1=1` // Default to no filter
@@ -233,11 +241,11 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
       )
       .limit(maxResults)
     
-    // Score matches based on common tags
+    // Score matches based on shared communities (prioritized) and common tags
     const scoredMatches: RecommendedUser[] = []
     
     for (const match of potentialMatches) {
-      // Get tags for this potential match
+      // Get tags and communities for this potential match
       const matchTags = await db
         .select({
           tagId: userTagsTable.tagId,
@@ -248,11 +256,24 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
         .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
         .where(eq(userTagsTable.userId, match.id))
       
-      const matchTagIds = matchTags.map((tag) => tag.tagId)
+      const matchCommunities = await db
+        .select({
+          communityId: communityMembersTable.communityId,
+        })
+        .from(communityMembersTable)
+        .where(eq(communityMembersTable.userId, match.id))
       
-      // Calculate compatibility score
+      const matchTagIds = matchTags.map((tag) => tag.tagId)
+      const matchCommunityIds = matchCommunities.map((community) => community.communityId)
+      
+      // Calculate compatibility score - prioritize shared communities
+      const commonCommunityIds = userCommunityIds.filter((communityId) => matchCommunityIds.includes(communityId))
       const commonTagIds = userTagIds.filter((tagId) => matchTagIds.includes(tagId))
-      const score = commonTagIds.length
+      
+      // Weight shared communities more heavily than tags
+      const communityScore = commonCommunityIds.length * 3 // 3x weight for shared communities
+      const tagScore = commonTagIds.length
+      const score = communityScore + tagScore
       
       const recommendedUser: RecommendedUser = {
         id: match.id,
@@ -262,7 +283,7 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
         profileImage: match.profileImage,
         tags: matchTags.map((tag) => tag.tagName).slice(0, 5),
         score,
-        similarity: score / Math.max(userTagIds.length, matchTagIds.length),
+        similarity: score / Math.max(userTagIds.length + userCommunityIds.length * 3, matchTagIds.length + matchCommunityIds.length * 3),
         reason: null,
       }
       
@@ -483,7 +504,7 @@ async function getDatabaseRecommendations(
 
   const user = currentUser[0]
 
-  // Get current user's tags for similarity scoring
+  // Get current user's tags and communities for similarity scoring
   const userTags = await db
     .select({
       tagId: userTagsTable.tagId,
@@ -494,7 +515,15 @@ async function getDatabaseRecommendations(
     .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
     .where(eq(userTagsTable.userId, userId))
 
+  const userCommunities = await db
+    .select({
+      communityId: communityMembersTable.communityId,
+    })
+    .from(communityMembersTable)
+    .where(eq(communityMembersTable.userId, userId))
+
   const userTagIds = userTags.map((tag) => tag.tagId)
+  const userCommunityIds = userCommunities.map((community) => community.communityId)
 
   // Build gender preference filter
   let genderFilter = sql`1=1` // Default to no filter
@@ -540,11 +569,11 @@ async function getDatabaseRecommendations(
     .limit(pageSize * 3)
     .offset(offset)
 
-  // Score matches based on common tags
+  // Score matches based on shared communities (prioritized) and common tags
   const scoredMatches: RecommendedUser[] = []
 
   for (const match of potentialMatches) {
-    // Get tags for this potential match
+    // Get tags and communities for this potential match
     const matchTags = await db
       .select({
         tagId: userTagsTable.tagId,
@@ -555,11 +584,24 @@ async function getDatabaseRecommendations(
       .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
       .where(eq(userTagsTable.userId, match.id))
 
-    const matchTagIds = matchTags.map((tag) => tag.tagId)
+    const matchCommunities = await db
+      .select({
+        communityId: communityMembersTable.communityId,
+      })
+      .from(communityMembersTable)
+      .where(eq(communityMembersTable.userId, match.id))
 
-    // Calculate compatibility score
+    const matchTagIds = matchTags.map((tag) => tag.tagId)
+    const matchCommunityIds = matchCommunities.map((community) => community.communityId)
+
+    // Calculate compatibility score - prioritize shared communities
+    const commonCommunityIds = userCommunityIds.filter((communityId) => matchCommunityIds.includes(communityId))
     const commonTagIds = userTagIds.filter((tagId) => matchTagIds.includes(tagId))
-    const score = commonTagIds.length
+    
+    // Weight shared communities more heavily than tags
+    const communityScore = commonCommunityIds.length * 3 // 3x weight for shared communities
+    const tagScore = commonTagIds.length
+    const score = communityScore + tagScore
 
     const recommendedUser: RecommendedUser = {
       id: match.id,
@@ -569,7 +611,7 @@ async function getDatabaseRecommendations(
       profileImage: match.profileImage,
       tags: matchTags.map((tag) => tag.tagName).slice(0, 5),
       score,
-      similarity: score / Math.max(userTagIds.length, matchTagIds.length),
+      similarity: score / Math.max(userTagIds.length + userCommunityIds.length * 3, matchTagIds.length + matchCommunityIds.length * 3),
       reason: null,
     }
 

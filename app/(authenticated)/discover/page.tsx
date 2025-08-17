@@ -719,7 +719,7 @@ export default function DiscoverPage() {
                             image: currentUser.image || "",
                             profileImage: currentUser.profileImage,
                             reason: currentUser.reason || "Calculating why you'd be a good match...",
-                            tags: currentUser.tags || [],
+                            tags: [],
                           }}
                           onMessage={() => handleMessage(currentUser.id.toString())}
                           onViewProfile={() => handleViewProfile(currentUser.id.toString())}
@@ -786,7 +786,7 @@ export default function DiscoverPage() {
                           image: currentUser.image || "",
                           profileImage: currentUser.profileImage,
                           reason: currentUser.reason || "Calculating why you'd be a good match...",
-                          tags: currentUser.tags || [],
+                          tags: [],
                         }}
                         onMessage={() => handleMessage(currentUser.id.toString())}
                         onViewProfile={() => handleViewProfile(currentUser.id.toString())}
