@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, MessageCircle, Plus, Users } from "lucide-react"
+import { Search, MessageCircle, Plus, Users, FileImage } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
 import { CommunityStories } from "@/components/messages/CommunityStories"
@@ -24,6 +24,7 @@ export default function MessagesPage() {
   const [groupName, setGroupName] = useState("")
   const [groupDescription, setGroupDescription] = useState("")
   const [creatingGroup, setCreatingGroup] = useState(false)
+  const [showAddStory, setShowAddStory] = useState(false)
 
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
@@ -118,20 +119,44 @@ export default function MessagesPage() {
 
       {/* Search */}
       <div className="px-6 py-4 bg-gray-950">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            placeholder="Search conversations..."
-            className="pl-12 h-12 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Input
+              placeholder="Search conversations..."
+              className="pl-12 h-12 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          {/* Add Story Button */}
+          {!groupsLoading && groups.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`px-3 py-2 h-12 rounded-xl transition-all duration-200 flex-shrink-0 ${
+                showAddStory 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+              }`}
+              onClick={() => setShowAddStory(!showAddStory)}
+            >
+              <FileImage className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Add Story</span>
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Community Stories */}
       {!groupsLoading && groups.length > 0 && (
-        <CommunityStories groups={groups} onRefresh={refetchGroups} />
+        <CommunityStories 
+          groups={groups} 
+          onRefresh={refetchGroups}
+          showGroupSelection={showAddStory}
+          onToggleAddStory={() => setShowAddStory(!showAddStory)}
+        />
       )}
 
       {/* Conversations List */}
