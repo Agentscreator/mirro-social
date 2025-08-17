@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
+import { ProfileHamburgerMenu } from "@/components/profile-hamburger-menu"
 
 interface Post {
   id: number
@@ -949,7 +950,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      {/* Hamburger Menu */}
+      <ProfileHamburgerMenu />
       {/* Profile Header */}
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-950/90 to-black rounded-3xl border border-gray-800/50"></div>

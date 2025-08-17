@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { ProfileHamburgerMenu } from "@/components/profile-hamburger-menu"
 
 export default function ProfileRedirect() {
   const { data: session, status } = useSession()
@@ -24,11 +25,16 @@ export default function ProfileRedirect() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen relative">
+        <ProfileHamburgerMenu />
         <div className="text-lg">Loading...</div>
       </div>
     )
   }
 
-  return null // Component will redirect
+  return (
+    <div className="relative">
+      <ProfileHamburgerMenu />
+    </div>
+  ) // Component will redirect
 }
