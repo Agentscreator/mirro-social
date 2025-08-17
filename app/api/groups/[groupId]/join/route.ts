@@ -81,7 +81,7 @@ export async function POST(
       .limit(1)
 
     // Notify group creator
-    if (group[0].createdBy !== session.user.id) {
+    if (group[0].createdBy !== session.user.id && user.length > 0) {
       await db
         .insert(notificationsTable)
         .values({

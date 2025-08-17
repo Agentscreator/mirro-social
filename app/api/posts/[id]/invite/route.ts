@@ -115,14 +115,15 @@ export async function POST(
         .where(eq(postInvitesTable.id, invite.id))
 
       // Find or create community if communityName exists
+      let group = null
       if (post.communityName) {
-        let group = await db
+        let existingGroup = await db
           .select()
           .from(groupsTable)
           .where(eq(groupsTable.postId, postId))
           .limit(1)
 
-        if (group.length === 0) {
+        if (existingGroup.length === 0) {
           // Create the group
           const newGroup = await db
             .insert(groupsTable)
@@ -146,6 +147,8 @@ export async function POST(
             })
 
           group = newGroup
+        } else {
+          group = existingGroup
         }
 
         // Add user to group
