@@ -209,29 +209,16 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
 
             <div
               className={cn(
-                "flex flex-col sm:flex-row justify-center items-center gap-3",
+                "flex justify-center items-center",
                 "mt-5",
               )}
             >
               <Button
-                onClick={handleMessage}
-                disabled={isMessaging}
-                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 disabled:opacity-50 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
-              >
-                {isMessaging ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
-                  <MessageSquare className="h-4 w-4" />
-                )}
-                <span>Message</span>
-              </Button>
-              <Button
                 onClick={handleViewProfile}
-                variant="outline"
-                className="rounded-full border-2 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-white flex items-center gap-2 min-w-[110px] shadow-sm hover:shadow-md transition-all text-sm px-4 py-2"
+                className="rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 min-w-[130px] shadow-sm hover:shadow-md transition-all text-sm px-6 py-2"
               >
                 <User className="h-4 w-4" />
-                <span>Profile</span>
+                <span>View Profile</span>
               </Button>
             </div>
           </div>
