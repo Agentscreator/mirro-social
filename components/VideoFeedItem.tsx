@@ -1,8 +1,9 @@
-import { Play, Pause, Heart, MessageCircle, Share, UserPlus, MoreHorizontal, MapPin, Loader2 } from "lucide-react";
+import { Play, Pause, Heart, MessageCircle, UserPlus, MoreHorizontal, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InviteButton } from "@/components/invite-button";
 import { CommentModal } from "@/components/CommentModal";
+import { ShareButton } from "@/components/share-button";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -49,7 +50,6 @@ const VideoFeedItem = ({
   const [currentComments, setCurrentComments] = useState(post.comments);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Sync comment count when post prop changes
@@ -261,115 +261,6 @@ const VideoFeedItem = ({
     setCurrentComments(prev => Math.max(0, prev + change));
   };
 
-  const handleShare = async () => {
-    console.log('🚀 Share button clicked!', { isSharing, postId: post.id });
-    if (isSharing) {
-      console.log('⏸️ Already sharing, returning early');
-      return;
-    }
-    
-    try {
-      setIsSharing(true);
-      console.log('✅ Started sharing process for post:', post.id);
-      
-      // Call the share API to get proper share data
-      const response = await fetch(`/api/posts/${post.id}/share`, {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        const shareData = await response.json();
-        console.log('✅ Share data received:', shareData);
-        
-        // Try native sharing first on mobile
-        if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-          try {
-            await navigator.share({
-              title: shareData.title || `Check out this post by ${getUserDisplayName()}`,
-              text: shareData.text || post.content,
-              url: shareData.url,
-            });
-            console.log('✅ Native share successful');
-            return;
-          } catch (shareError) {
-            console.log("Native share failed, falling back to clipboard");
-          }
-        }
-
-        // Fallback to clipboard
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(shareData.url);
-          console.log('✅ Link copied to clipboard');
-          toast({
-            title: "Link Copied!",
-            description: "Post link has been copied to your clipboard.",
-          });
-        } else {
-          // Fallback for older browsers
-          const textArea = document.createElement("textarea");
-          textArea.value = shareData.url;
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          try {
-            document.execCommand("copy");
-            console.log('✅ Link copied to clipboard (fallback)');
-            toast({
-              title: "Link Copied!",
-              description: "Post link has been copied to your clipboard.",
-            });
-          } catch (err) {
-            console.error('Failed to copy link');
-            toast({
-              title: "Share Link",
-              description: `Copy this link: ${shareData.url}`,
-            });
-          }
-          document.body.removeChild(textArea);
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('Share API failed:', response.status, errorText);
-        throw new Error('Failed to generate share link');
-      }
-    } catch (error) {
-      console.error('Error sharing post:', error);
-      
-      // Check if it's a network error or authentication issue
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        toast({
-          title: "Network Error",
-          description: "Unable to share. Please check your connection.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Fallback to basic sharing
-      const fallbackUrl = `${window.location.origin}/post/${post.id}`;
-      if (navigator.clipboard && window.isSecureContext) {
-        try {
-          await navigator.clipboard.writeText(fallbackUrl);
-          toast({
-            title: "Link Copied!",
-            description: "Post link has been copied to your clipboard.",
-          });
-        } catch {
-          toast({
-            title: "Share Link",
-            description: `Copy this link: ${fallbackUrl}`,
-          });
-        }
-      } else {
-        toast({
-          title: "Share Link",
-          description: `Copy this link: ${fallbackUrl}`,
-        });
-      }
-    } finally {
-      setIsSharing(false);
-    }
-  };
 
 
   return (
@@ -502,20 +393,17 @@ const VideoFeedItem = ({
         </div>
 
         <div className="flex flex-col items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleShare}
-            disabled={isSharing}
+          <ShareButton
+            postId={post.id}
+            content={post.content}
+            userDisplayName={getUserDisplayName()}
             className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
-          >
-            {isSharing ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Share className="w-5 h-5" />
-            )}
-          </Button>
+            variant="ghost"
+            size="icon"
+          />
+          <span className="text-white text-xs font-medium mt-1">Share</span>
         </div>
+
       </div>
 
       {/* Bottom Content - Clean & Elegant */}

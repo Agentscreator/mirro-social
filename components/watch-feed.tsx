@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Heart, MessageCircle, Share, MoreHorizontal } from "lucide-react"
+import { ShareButton } from "@/components/share-button"
 import { 
   WatchLayout, 
   WatchCard, 
@@ -137,9 +138,14 @@ export function WatchFeed({ posts = [] }: WatchFeedProps) {
                   <span className="watch-text-xs">{post.comments}</span>
                 </button>
                 
-                <button className="p-1 rounded text-gray-400 hover:text-green-400">
-                  <Share className="w-3 h-3" />
-                </button>
+                <ShareButton
+                  postId={parseInt(post.id)}
+                  content={post.content}
+                  userDisplayName={post.user.name}
+                  className="p-1 rounded text-gray-400 hover:text-green-400"
+                  variant="ghost"
+                  size="icon"
+                />
               </div>
             </WatchCard>
           ))}
