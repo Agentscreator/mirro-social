@@ -349,7 +349,7 @@ export async function POST(request: NextRequest) {
     const inviteLimit = formData.get("inviteLimit") ? parseInt(formData.get("inviteLimit") as string) : 10
     
     // Location data
-    const hasPrivateLocation = formData.get("hasPrivateLocation") === "true"
+    const hasLocation = formData.get("hasPrivateLocation") === "true" // Keep the form field name for backwards compatibility
     const locationName = formData.get("locationName") as string
     const locationAddress = formData.get("locationAddress") as string
     const latitude = formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null
@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
         : null,
       isInvite,
       inviteLimit,
-      hasPrivateLocation,
+      hasLocation,
       locationName: locationName?.substring(0, 50),
       communityName: communityName?.substring(0, 50),
     })
@@ -447,7 +447,7 @@ export async function POST(request: NextRequest) {
     const postData: any = {
       userId: session.user.id,
       content: content || "",
-      hasPrivateLocation: hasPrivateLocation ? 1 : 0,
+      hasPrivateLocation: hasLocation ? 1 : 0, // Keep the database field name for backwards compatibility
       communityName: communityName?.trim() || null,
     }
 
@@ -500,8 +500,8 @@ export async function POST(request: NextRequest) {
       persisted: true,
     })
 
-    // Create location entry if this post has a private location
-    if (hasPrivateLocation && locationName?.trim()) {
+    // Create location entry if this post has location data
+    if (hasLocation && locationName?.trim()) {
       console.log("=== CREATING LOCATION ENTRY ===")
       try {
         const locationEntry = await db
@@ -512,7 +512,7 @@ export async function POST(request: NextRequest) {
             locationAddress: locationAddress?.trim() || null,
             latitude: latitude,
             longitude: longitude,
-            isPrivate: 1,
+            isPrivate: 0, // Make locations public by default
           })
           .returning()
 

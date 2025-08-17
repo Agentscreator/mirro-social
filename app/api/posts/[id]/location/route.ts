@@ -42,18 +42,7 @@ export async function GET(
       return NextResponse.json({ error: "No location data for this post" }, { status: 404 })
     }
 
-    // Only return location if user is the post owner or has been granted access
-    if (post.userId !== session.user.id) {
-      // TODO: Check if user has been granted location access
-      // For now, return basic info only
-      return NextResponse.json({
-        hasLocation: true,
-        locationName: location.locationName,
-        // Don't return address/coordinates unless access granted
-      })
-    }
-
-    // Return full location data for post owner
+    // Return full location data to everyone since locations are now public
     return NextResponse.json({
       hasLocation: true,
       locationName: location.locationName,

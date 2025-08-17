@@ -48,7 +48,6 @@ const VideoFeedItem = ({
   const [isLiking, setIsLiking] = useState(false);
   const [currentComments, setCurrentComments] = useState(post.comments);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -372,42 +371,6 @@ const VideoFeedItem = ({
     }
   };
 
-  const handleLocationRequest = async () => {
-    if (isRequestingLocation) return;
-    
-    try {
-      setIsRequestingLocation(true);
-      
-      const response = await fetch('/api/location-requests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postId: post.id,
-        }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Request Sent!",
-          description: "Your location request has been sent to the post owner.",
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send location request');
-      }
-    } catch (error) {
-      console.error('Error requesting location:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send location request. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRequestingLocation(false);
-    }
-  };
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
@@ -595,24 +558,18 @@ const VideoFeedItem = ({
         
         {/* Location */}
         {locationData && (
-          <div className="flex items-center text-white/80 text-sm mb-2">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{locationData.locationName || "Location available"}</span>
-            {!locationData.locationAddress && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleLocationRequest}
-                disabled={isRequestingLocation}
-                className="ml-2 text-white hover:text-white hover:bg-white/10 p-1 h-auto"
-              >
-                {isRequestingLocation ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  "Request Details"
+          <div className="text-white/80 text-sm mb-2">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+              <div className="flex-1">
+                {locationData.locationName && (
+                  <div className="font-medium">{locationData.locationName}</div>
                 )}
-              </Button>
-            )}
+                {locationData.locationAddress && (
+                  <div className="text-xs text-white/60 mt-0.5">{locationData.locationAddress}</div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
