@@ -10,7 +10,9 @@ import {
   MessageCircle,
   Copy,
   X,
-  ExternalLink 
+  ExternalLink,
+  Instagram,
+  Linkedin
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
@@ -151,6 +153,65 @@ export function ShareButton({
     setShowShareMenu(false)
   }
 
+  const shareToLinkedIn = (data: ShareData) => {
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(data.url)}&title=${encodeURIComponent(data.title)}&summary=${encodeURIComponent(data.text)}`
+    window.open(linkedinUrl, '_blank', 'width=550,height=420')
+    setShowShareMenu(false)
+  }
+
+  const shareToInstagram = async (data: ShareData) => {
+    // Instagram doesn't have direct web sharing, but we can use different approaches
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    
+    // Copy the link silently
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(data.url)
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea")
+        textArea.value = data.url
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+      }
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+    }
+    
+    if (isMobile) {
+      // Try to open Instagram app on mobile devices
+      const instagramUrl = 'instagram://camera'
+      
+      // Try to open Instagram app
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = instagramUrl
+      document.body.appendChild(iframe)
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+      }, 1000)
+      
+      toast({
+        title: "Ready for Instagram!",
+        description: "Link copied! Instagram should open - paste the link in your story or post.",
+        duration: 5000,
+      })
+    } else {
+      // On desktop: copy link and show instructions
+      toast({
+        title: "Ready for Instagram!",
+        description: "Link copied! Open Instagram on your phone and paste it in your story or post.",
+        duration: 5000,
+      })
+    }
+    setShowShareMenu(false)
+  }
+
   return (
     <>
       <Button
@@ -214,6 +275,28 @@ export function ShareButton({
                   <Facebook className="w-5 h-5" />
                 </div>
                 <span className="font-medium">Share to Facebook</span>
+              </button>
+
+              {/* LinkedIn */}
+              <button
+                onClick={() => shareToLinkedIn(shareData)}
+                className="w-full flex items-center gap-3 p-3 text-white hover:bg-white/10 rounded-xl transition-colors"
+              >
+                <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center">
+                  <Linkedin className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Share to LinkedIn</span>
+              </button>
+
+              {/* Instagram */}
+              <button
+                onClick={() => shareToInstagram(shareData)}
+                className="w-full flex items-center gap-3 p-3 text-white hover:bg-white/10 rounded-xl transition-colors"
+              >
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Instagram className="w-5 h-5" />
+                </div>
+                <span className="font-medium">Share to Instagram</span>
               </button>
 
               {/* WhatsApp */}
