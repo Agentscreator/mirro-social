@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Bell, LogOut, Loader2, ArrowLeft } from "lucide-react"
+import { Bell, LogOut, Loader2, ArrowLeft, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AgeRangeSelector } from "@/components/age-range-selector"
 import { GENDER_PREFERENCES, PROXIMITY_OPTIONS } from "@/lib/constants"
 import { TagSelector, type Tag as TagSelectorTag } from "@/components/tag-selector"
+import { DeleteAccountDialog } from "@/components/delete-account-dialog"
 import { useToast } from "@/hooks/use-toast"
 
 interface UserData {
@@ -67,6 +68,7 @@ export default function SettingsPage() {
   const [availableTags, setAvailableTags] = useState<TagSelectorCompatibleTag[]>([])
   const [notifications, setNotifications] = useState(true)
   const [scrollY, setScrollY] = useState(0)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   // Form state (removed age)
   const [formData, setFormData] = useState({
@@ -459,11 +461,30 @@ export default function SettingsPage() {
             <CardTitle className="text-white">Account</CardTitle>
             <CardDescription className="text-gray-300">Manage your account settings</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Button variant="destructive" className="w-full rounded-full" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log Out
             </Button>
+            
+            <div className="pt-4 border-t border-gray-700">
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-white font-medium mb-1">Danger Zone</h4>
+                  <p className="text-gray-400 text-sm mb-3">
+                    Permanently delete your account and all of your data. This action cannot be undone.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full rounded-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-400"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -495,6 +516,12 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+      />
     </div>
   )
 }
