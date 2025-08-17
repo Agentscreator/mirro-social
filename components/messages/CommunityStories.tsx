@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Camera, Video, X } from "lucide-react"
+import { Plus, Camera, Video, X, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface CommunityStory {
@@ -47,6 +47,51 @@ export function CommunityStories({ groups, onRefresh }: CommunityStoriesProps) {
   const [storyContent, setStoryContent] = useState("")
   const [storyMedia, setStoryMedia] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [showGroupSelection, setShowGroupSelection] = useState(false)
+  const [lastInteractionTime, setLastInteractionTime] = useState(Date.now())
+  const timeoutRef = useRef<NodeJS.Timeout>()
+
+  // Auto-hide group selection after inactivity
+  useEffect(() => {
+    if (showGroupSelection) {
+      // Clear existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      
+      // Set timeout to hide after 5 seconds of inactivity
+      timeoutRef.current = setTimeout(() => {
+        setShowGroupSelection(false)
+      }, 5000)
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [showGroupSelection, lastInteractionTime])
+
+  // Track page visibility to refresh when returning
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Page became visible again - refresh data
+        onRefresh()
+      } else {
+        // Page hidden - reset interaction time
+        setLastInteractionTime(Date.now())
+        setShowGroupSelection(false)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [onRefresh])
+
+  const handleInteraction = () => {
+    setLastInteractionTime(Date.now())
+  }
 
   const handleCreateStory = async () => {
     if (!selectedGroup || (!storyContent.trim() && !storyMedia)) {
@@ -153,6 +198,33 @@ export function CommunityStories({ groups, onRefresh }: CommunityStoriesProps) {
     <>
       {/* Community Stories Row */}
       <div className="px-4 py-3 bg-gray-900 border-b border-gray-800">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-300">Community Stories</h3>
+          
+          {/* Subtle Add to Stories Button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`text-xs px-3 py-1 h-7 rounded-full transition-all duration-200 ${
+              showGroupSelection 
+                ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+            }`}
+            onClick={() => {
+              setShowGroupSelection(!showGroupSelection)
+              handleInteraction()
+            }}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add Story
+            {showGroupSelection ? (
+              <ChevronUp className="h-3 w-3 ml-1" />
+            ) : (
+              <ChevronDown className="h-3 w-3 ml-1" />
+            )}
+          </Button>
+        </div>
+
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
           {groups.map((group) => (
             <div key={group.id} className="flex-shrink-0">
@@ -170,18 +242,6 @@ export function CommunityStories({ groups, onRefresh }: CommunityStoriesProps) {
                     <span className="text-xs text-white font-bold">{group.stories?.length || 0}</span>
                   </div>
                 )}
-
-                {/* Add story button */}
-                <Button
-                  size="sm"
-                  className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-green-500 hover:bg-green-600 p-0"
-                  onClick={() => {
-                    setSelectedGroup(group)
-                    setShowCreateStory(true)
-                  }}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
               </div>
               <p className="text-xs text-gray-300 text-center mt-1 max-w-[64px] truncate">
                 {group.name}
@@ -189,6 +249,39 @@ export function CommunityStories({ groups, onRefresh }: CommunityStoriesProps) {
             </div>
           ))}
         </div>
+
+        {/* Expandable Group Selection */}
+        {showGroupSelection && (
+          <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700 animate-in slide-in-from-top-2 duration-200">
+            <p className="text-xs text-gray-400 mb-3">Select a community to add your story:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {groups.map((group) => (
+                <Button
+                  key={group.id}
+                  variant="ghost"
+                  className="flex items-center gap-2 p-2 h-auto justify-start text-left hover:bg-gray-700"
+                  onClick={() => {
+                    setSelectedGroup(group)
+                    setShowCreateStory(true)
+                    setShowGroupSelection(false)
+                    handleInteraction()
+                  }}
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={group.image} alt={group.name} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
+                      {group.name[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{group.name}</p>
+                    <p className="text-xs text-gray-400">{group.memberCount} members</p>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Create Story Dialog */}
