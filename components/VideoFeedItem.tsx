@@ -362,14 +362,14 @@ const VideoFeedItem = ({
 
 
       {/* Right Side Actions - Minimal Design */}
-      <div className="absolute right-4 bottom-36 md:bottom-28 flex flex-col space-y-4 z-20">
-        <div className="flex flex-col items-center">
+      <div className="absolute right-4 bottom-36 md:bottom-28 flex flex-col space-y-4 z-30">
+        <div className="flex flex-col items-center pointer-events-auto">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={handleLike}
             disabled={isLiking}
-            className={`w-10 h-10 rounded-full transition-all duration-200 ${
+            className={`w-10 h-10 rounded-full transition-all duration-200 pointer-events-auto ${
               isLiked 
                 ? 'bg-white text-black' 
                 : 'bg-white/10 text-white hover:bg-white/20'
@@ -377,37 +377,37 @@ const VideoFeedItem = ({
           >
             <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
-          <span className="text-white text-xs font-medium mt-1">{currentLikes}</span>
+          <span className="text-white text-xs font-medium mt-1 pointer-events-none">{currentLikes}</span>
         </div>
 
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center pointer-events-auto">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => handleComment()}
-            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200 pointer-events-auto"
           >
             <MessageCircle className="w-5 h-5" />
           </Button>
-          <span className="text-white text-xs font-medium mt-1">{currentComments}</span>
+          <span className="text-white text-xs font-medium mt-1 pointer-events-none">{currentComments}</span>
         </div>
 
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center pointer-events-auto">
           <ShareButton
             postId={post.id}
             content={post.content}
             userDisplayName={getUserDisplayName()}
-            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200"
+            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200 pointer-events-auto"
             variant="ghost"
             size="icon"
           />
-          <span className="text-white text-xs font-medium mt-1">Share</span>
+          <span className="text-white text-xs font-medium mt-1 pointer-events-none">Share</span>
         </div>
 
       </div>
 
       {/* Bottom Content - Clean & Elegant */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-20 md:pb-8">
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-20 md:pb-8 pr-20">
         {/* User Info */}
         <div className="flex items-center space-x-3 mb-4">
           <Avatar 
