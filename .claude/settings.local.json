@@ -25,6 +25,9 @@
       "Bash(xcode-select:*)",
       "Bash(npx drizzle-kit:*)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\joshn\\Downloads"
+    ]
   }
 }

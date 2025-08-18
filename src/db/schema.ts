@@ -496,3 +496,15 @@ export const notificationsTable = pgTable("notifications", {
   actionUrl: varchar("action_url", { length: 500 }), // URL to navigate to when notification is clicked
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// Password Reset Tokens
+export const passwordResetTokensTable = pgTable("password_reset_tokens", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: integer("used").notNull().default(0), // 0 = unused, 1 = used
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
