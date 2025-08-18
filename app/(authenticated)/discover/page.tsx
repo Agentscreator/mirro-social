@@ -357,26 +357,52 @@ export default function DiscoverPage() {
       try {
         setLoading(true)
         
-        // Load recommendations
-        const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(1, 5)
-        const usersWithReasons: ExtendedRecommendedUser[] = []
-
-        for (const user of recommendedUsers) {
+        // Load recommendations and thoughts in parallel
+        const [recommendationsData, _] = await Promise.all([
+          fetchRecommendations(1, 5),
+          loadThoughts()
+        ])
+        
+        const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = recommendationsData
+        
+        // Convert users first, set basic data immediately
+        const usersWithBasicData = recommendedUsers.map(user => {
           const convertedUser = convertApiUserToLocalUser(user)
-          convertedUser.reason = await generateExplanation(user)
-          usersWithReasons.push(convertedUser)
-        }
-
-        setUsers(usersWithReasons)
+          convertedUser.reason = "Generating match explanation..."
+          return convertedUser
+        })
+        
+        setUsers(usersWithBasicData)
         setHasMore(moreAvailable)
         setCurrentPage(nextPage ?? 1)
-        setExplanationLoading(-1)
+        setLoading(false) // Stop loading here to show users faster
         
-        // Load thoughts
-        await loadThoughts()
+        // Generate explanations in parallel after showing users
+        const explanationPromises = recommendedUsers.map(async (user, index) => {
+          try {
+            const explanation = await generateExplanation(user)
+            return { index, explanation }
+          } catch (error) {
+            console.error(`Failed to generate explanation for user ${user.id}:`, error)
+            return { index, explanation: "Unable to generate match explanation" }
+          }
+        })
+        
+        // Update explanations as they come in
+        explanationPromises.forEach(async (promise) => {
+          const { index, explanation } = await promise
+          setUsers(prevUsers => {
+            const newUsers = [...prevUsers]
+            if (newUsers[index]) {
+              newUsers[index].reason = explanation
+            }
+            return newUsers
+          })
+        })
+        
+        setExplanationLoading(-1)
       } catch (error) {
         console.error("Failed to load initial data:", error)
-      } finally {
         setLoading(false)
       }
     }
@@ -532,6 +558,17 @@ export default function DiscoverPage() {
             autoCapitalize="off"
             spellCheck="false"
             data-testid="thought-input"
+            onFocus={() => {
+              // Scroll the element into view when focused on mobile
+              if (window.innerWidth < 1024) {
+                setTimeout(() => {
+                  thoughtInputRef.current?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                  })
+                }, 300) // Small delay to allow keyboard to appear
+              }
+            }}
           />
           
           <Button

@@ -7,7 +7,7 @@ interface TypingAnimationProps {
   speed?: number
 }
 
-export function TypingAnimation({ dots = 3, speed = 500 }: TypingAnimationProps) {
+export function TypingAnimation({ dots = 3, speed = 200 }: TypingAnimationProps) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function TypingAnimation({ dots = 3, speed = 500 }: TypingAnimationProps)
       <span className="text-2xl font-light tracking-wider text-white drop-shadow-sm">
         Thinking
       </span>
-      <span className="ml-2 text-blue-500">
+      <span className="ml-2 text-white">
         {Array(count)
           .fill(".")
           .map((dot, i) => (
