@@ -121,7 +121,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8">
+    <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8 -mt-16 md:-mt-8 pt-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm">
         <div className="flex items-center gap-3">

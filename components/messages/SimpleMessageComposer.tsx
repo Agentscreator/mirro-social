@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Send, Smile, Paperclip, X, Image, FileText } from "lucide-react"
@@ -32,10 +33,14 @@ export function SimpleMessageComposer({
   const [sending, setSending] = useState(false)
   const [attachment, setAttachment] = useState<Attachment | null>(null)
   const [uploading, setUploading] = useState(false)
+  const pathname = usePathname()
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
+
+  // Check if we're in an active conversation (navigation is hidden)
+  const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
@@ -198,7 +203,7 @@ export function SimpleMessageComposer({
       
       const keyboardWillHide = () => {
         // Remove padding when keyboard hides
-        document.body.style.paddingBottom = '80px' // Keep space for bottom nav
+        document.body.style.paddingBottom = isInActiveConversation ? '0px' : '80px' // No padding if nav is hidden
       }
       
       keyboard.addListener('keyboardWillShow', keyboardWillShow)
@@ -206,10 +211,10 @@ export function SimpleMessageComposer({
       
       return () => {
         keyboard.removeAllListeners()
-        document.body.style.paddingBottom = '80px'
+        document.body.style.paddingBottom = isInActiveConversation ? '0px' : '80px'
       }
     }
-  }, [])
+  }, [isInActiveConversation])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -225,7 +230,7 @@ export function SimpleMessageComposer({
   }
 
   return (
-    <div ref={composerRef} className="p-4 bg-gray-900 border-t border-gray-700 mb-[calc(4rem+env(safe-area-inset-bottom))] md:mb-0">
+    <div ref={composerRef} className={`p-4 bg-gray-900 border-t border-gray-700 ${isInActiveConversation ? 'mb-0' : 'mb-[calc(4rem+env(safe-area-inset-bottom))] md:mb-0'}`}>
       {/* Attachment Preview */}
       {attachment && (
         <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between">

@@ -15,6 +15,13 @@ export function Navigation() {
   const router = useRouter()
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
 
+  // Hide navigation during active conversations for professional experience
+  const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
+  
+  if (isInActiveConversation) {
+    return null
+  }
+
   const routes = [
     {
       href: "/feed",

@@ -20,6 +20,7 @@ export default function AuthenticatedLayout({
   const pathname = usePathname()
   const isFeedPage = pathname === '/feed'
   const isMessagesPage = pathname.startsWith('/messages')
+  const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
 
   // Request notification permission on mount
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function AuthenticatedLayout({
                 )}
               </div>
             )}
-            <main className="flex-1 pb-20 lg:ml-16 lg:pb-0 pt-16 lg:pt-safe-top px-safe-left px-safe-right bg-black">
+            <main className={`flex-1 ${isInActiveConversation ? 'pb-0' : 'pb-20'} lg:ml-16 lg:pb-0 pt-16 lg:pt-safe-top px-safe-left px-safe-right bg-black`}>
               <div className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-8">
                 {children}
               </div>
