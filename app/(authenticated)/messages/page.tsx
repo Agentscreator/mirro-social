@@ -142,7 +142,7 @@ export default function MessagesPage() {
               }`}
               onClick={() => setShowAddStory(!showAddStory)}
             >
-              <FileImage className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Add Story</span>
             </Button>
           )}
