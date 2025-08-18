@@ -763,7 +763,21 @@ export default function DiscoverPage() {
                 {/* Desktop Layout */}
                 <div className="hidden lg:block">
                   {/* Navigation */}
-                  <div className="flex items-center justify-end mb-8">
+                  <div className="flex items-center justify-center gap-8 mb-8">
+                    <Button
+                      onClick={goToPrevious}
+                      disabled={currentIndex === 0}
+                      variant="ghost"
+                      size="lg"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-white" />
+                    </Button>
+
+                    <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
+                      {currentIndex + 1} of {shuffledUsers.length}
+                    </div>
+
                     <Button
                       onClick={goToNext}
                       disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
@@ -812,7 +826,22 @@ export default function DiscoverPage() {
                 {/* Mobile Layout */}
                 <div className="lg:hidden space-y-6">
                   {/* Navigation */}
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-center gap-6">
+                    <Button
+                      onClick={goToPrevious}
+                      disabled={currentIndex === 0}
+                      variant="ghost"
+                      size="lg"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-white" />
+                    </Button>
+
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">{currentIndex + 1} of {shuffledUsers.length}</p>
+                      <p className="text-xs text-gray-500">Swipe to explore</p>
+                    </div>
+
                     <Button
                       onClick={goToNext}
                       disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
