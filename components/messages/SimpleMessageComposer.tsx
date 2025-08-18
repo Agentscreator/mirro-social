@@ -35,6 +35,7 @@ export function SimpleMessageComposer({
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLDivElement>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
@@ -183,6 +184,33 @@ export function SimpleMessageComposer({
     }
   }, [])
 
+  // Capacitor keyboard handling
+  useEffect(() => {
+    const isCapacitor = !!(window as any).Capacitor
+    
+    if (isCapacitor && (window as any).Capacitor?.Plugins?.Keyboard) {
+      const keyboard = (window as any).Capacitor.Plugins.Keyboard
+      
+      const keyboardWillShow = () => {
+        // Add padding to body to prevent content from being hidden
+        document.body.style.paddingBottom = '280px' // More padding for message composer
+      }
+      
+      const keyboardWillHide = () => {
+        // Remove padding when keyboard hides
+        document.body.style.paddingBottom = '80px' // Keep space for bottom nav
+      }
+      
+      keyboard.addListener('keyboardWillShow', keyboardWillShow)
+      keyboard.addListener('keyboardWillHide', keyboardWillHide)
+      
+      return () => {
+        keyboard.removeAllListeners()
+        document.body.style.paddingBottom = '80px'
+      }
+    }
+  }, [])
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -197,7 +225,7 @@ export function SimpleMessageComposer({
   }
 
   return (
-    <div className="p-4 bg-gray-900 border-t border-gray-700">
+    <div ref={composerRef} className="p-4 bg-gray-900 border-t border-gray-700 mb-[calc(4rem+env(safe-area-inset-bottom))] md:mb-0">
       {/* Attachment Preview */}
       {attachment && (
         <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between">
@@ -239,6 +267,31 @@ export function SimpleMessageComposer({
             value={message}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
+            onFocus={() => {
+              // Handle keyboard display for both web and Capacitor apps
+              if (window.innerWidth < 1024) {
+                // Check if running in Capacitor
+                const isCapacitor = !!(window as any).Capacitor
+                
+                if (isCapacitor) {
+                  // For Capacitor apps, scroll to keep composer visible
+                  setTimeout(() => {
+                    composerRef.current?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'end' 
+                    })
+                  }, 100)
+                } else {
+                  // For web browsers
+                  setTimeout(() => {
+                    composerRef.current?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'end' 
+                    })
+                  }, 300)
+                }
+              }
+            }}
             className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
             disabled={disabled || sending}
             rows={1}
