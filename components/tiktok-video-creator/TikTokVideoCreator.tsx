@@ -94,28 +94,42 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
       if (isNative) {
         console.log('🚀 Running on native platform, checking Capacitor permissions...');
         
-        // Check existing permissions
-        const currentPermissions = await checkAndroidPermissions();
-        console.log('Current permissions:', currentPermissions);
-        
-        if (currentPermissions?.camera === 'denied') {
-          console.log('Camera permission denied, requesting...');
-          const requestedPermissions = await requestAndroidPermissions();
-          console.log('Requested permissions result:', requestedPermissions);
+        try {
+          // Always request permissions directly on native platforms
+          const { Camera } = await import('@capacitor/camera');
+          console.log('📱 Capacitor Camera plugin loaded, requesting permissions...');
           
-          if (requestedPermissions?.camera === 'denied') {
-            setPermissionDenied(true);
-            return;
-          }
-        } else if (currentPermissions?.camera === 'prompt') {
-          console.log('Camera permission prompt, requesting...');
-          const requestedPermissions = await requestAndroidPermissions();
-          console.log('Requested permissions result:', requestedPermissions);
+          // First check current permissions
+          const currentPerms = await Camera.checkPermissions();
+          console.log('Current camera permissions:', currentPerms);
           
-          if (requestedPermissions?.camera !== 'granted') {
-            setPermissionDenied(true);
-            return;
+          // If already granted, proceed
+          if (currentPerms.camera === 'granted') {
+            console.log('✅ Camera permission already granted!');
+          } else {
+            // Request permissions
+            console.log('🔑 Requesting camera permissions...');
+            const permissions = await Camera.requestPermissions();
+            console.log('Camera permission request result:', permissions);
+            
+            if (permissions.camera === 'denied' || permissions.camera === 'restricted') {
+              console.log('❌ Camera permission denied/restricted');
+              setPermissionDenied(true);
+              return;
+            }
+            
+            if (permissions.camera !== 'granted') {
+              console.log('❌ Camera permission not granted, received:', permissions.camera);
+              setPermissionDenied(true);
+              return;
+            }
+            
+            console.log('✅ Camera permission granted!');
           }
+        } catch (permError) {
+          console.error('❌ Error with native camera permissions:', permError);
+          console.log('Falling back to getUserMedia...');
+          // Continue to try getUserMedia as fallback
         }
       } else {
         // Web browser permission handling
@@ -196,18 +210,33 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
 
   // Retry camera access
   const retryCamera = useCallback(async () => {
+    console.log('🔄 Retrying camera access...');
     setPermissionDenied(false);
     
-    // If native platform, request permissions again
+    // If native platform, request permissions directly
     if (Capacitor.isNativePlatform()) {
       try {
-        console.log('🔄 Retrying native camera permissions...');
-        await requestAndroidPermissions();
+        console.log('🔄 Requesting native camera permissions directly...');
+        const { Camera } = await import('@capacitor/camera');
+        
+        const permissions = await Camera.requestPermissions();
+        console.log('Retry permissions result:', permissions);
+        
+        if (permissions.camera !== 'granted') {
+          console.log('❌ Camera permission still denied on retry');
+          setPermissionDenied(true);
+          return;
+        }
+        
+        console.log('✅ Camera permission granted on retry!');
       } catch (error) {
         console.error('Error requesting permissions on retry:', error);
+        setPermissionDenied(true);
+        return;
       }
     }
     
+    // Proceed with camera initialization
     initCamera();
   }, [initCamera]);
 
@@ -343,24 +372,16 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
           </div>
           
           {isNative ? (
-            <div className="space-y-3 text-sm text-gray-300 text-left">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">1</span>
-                </div>
-                <span>Tap "Try Again" to request camera permission</span>
+            <div className="space-y-4 text-sm text-gray-300">
+              <div className="bg-gray-800 rounded-lg p-4">
+                <p className="text-center">
+                  Camera access is required to record videos. Tap "Allow Access" and we'll request permission from your device.
+                </p>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">2</span>
-                </div>
-                <span>Allow camera access when prompted</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">3</span>
-                </div>
-                <span>If denied, go to device Settings → Apps → Mirro → Permissions</span>
+              
+              <div className="text-xs text-gray-400 text-center">
+                If you previously denied access, go to:<br/>
+                <strong>Settings → Apps → Mirro → Permissions → Camera</strong>
               </div>
             </div>
           ) : (
@@ -392,7 +413,7 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
               className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
             >
               <Camera className="w-4 h-4 mr-2" />
-              Try Again
+              {isNative ? 'Allow Access' : 'Try Again'}
             </Button>
             
             <Button
