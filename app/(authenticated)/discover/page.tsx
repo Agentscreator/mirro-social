@@ -479,6 +479,33 @@ export default function DiscoverPage() {
     }
   }, [typingTimeout])
 
+  // Capacitor keyboard handling
+  useEffect(() => {
+    const isCapacitor = !!(window as any).Capacitor
+    
+    if (isCapacitor && (window as any).Capacitor?.Plugins?.Keyboard) {
+      const keyboard = (window as any).Capacitor.Plugins.Keyboard
+      
+      const keyboardWillShow = () => {
+        // Add padding to body to prevent content from being hidden
+        document.body.style.paddingBottom = '250px'
+      }
+      
+      const keyboardWillHide = () => {
+        // Remove padding when keyboard hides
+        document.body.style.paddingBottom = '0px'
+      }
+      
+      keyboard.addListener('keyboardWillShow', keyboardWillShow)
+      keyboard.addListener('keyboardWillHide', keyboardWillHide)
+      
+      return () => {
+        keyboard.removeAllListeners()
+        document.body.style.paddingBottom = '0px'
+      }
+    }
+  }, [])
+
   // Swipe gesture handling
   const minSwipeDistance = 50
 
@@ -560,14 +587,36 @@ export default function DiscoverPage() {
             spellCheck="false"
             data-testid="thought-input"
             onFocus={() => {
-              // Scroll the entire thoughts container into view when focused on mobile
+              // Handle keyboard display for both web and Capacitor apps
               if (window.innerWidth < 1024) {
-                setTimeout(() => {
-                  thoughtsContainerRef.current?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'end' 
-                  })
-                }, 300) // Small delay to allow keyboard to appear
+                // Check if running in Capacitor
+                const isCapacitor = !!(window as any).Capacitor
+                
+                if (isCapacitor) {
+                  // For Capacitor apps, use a different approach
+                  setTimeout(() => {
+                    const viewportHeight = window.innerHeight
+                    const keyboardHeight = viewportHeight * 0.4 // Estimate keyboard takes ~40% of screen
+                    const availableHeight = viewportHeight - keyboardHeight
+                    
+                    // Scroll to ensure the container fits in available space
+                    const containerRect = thoughtsContainerRef.current?.getBoundingClientRect()
+                    if (containerRect) {
+                      const scrollY = window.scrollY + containerRect.bottom - availableHeight + 20
+                      if (scrollY > window.scrollY) {
+                        window.scrollTo({ top: scrollY, behavior: 'smooth' })
+                      }
+                    }
+                  }, 100) // Shorter delay for Capacitor
+                } else {
+                  // For web browsers
+                  setTimeout(() => {
+                    thoughtsContainerRef.current?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'end' 
+                    })
+                  }, 300)
+                }
               }
             }}
           />
