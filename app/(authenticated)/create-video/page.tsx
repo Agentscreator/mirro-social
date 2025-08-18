@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
+import { generateVideoThumbnail } from '@/lib/video-utils'
 import { 
   ArrowLeft, 
   Upload, 
@@ -28,6 +29,7 @@ import {
 interface VideoUploadData {
   file: File | null
   preview: string | null
+  thumbnail: string | null
   duration: number
 }
 
@@ -41,6 +43,7 @@ export default function CreateVideoPage() {
   const [videoData, setVideoData] = useState<VideoUploadData>({
     file: null,
     preview: null,
+    thumbnail: null,
     duration: 0
   })
   const [isPlaying, setIsPlaying] = useState(false)
@@ -84,15 +87,30 @@ export default function CreateVideoPage() {
 
     const preview = URL.createObjectURL(file)
     
-    // Get video duration
+    // Get video duration and generate thumbnail
     const video = document.createElement('video')
     video.src = preview
-    video.onloadedmetadata = () => {
-      setVideoData({
-        file,
-        preview,
-        duration: Math.round(video.duration)
-      })
+    video.onloadedmetadata = async () => {
+      try {
+        // Generate thumbnail
+        const thumbnail = await generateVideoThumbnail(file, 1)
+        
+        setVideoData({
+          file,
+          preview,
+          thumbnail,
+          duration: Math.round(video.duration)
+        })
+      } catch (error) {
+        console.error('Error generating thumbnail:', error)
+        // Fallback to video preview
+        setVideoData({
+          file,
+          preview,
+          thumbnail: preview,
+          duration: Math.round(video.duration)
+        })
+      }
     }
   }, [])
 
@@ -111,7 +129,7 @@ export default function CreateVideoPage() {
     if (videoData.preview) {
       URL.revokeObjectURL(videoData.preview)
     }
-    setVideoData({ file: null, preview: null, duration: 0 })
+    setVideoData({ file: null, preview: null, thumbnail: null, duration: 0 })
     setIsPlaying(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -301,15 +319,26 @@ export default function CreateVideoPage() {
             ) : (
               <div className="space-y-4">
                 <div className="relative aspect-[9/16] bg-black rounded-lg overflow-hidden">
+                  {/* Thumbnail Background */}
+                  {videoData.thumbnail && (
+                    <img
+                      src={videoData.thumbnail}
+                      alt="Video thumbnail"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
+                  
+                  {/* Video Element (hidden but used for playback) */}
                   <video
                     ref={videoRef}
                     src={videoData.preview}
-                    className="w-full h-full object-cover"
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                      isPlaying ? 'opacity-100' : 'opacity-0'
+                    }`}
                     loop
                     muted
                     playsInline
                     preload="metadata"
-                    poster={videoData.preview}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                   />

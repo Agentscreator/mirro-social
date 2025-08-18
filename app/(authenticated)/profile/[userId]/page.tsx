@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { ProfileHamburgerMenu } from "@/components/profile-hamburger-menu"
+import { generateVideoThumbnail } from "@/lib/video-utils"
 
 interface Post {
   id: number
@@ -31,6 +32,7 @@ interface Post {
   createdAt: string
   image: string | null
   video: string | null
+  videoThumbnail?: string | null
   likes: number
   comments: number
   isLiked?: boolean
@@ -84,6 +86,7 @@ export default function ProfilePage() {
   const [following, setFollowing] = useState<FollowUser[]>([])
   const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(false)
+  const [videoThumbnails, setVideoThumbnails] = useState<Record<number, string>>({})
   const [profileImageUploading, setProfileImageUploading] = useState(false)
   const [isEditingAbout, setIsEditingAbout] = useState(false)
   const [editedAbout, setEditedAbout] = useState("")
@@ -122,6 +125,29 @@ export default function ProfilePage() {
 
   const cacheKey = `posts-${userId || session?.user?.id}`
 
+  const generateThumbnailsForPosts = useCallback(async (posts: Post[]) => {
+    const thumbnails: Record<number, string> = {}
+    
+    for (const post of posts) {
+      if (post.video) {
+        // Check if we already have a thumbnail
+        setVideoThumbnails(current => {
+          if (!current[post.id]) {
+            // Generate thumbnail asynchronously
+            generateVideoThumbnail(post.video!, 1)
+              .then(thumbnail => {
+                setVideoThumbnails(prev => ({ ...prev, [post.id]: thumbnail }))
+              })
+              .catch(error => {
+                console.error(`Failed to generate thumbnail for post ${post.id}:`, error)
+              })
+          }
+          return current
+        })
+      }
+    }
+  }, [])
+
   const fetchPosts = useCallback(
     async (targetUserId: string, forceRefresh = false) => {
       try {
@@ -157,6 +183,7 @@ export default function ProfilePage() {
           }
           sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
           console.log("✅ Successfully fetched posts:", newPosts.length)
+          
         } else {
           throw new Error("Failed to fetch posts")
         }
@@ -290,6 +317,13 @@ export default function ProfilePage() {
       fetchProfile()
     }
   }, [userId, session, isOwnProfile, fetchPosts])
+
+  // Generate thumbnails when posts change
+  useEffect(() => {
+    if (posts.length > 0) {
+      generateThumbnailsForPosts(posts)
+    }
+  }, [posts, generateThumbnailsForPosts])
 
   // Media handling for post creation
 
@@ -1244,14 +1278,23 @@ export default function ProfilePage() {
                 >
                   {post.video ? (
                     <div className="relative w-full h-full">
-                      <video 
-                        src={post.video} 
-                        className="w-full h-full object-cover" 
-                        preload="metadata"
-                        poster={post.video}
-                        muted
-                        playsInline
-                      />
+                      {/* Show thumbnail if available, otherwise use video element */}
+                      {videoThumbnails[post.id] ? (
+                        <img 
+                          src={videoThumbnails[post.id]} 
+                          alt="Video thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video 
+                          src={post.video} 
+                          className="w-full h-full object-cover" 
+                          preload="metadata"
+                          poster={post.video}
+                          muted
+                          playsInline
+                        />
+                      )}
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-colors">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                           <Play className="h-6 w-6 text-white" />
