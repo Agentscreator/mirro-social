@@ -288,6 +288,7 @@ export default function DiscoverPage() {
 
   // Navigation functions
   const goToPrevious = () => {
+    // Left button: go back to previous user if available
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
     }
@@ -296,10 +297,15 @@ export default function DiscoverPage() {
   const goToNext = async () => {
     if (currentIndex < shuffledUsers.length - 1) {
       setCurrentIndex(currentIndex + 1)
+      
+      // Preload more users when we're getting close to the end (within 2 users)
+      if (currentIndex >= shuffledUsers.length - 3 && hasMore && !loadingMore && !isTypingThought) {
+        loadMore() // Don't await, run in background
+      }
     } else if (hasMore && !loadingMore && !isTypingThought) {
       // Load more users when reaching the end, but not if user is typing
       await loadMore()
-      if (currentIndex < users.length - 1) {
+      if (currentIndex < shuffledUsers.length - 1) {
         setCurrentIndex(currentIndex + 1)
       }
     }
@@ -310,38 +316,54 @@ export default function DiscoverPage() {
     if (!hasMore || loadingMore || isTypingThought) return
     try {
       setLoadingMore(true)
-      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 1)
+      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 3)
       const usersWithReasons = [...users]
       const existingUserIds = new Set(users.map((user) => user.id))
 
+      // First, add all new users immediately with placeholder reasons
+      const newConvertedUsers = []
       for (const newUser of newUsers) {
         if (existingUserIds.has(newUser.id)) {
           continue
         }
 
-        let userId = -1
-        if (typeof newUser.id === "string") {
-          const parsed = Number.parseInt(newUser.id, 10)
-          if (!isNaN(parsed)) {
-            userId = parsed
-          }
-        } else if (typeof newUser.id === "number") {
-          userId = newUser.id
-        }
-
-        if (userId > 0) {
-          setExplanationLoading(userId)
-        }
-
-        const explanation = await generateExplanation(newUser)
         const convertedUser = convertApiUserToLocalUser(newUser)
-        convertedUser.reason = explanation
+        convertedUser.reason = "Generating match explanation..."
         usersWithReasons.push(convertedUser)
+        newConvertedUsers.push({ originalUser: newUser, convertedUser })
         existingUserIds.add(newUser.id)
-        setExplanationLoading(-1)
       }
+      
+      // Update users immediately so navigation is fast
+      setUsers([...usersWithReasons])
+      
+      // Generate explanations in background without blocking navigation
+      newConvertedUsers.forEach(async ({ originalUser, convertedUser }, index) => {
+        try {
+          const explanation = await generateExplanation(originalUser)
+          // Update the specific user's reason
+          setUsers(prevUsers => {
+            const updatedUsers = [...prevUsers]
+            const userIndex = updatedUsers.findIndex(u => u.id === convertedUser.id)
+            if (userIndex !== -1) {
+              updatedUsers[userIndex].reason = explanation
+            }
+            return updatedUsers
+          })
+        } catch (error) {
+          console.error(`Failed to generate explanation for user ${originalUser.id}:`, error)
+          setUsers(prevUsers => {
+            const updatedUsers = [...prevUsers]
+            const userIndex = updatedUsers.findIndex(u => u.id === convertedUser.id)
+            if (userIndex !== -1) {
+              updatedUsers[userIndex].reason = "Unable to generate match explanation"
+            }
+            return updatedUsers
+          })
+        }
+      })
 
-      setUsers(usersWithReasons)
+      // Users already updated above for faster navigation
       setHasMore(moreAvailable)
       setCurrentPage(nextPage ?? currentPage)
     } catch (error) {
@@ -360,7 +382,7 @@ export default function DiscoverPage() {
         
         // Load recommendations and thoughts in parallel
         const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 1),
+          fetchRecommendations(1, 5),
           loadThoughts()
         ])
         
@@ -780,10 +802,10 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
+                      disabled={false}
                       variant="ghost"
                       size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 transition-colors"
                     >
                       {loadingMore ? (
                         <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
@@ -843,10 +865,10 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={currentIndex === shuffledUsers.length - 1 && !hasMore}
+                      disabled={false}
                       variant="ghost"
                       size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 transition-colors"
                     >
                       {loadingMore ? (
                         <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
