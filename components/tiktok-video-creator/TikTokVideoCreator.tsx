@@ -81,6 +81,7 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   // UI State
   const [showFilters, setShowFilters] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   // Initialize camera
   const initCamera = useCallback(async () => {
@@ -101,7 +102,7 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
           console.log('Microphone permission:', microphonePermission.state);
           
           if (cameraPermission.state === 'denied') {
-            alert('Camera access is denied. Please enable camera permissions in your browser settings and refresh the page.');
+            setPermissionDenied(true);
             return;
           }
         } catch (permError) {
@@ -132,7 +133,7 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
       // Provide specific error messages based on error type
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          alert('Camera access denied. Please allow camera permissions and try again.');
+          setPermissionDenied(true);
         } else if (error.name === 'NotFoundError') {
           alert('No camera found on this device.');
         } else if (error.name === 'NotReadableError') {
@@ -159,6 +160,12 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   const flipCamera = useCallback(() => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   }, []);
+
+  // Retry camera access
+  const retryCamera = useCallback(() => {
+    setPermissionDenied(false);
+    initCamera();
+  }, [initCamera]);
 
   // Start countdown
   const startCountdown = useCallback(() => {
@@ -272,6 +279,65 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
       setTimeout(initCamera, 100);
     }
   }, [facingMode, audioEnabled]);
+
+  // Permission denied screen
+  if (permissionDenied) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-8">
+        <div className="text-center space-y-6 max-w-sm">
+          <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto">
+            <Camera className="w-10 h-10 text-white" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Camera Permission Required</h2>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              To record videos, we need access to your camera. Please:
+            </p>
+          </div>
+          
+          <div className="space-y-3 text-sm text-gray-300 text-left">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-xs font-bold">1</span>
+              </div>
+              <span>Tap the camera icon in your browser's address bar</span>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-xs font-bold">2</span>
+              </div>
+              <span>Select "Allow" for camera access</span>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-xs font-bold">3</span>
+              </div>
+              <span>Try again by tapping the button below</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3 pt-4">
+            <Button
+              onClick={retryCamera}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="w-full border-gray-600 text-white hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
