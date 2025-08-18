@@ -159,8 +159,17 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             )}
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 flex items-center justify-between">
             <h3 className="text-xl font-semibold text-white">@{user.username}</h3>
+            <Button
+              onClick={handleViewProfile}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-1.5 text-sm font-medium"
+            >
+              <User className="h-3.5 w-3.5 mr-1.5" />
+              View profile
+            </Button>
           </div>
         </div>
 
@@ -187,19 +196,6 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
           </div>
         )}
 
-        {/* Action button */}
-        <div className="flex justify-center">
-          <div className="text-center">
-            <Button
-              onClick={handleViewProfile}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2 flex items-center gap-2 transition-colors mb-2"
-            >
-              <User className="h-4 w-4" />
-              View Profile
-            </Button>
-            <p className="text-xs text-gray-400">Tap to view profile</p>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )
