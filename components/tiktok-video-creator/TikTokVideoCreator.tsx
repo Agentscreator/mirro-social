@@ -25,6 +25,8 @@ import {
   Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Capacitor } from '@capacitor/core';
+import { checkAndroidPermissions, requestAndroidPermissions } from '@/src/lib/android-utils';
 
 interface TikTokVideoCreatorProps {
   onVideoCreated: (videoBlob: Blob, thumbnail: string) => void;
@@ -86,27 +88,58 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   // Initialize camera
   const initCamera = useCallback(async () => {
     try {
-      // Check if camera permissions are available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Camera is not supported in this browser.');
-        return;
-      }
-
-      // Check current permissions
-      if (navigator.permissions) {
-        try {
-          const cameraPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
-          const microphonePermission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      // Check if we're on a native platform
+      const isNative = Capacitor.isNativePlatform();
+      
+      if (isNative) {
+        console.log('🚀 Running on native platform, checking Capacitor permissions...');
+        
+        // Check existing permissions
+        const currentPermissions = await checkAndroidPermissions();
+        console.log('Current permissions:', currentPermissions);
+        
+        if (currentPermissions?.camera === 'denied') {
+          console.log('Camera permission denied, requesting...');
+          const requestedPermissions = await requestAndroidPermissions();
+          console.log('Requested permissions result:', requestedPermissions);
           
-          console.log('Camera permission:', cameraPermission.state);
-          console.log('Microphone permission:', microphonePermission.state);
-          
-          if (cameraPermission.state === 'denied') {
+          if (requestedPermissions?.camera === 'denied') {
             setPermissionDenied(true);
             return;
           }
-        } catch (permError) {
-          console.log('Permission check not supported, proceeding with getUserMedia');
+        } else if (currentPermissions?.camera === 'prompt') {
+          console.log('Camera permission prompt, requesting...');
+          const requestedPermissions = await requestAndroidPermissions();
+          console.log('Requested permissions result:', requestedPermissions);
+          
+          if (requestedPermissions?.camera !== 'granted') {
+            setPermissionDenied(true);
+            return;
+          }
+        }
+      } else {
+        // Web browser permission handling
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Camera is not supported in this browser.');
+          return;
+        }
+
+        // Check current permissions
+        if (navigator.permissions) {
+          try {
+            const cameraPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+            const microphonePermission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+            
+            console.log('Camera permission:', cameraPermission.state);
+            console.log('Microphone permission:', microphonePermission.state);
+            
+            if (cameraPermission.state === 'denied') {
+              setPermissionDenied(true);
+              return;
+            }
+          } catch (permError) {
+            console.log('Permission check not supported, proceeding with getUserMedia');
+          }
         }
       }
 
@@ -162,8 +195,19 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   }, []);
 
   // Retry camera access
-  const retryCamera = useCallback(() => {
+  const retryCamera = useCallback(async () => {
     setPermissionDenied(false);
+    
+    // If native platform, request permissions again
+    if (Capacitor.isNativePlatform()) {
+      try {
+        console.log('🔄 Retrying native camera permissions...');
+        await requestAndroidPermissions();
+      } catch (error) {
+        console.error('Error requesting permissions on retry:', error);
+      }
+    }
+    
     initCamera();
   }, [initCamera]);
 
@@ -282,6 +326,8 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
 
   // Permission denied screen
   if (permissionDenied) {
+    const isNative = Capacitor.isNativePlatform();
+    
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-8">
         <div className="text-center space-y-6 max-w-sm">
@@ -292,30 +338,53 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-white">Camera Permission Required</h2>
             <p className="text-gray-300 text-sm leading-relaxed">
-              To record videos, we need access to your camera. Please:
+              To record videos, we need access to your camera.
             </p>
           </div>
           
-          <div className="space-y-3 text-sm text-gray-300 text-left">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">1</span>
+          {isNative ? (
+            <div className="space-y-3 text-sm text-gray-300 text-left">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">1</span>
+                </div>
+                <span>Tap "Try Again" to request camera permission</span>
               </div>
-              <span>Tap the camera icon in your browser's address bar</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">2</span>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">2</span>
+                </div>
+                <span>Allow camera access when prompted</span>
               </div>
-              <span>Select "Allow" for camera access</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold">3</span>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">3</span>
+                </div>
+                <span>If denied, go to device Settings → Apps → Mirro → Permissions</span>
               </div>
-              <span>Try again by tapping the button below</span>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3 text-sm text-gray-300 text-left">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">1</span>
+                </div>
+                <span>Tap the camera icon in your browser's address bar</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">2</span>
+                </div>
+                <span>Select "Allow" for camera access</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">3</span>
+                </div>
+                <span>Try again by tapping the button below</span>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-3 pt-4">
             <Button
