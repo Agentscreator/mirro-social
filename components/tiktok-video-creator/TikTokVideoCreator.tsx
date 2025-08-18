@@ -85,6 +85,30 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   // Initialize camera
   const initCamera = useCallback(async () => {
     try {
+      // Check if camera permissions are available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera is not supported in this browser.');
+        return;
+      }
+
+      // Check current permissions
+      if (navigator.permissions) {
+        try {
+          const cameraPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          const microphonePermission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          
+          console.log('Camera permission:', cameraPermission.state);
+          console.log('Microphone permission:', microphonePermission.state);
+          
+          if (cameraPermission.state === 'denied') {
+            alert('Camera access is denied. Please enable camera permissions in your browser settings and refresh the page.');
+            return;
+          }
+        } catch (permError) {
+          console.log('Permission check not supported, proceeding with getUserMedia');
+        }
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 720 },
@@ -104,7 +128,21 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
       setCameraReady(true);
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
+      
+      // Provide specific error messages based on error type
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          alert('Camera access denied. Please allow camera permissions and try again.');
+        } else if (error.name === 'NotFoundError') {
+          alert('No camera found on this device.');
+        } else if (error.name === 'NotReadableError') {
+          alert('Camera is being used by another application.');
+        } else {
+          alert(`Camera error: ${error.message}`);
+        }
+      } else {
+        alert('Unable to access camera. Please check permissions.');
+      }
     }
   }, [facingMode, audioEnabled]);
 
@@ -414,11 +452,9 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
             <Button
               onClick={startCountdown}
               disabled={!cameraReady}
-              className="w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center"
+              className="w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center border-4 border-white"
             >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                <div className="w-12 h-12 bg-red-600 rounded-full" />
-              </div>
+              <div className="w-12 h-12 bg-red-600 rounded-full" />
             </Button>
           ) : (
             <Button
