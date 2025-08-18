@@ -310,7 +310,7 @@ export default function DiscoverPage() {
     if (!hasMore || loadingMore || isTypingThought) return
     try {
       setLoadingMore(true)
-      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 5)
+      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 1)
       const usersWithReasons = [...users]
       const existingUserIds = new Set(users.map((user) => user.id))
 
@@ -360,7 +360,7 @@ export default function DiscoverPage() {
         
         // Load recommendations and thoughts in parallel
         const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 5),
+          fetchRecommendations(1, 1),
           loadThoughts()
         ])
         
@@ -775,7 +775,7 @@ export default function DiscoverPage() {
                     </Button>
 
                     <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
-                      {currentIndex + 1} of {shuffledUsers.length}
+                      {/* Pagination counter removed for 1-by-1 browsing */}
                     </div>
 
                     <Button
@@ -838,7 +838,6 @@ export default function DiscoverPage() {
                     </Button>
 
                     <div className="text-center">
-                      <p className="text-sm text-gray-400">{currentIndex + 1} of {shuffledUsers.length}</p>
                       <p className="text-xs text-gray-500">Swipe to explore</p>
                     </div>
 
