@@ -4,8 +4,9 @@ import React, { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Upload, X, Loader2, Video, Image as ImageIcon } from "lucide-react"
+import { Upload, X, Loader2, Video, Image as ImageIcon, Camera } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { TikTokVideoCreator } from "@/components/tiktok-video-creator/TikTokVideoCreator"
 
 interface NewPostCreatorProps {
   isOpen: boolean
@@ -18,6 +19,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [caption, setCaption] = useState("")
   const [isUploading, setIsUploading] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Handle file upload
@@ -49,6 +51,25 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
     }
+  }
+
+  // Handle camera recording completion
+  const handleVideoRecorded = (videoBlob: Blob, thumbnail: string) => {
+    // Convert blob to file
+    const file = new File([videoBlob], 'recorded-video.webm', { type: 'video/webm' })
+    setSelectedFile(file)
+    setPreviewUrl(thumbnail)
+    setShowCamera(false)
+    
+    toast({
+      title: "Video recorded!",
+      description: "Your video is ready to post",
+    })
+  }
+
+  // Handle camera cancel
+  const handleCameraCancel = () => {
+    setShowCamera(false)
   }
 
   // Create post
@@ -118,6 +139,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setSelectedFile(null)
     setPreviewUrl(null)
     setIsUploading(false)
+    setShowCamera(false)
     onClose()
   }
 
@@ -131,9 +153,10 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-lg mx-auto bg-gray-900 text-white border-gray-700 p-0">
-        <DialogTitle className="sr-only">Create New Post</DialogTitle>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="w-full max-w-lg mx-auto bg-gray-900 text-white border-gray-700 p-0">
+          <DialogTitle className="sr-only">Create New Post</DialogTitle>
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
@@ -205,14 +228,25 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
             />
             
             {!selectedFile && (
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-gray-600 text-white hover:bg-gray-800"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Add Photo or Video
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-gray-600 text-white hover:bg-gray-800"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Add Photo or Video
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCamera(true)}
+                  className="w-full border-gray-600 text-white hover:bg-gray-800"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Record with Camera
+                </Button>
+              </div>
             )}
           </div>
 
@@ -244,5 +278,14 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Camera Recording Interface */}
+    {showCamera && (
+      <TikTokVideoCreator
+        onVideoCreated={handleVideoRecorded}
+        onCancel={handleCameraCancel}
+      />
+    )}
+    </>
   )
 }
