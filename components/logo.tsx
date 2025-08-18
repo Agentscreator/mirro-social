@@ -15,7 +15,7 @@ export function Logo({ size = "md", className }: LogoProps) {
   return (
     <div className={cn("relative", sizeClasses[size], className)}>
       <img
-        src="/icon-512.png"
+        src="/icon-512.jpg"
         alt="Mirro App Icon"
         className="rounded-xl object-contain w-full h-full"
       />
