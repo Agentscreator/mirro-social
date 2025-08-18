@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { generateVideoThumbnail } from '@/lib/video-utils'
+import { TikTokVideoCreator } from '@/components/tiktok-video-creator/TikTokVideoCreator'
 import { 
   ArrowLeft, 
   Upload, 
@@ -60,6 +61,7 @@ export default function CreateVideoPage() {
   // UI state
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [showCamera, setShowCamera] = useState(false)
 
   const handleVideoSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -113,6 +115,31 @@ export default function CreateVideoPage() {
       }
     }
   }, [])
+
+  // Handle camera recording completion
+  const handleVideoRecorded = (videoBlob: Blob, thumbnail: string) => {
+    // Convert blob to file
+    const file = new File([videoBlob], 'recorded-video.webm', { type: 'video/webm' })
+    
+    setVideoData({
+      file,
+      preview: thumbnail,
+      thumbnail,
+      duration: 0 // We'll calculate this later if needed
+    })
+    
+    setShowCamera(false)
+    
+    toast({
+      title: "Video recorded!",
+      description: "Your video is ready to post",
+    })
+  }
+
+  // Handle camera cancel
+  const handleCameraCancel = () => {
+    setShowCamera(false)
+  }
 
   const handleVideoPlay = () => {
     if (videoRef.current) {
@@ -310,10 +337,13 @@ export default function CreateVideoPage() {
                 </div>
                 
                 <div className="flex items-center justify-center">
-                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    className="flex items-center space-x-2 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  >
                     <Camera className="h-4 w-4" />
                     <span>Or record with camera</span>
-                  </div>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -548,6 +578,14 @@ export default function CreateVideoPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Camera Recording Interface */}
+      {showCamera && (
+        <TikTokVideoCreator
+          onVideoCreated={handleVideoRecorded}
+          onCancel={handleCameraCancel}
+        />
       )}
     </div>
   )
