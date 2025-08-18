@@ -4,6 +4,7 @@ import type React from "react"
 import { usePathname } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { HamburgerMenu } from "@/components/hamburger-menu"
 import { StreamProvider } from '@/components/providers/StreamProvider'
 import { ErrorBoundary } from '@/components/providers/ErrorBoundary'
 import { StreamVideoProvider } from "@/components/providers/StreamVideoProvider"
@@ -18,6 +19,7 @@ export default function AuthenticatedLayout({
 }) {
   const pathname = usePathname()
   const isFeedPage = pathname === '/feed'
+  const isMessagesPage = pathname.startsWith('/messages')
 
   // Request notification permission on mount
   useEffect(() => {
@@ -33,7 +35,11 @@ export default function AuthenticatedLayout({
             {/* Top header with notifications - hidden on feed page */}
             {!isFeedPage && (
               <div className="fixed top-0 right-0 z-40 p-4 lg:ml-16">
-                <NotificationBell />
+                {isMessagesPage ? (
+                  <HamburgerMenu />
+                ) : (
+                  <NotificationBell />
+                )}
               </div>
             )}
             <main className="flex-1 pb-20 lg:ml-16 lg:pb-0 pt-16 lg:pt-safe-top px-safe-left px-safe-right bg-black">

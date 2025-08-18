@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut, 
   Bell,
-  User
+  User,
+  AlertTriangle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +36,12 @@ export function ProfileHamburgerMenu({ className }: ProfileHamburgerMenuProps) {
       label: "Notifications",
       href: "/notifications",
       description: "Notification preferences"
+    },
+    {
+      icon: AlertTriangle,
+      label: "Report Issue",
+      href: "/report",
+      description: "Report child abuse or other problems"
     }
   ]
 
