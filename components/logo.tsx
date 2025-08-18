@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 
 interface LogoProps {
   size?: "sm" | "md" | "lg"
@@ -15,12 +14,10 @@ export function Logo({ size = "md", className }: LogoProps) {
 
   return (
     <div className={cn("relative", sizeClasses[size], className)}>
-      <Image
+      <img
         src="/icon-512.png"
         alt="Mirro App Icon"
-        fill
-        className="rounded-xl object-contain"
-        priority
+        className="rounded-xl object-contain w-full h-full"
       />
     </div>
   )
