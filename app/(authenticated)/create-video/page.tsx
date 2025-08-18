@@ -308,6 +308,8 @@ export default function CreateVideoPage() {
                     loop
                     muted
                     playsInline
+                    preload="metadata"
+                    poster={videoData.preview}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                   />

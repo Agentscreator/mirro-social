@@ -592,6 +592,8 @@ export default function EnhancedAlbumDetailPage({ params }: { params: { albumId:
                         className="w-full h-64 object-cover"
                         muted={mutedVideos.has(item.id)}
                         loop
+                        preload="metadata"
+                        playsInline
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                         <Button
@@ -716,6 +718,8 @@ export default function EnhancedAlbumDetailPage({ params }: { params: { albumId:
                             className="w-24 h-24 object-cover rounded-lg"
                             muted={mutedVideos.has(item.id)}
                             loop
+                            preload="metadata"
+                            playsInline
                           />
                           <Button
                             variant="secondary"

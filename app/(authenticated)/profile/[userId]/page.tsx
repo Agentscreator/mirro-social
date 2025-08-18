@@ -1244,7 +1244,14 @@ export default function ProfilePage() {
                 >
                   {post.video ? (
                     <div className="relative w-full h-full">
-                      <video src={post.video} className="w-full h-full object-cover" />
+                      <video 
+                        src={post.video} 
+                        className="w-full h-full object-cover" 
+                        preload="metadata"
+                        poster={post.video}
+                        muted
+                        playsInline
+                      />
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-colors">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                           <Play className="h-6 w-6 text-white" />
@@ -1324,6 +1331,8 @@ export default function ProfilePage() {
                         src={selectedPost.video}
                         className="w-full h-full object-cover blur-xl scale-110 opacity-30"
                         muted
+                        preload="metadata"
+                        playsInline
                       />
                     ) : (
                       <Image
@@ -1346,6 +1355,8 @@ export default function ProfilePage() {
                       autoPlay
                       loop
                       playsInline
+                      preload="metadata"
+                      muted
                     />
                   ) : selectedPost.image ? (
                     <Image

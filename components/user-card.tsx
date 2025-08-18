@@ -139,6 +139,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
                   loop
                   muted
                   playsInline
+                  preload="metadata"
                   className="absolute inset-0 w-full h-full object-cover"
                   onError={handleGifError}
                 />
