@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { Menu, Settings, HelpCircle, LogOut, Bell } from "lucide-react"
+import { Menu, Settings, HelpCircle, LogOut, Bell, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -37,6 +37,11 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
     setIsOpen(false)
   }
 
+  const handleReport = () => {
+    router.push("/report")
+    setIsOpen(false)
+  }
+
   const handleLogout = async () => {
     setIsOpen(false)
     await signOut({ callbackUrl: "/login" })
@@ -61,7 +66,7 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
       >
         <DropdownMenuItem
           onClick={handleNotifications}
-          className="flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-800 cursor-pointer rounded-lg mx-1 my-1"
+          className="flex items-center gap-3 px-4 py-3 !text-white hover:bg-gray-800 cursor-pointer rounded-lg mx-1 my-1"
         >
           <Bell className="h-4 w-4 text-blue-400" />
           <span className="font-medium">Notifications</span>
@@ -81,6 +86,14 @@ export function HamburgerMenu({ className }: HamburgerMenuProps) {
         >
           <HelpCircle className="h-4 w-4 text-blue-400" />
           <span className="font-medium">Help/Support</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={handleReport}
+          className="flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-800 cursor-pointer rounded-lg mx-1 my-1"
+        >
+          <AlertTriangle className="h-4 w-4 text-red-400" />
+          <span className="font-medium">Report Issue</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="my-2 bg-gray-700/50" />
