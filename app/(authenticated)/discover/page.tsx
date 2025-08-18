@@ -49,6 +49,7 @@ export default function DiscoverPage() {
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
   const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
+  const thoughtsContainerRef = useRef<HTMLDivElement>(null)
 
   // Touch/swipe state
   const [touchStart, setTouchStart] = useState<number | null>(null)
@@ -509,7 +510,7 @@ export default function DiscoverPage() {
   // Memoized ThoughtsUploadArea Component to prevent unnecessary re-renders
   const ThoughtsUploadArea = useMemo(() => {
     return (
-      <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+      <div ref={thoughtsContainerRef} className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
         <div className="text-center mb-4">
           <h3 className="text-lg font-medium text-white mb-1">Tell us about yourself</h3>
           <p className="text-sm text-gray-400">Help us find better matches</p>
@@ -559,12 +560,12 @@ export default function DiscoverPage() {
             spellCheck="false"
             data-testid="thought-input"
             onFocus={() => {
-              // Scroll the element into view when focused on mobile
+              // Scroll the entire thoughts container into view when focused on mobile
               if (window.innerWidth < 1024) {
                 setTimeout(() => {
-                  thoughtInputRef.current?.scrollIntoView({ 
+                  thoughtsContainerRef.current?.scrollIntoView({ 
                     behavior: 'smooth', 
-                    block: 'center' 
+                    block: 'end' 
                   })
                 }, 300) // Small delay to allow keyboard to appear
               }
