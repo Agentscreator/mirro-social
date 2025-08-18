@@ -197,13 +197,15 @@ export function SimpleMessageComposer({
       const keyboard = (window as any).Capacitor.Plugins.Keyboard
       
       const keyboardWillShow = () => {
-        // Add padding to body to prevent content from being hidden
-        document.body.style.paddingBottom = '280px' // More padding for message composer
+        // Minimal adjustment for keyboard - layout should handle this naturally
+        if (isInActiveConversation) {
+          document.body.style.paddingBottom = '20px'
+        }
       }
       
       const keyboardWillHide = () => {
-        // Remove padding when keyboard hides
-        document.body.style.paddingBottom = isInActiveConversation ? '0px' : '80px' // No padding if nav is hidden
+        // Reset padding
+        document.body.style.paddingBottom = '0px'
       }
       
       keyboard.addListener('keyboardWillShow', keyboardWillShow)
@@ -211,7 +213,7 @@ export function SimpleMessageComposer({
       
       return () => {
         keyboard.removeAllListeners()
-        document.body.style.paddingBottom = isInActiveConversation ? '0px' : '80px'
+        document.body.style.paddingBottom = '0px'
       }
     }
   }, [isInActiveConversation])
@@ -230,7 +232,7 @@ export function SimpleMessageComposer({
   }
 
   return (
-    <div ref={composerRef} className={`p-4 bg-gray-900 border-t border-gray-700 ${isInActiveConversation ? 'mb-0' : 'mb-[calc(4rem+env(safe-area-inset-bottom))] md:mb-0'}`}>
+    <div ref={composerRef} className="p-4 bg-gray-900 border-t border-gray-700">
       {/* Attachment Preview */}
       {attachment && (
         <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between">

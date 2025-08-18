@@ -123,7 +123,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8 -mt-16 md:-mt-8 pt-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -169,7 +169,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 pb-4 relative">
+      <div className="flex-1 overflow-y-auto px-4 py-2 pb-4 relative min-h-0">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
@@ -243,13 +243,15 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* Message Input */}
-      <SimpleMessageComposer 
-        onSendMessage={handleSendMessage}
-        placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
-        onStartTyping={startTyping}
-        onStopTyping={stopTyping}
-      />
+      {/* Message Input - Fixed at bottom */}
+      <div className="flex-shrink-0">
+        <SimpleMessageComposer 
+          onSendMessage={handleSendMessage}
+          placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
+          onStartTyping={startTyping}
+          onStopTyping={stopTyping}
+        />
+      </div>
 
       {/* User Profile Modal */}
       <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>
