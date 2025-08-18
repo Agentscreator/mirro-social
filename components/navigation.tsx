@@ -2,7 +2,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Home, Search, User, MessageSquare, Bell, Plus } from "lucide-react"
-import { Logo } from "@/components/logo"
+import { MirroIcon } from "@/components/logo"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { NewPostCreator } from "@/components/new-post/NewPostCreator"
@@ -63,7 +63,7 @@ export function Navigation() {
       {/* Desktop navigation (side) - FORCE HIDE on mobile */}
       <div className="fixed left-0 top-0 z-50 hidden lg:flex lg:flex-col lg:items-center lg:justify-between lg:py-6 h-screen w-16 border-r border-gray-800 bg-black max-lg:!hidden">
         <Link href="/feed" className="flex items-center justify-center">
-          <Logo size="md" />
+          <MirroIcon size="md" />
         </Link>
         <div className="flex flex-col items-center space-y-6">
           {routes.slice(0, 2).map((route) => (

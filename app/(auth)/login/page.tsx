@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Logo } from "@/components/logo"
+import { Logo, MirroIcon } from "@/components/logo"
 import { isMobileApp, mobileLogin, setMobileAuthToken } from "@/src/lib/mobile-auth"
 
 export default function LoginPage() {
@@ -147,7 +147,7 @@ export default function LoginPage() {
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-xl rounded-full scale-150"></div>
           <div className="relative">
-            <Logo size="lg" />
+            <MirroIcon size="lg" />
           </div>
         </div>
       </div>
