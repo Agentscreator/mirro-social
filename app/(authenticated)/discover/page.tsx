@@ -37,6 +37,7 @@ export default function DiscoverPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [explanationLoading, setExplanationLoading] = useState<string | null>(null)
+  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -288,8 +289,8 @@ export default function DiscoverPage() {
 
   // Navigation functions
   const goToPrevious = () => {
-    // Don't allow navigation while generating explanation for current user
-    if (explanationLoading === currentUser?.id) return
+    // Don't allow navigation while generating any explanation
+    if (isGeneratingExplanation) return
     
     // Left button: go back to previous user if available
     if (currentIndex > 0) {
@@ -298,8 +299,8 @@ export default function DiscoverPage() {
   }
 
   const goToNext = async () => {
-    // Don't allow navigation while generating explanation for current user
-    if (explanationLoading === currentUser?.id) return
+    // Don't allow navigation while generating any explanation
+    if (isGeneratingExplanation) return
     
     if (currentIndex < shuffledUsers.length - 1) {
       setCurrentIndex(currentIndex + 1)
@@ -344,6 +345,10 @@ export default function DiscoverPage() {
       setUsers([...usersWithReasons])
       
       // Generate explanations sequentially for better UX
+      if (newConvertedUsers.length > 0) {
+        setIsGeneratingExplanation(true)
+      }
+      
       for (const { originalUser, convertedUser } of newConvertedUsers) {
         try {
           setExplanationLoading(convertedUser.id)
@@ -371,6 +376,10 @@ export default function DiscoverPage() {
           setExplanationLoading(null)
         }
       }
+      
+      if (newConvertedUsers.length > 0) {
+        setIsGeneratingExplanation(false)
+      }
 
       // Users already updated above for faster navigation
       setHasMore(moreAvailable)
@@ -388,11 +397,18 @@ export default function DiscoverPage() {
       try {
         setLoading(true)
         
+        // Set a maximum loading time of 800ms
+        const maxLoadingTime = setTimeout(() => {
+          setLoading(false)
+        }, 800)
+        
         // Load recommendations and thoughts in parallel
         const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 5),
+          fetchRecommendations(1, 3), // Reduced from 5 to 3 for faster initial load
           loadThoughts()
         ])
+        
+        clearTimeout(maxLoadingTime)
         
         const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = recommendationsData
         
@@ -409,6 +425,10 @@ export default function DiscoverPage() {
         setLoading(false) // Stop loading here to show users faster
         
         // Generate explanations sequentially after showing users
+        if (recommendedUsers.length > 0) {
+          setIsGeneratingExplanation(true)
+        }
+        
         for (let index = 0; index < recommendedUsers.length; index++) {
           const user = recommendedUsers[index]
           const convertedUser = usersWithBasicData[index]
@@ -437,9 +457,14 @@ export default function DiscoverPage() {
             setExplanationLoading(null)
           }
         }
+        
+        if (recommendedUsers.length > 0) {
+          setIsGeneratingExplanation(false)
+        }
       } catch (error) {
         console.error("Failed to load initial data:", error)
         setLoading(false)
+        setIsGeneratingExplanation(false)
       }
     }
     loadInitialData()
@@ -557,6 +582,8 @@ export default function DiscoverPage() {
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return
+    if (isGeneratingExplanation) return // Block swipe during explanation generation
+    
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
@@ -671,7 +698,7 @@ export default function DiscoverPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
-        <TypingAnimation />
+        <TypingAnimation speed={100} />
       </div>
     )
   }
@@ -796,7 +823,7 @@ export default function DiscoverPage() {
                   <div className="flex items-center justify-center gap-8 mb-8">
                     <Button
                       onClick={goToPrevious}
-                      disabled={currentIndex === 0 || explanationLoading === currentUser?.id}
+                      disabled={currentIndex === 0 || isGeneratingExplanation}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
@@ -810,7 +837,7 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={explanationLoading === currentUser?.id}
+                      disabled={isGeneratingExplanation}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
@@ -859,7 +886,7 @@ export default function DiscoverPage() {
                   <div className="flex items-center justify-center gap-6">
                     <Button
                       onClick={goToPrevious}
-                      disabled={currentIndex === 0 || explanationLoading === currentUser?.id}
+                      disabled={currentIndex === 0 || isGeneratingExplanation}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
@@ -868,12 +895,12 @@ export default function DiscoverPage() {
                     </Button>
 
                     <div className="text-center">
-                      <p className="text-xs text-gray-500">Swipe to explore</p>
+                      <p className="text-xs text-gray-500">{isGeneratingExplanation ? "Generating..." : "Swipe to explore"}</p>
                     </div>
 
                     <Button
                       onClick={goToNext}
-                      disabled={explanationLoading === currentUser?.id}
+                      disabled={isGeneratingExplanation}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
