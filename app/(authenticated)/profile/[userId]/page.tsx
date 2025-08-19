@@ -126,27 +126,34 @@ export default function ProfilePage() {
   const cacheKey = `posts-${userId || session?.user?.id}`
 
   const generateThumbnailsForPosts = useCallback(async (posts: Post[]) => {
-    const thumbnails: Record<number, string> = {}
+    // Generate thumbnails in batches to avoid blocking the main thread
+    const videoPosts = posts.filter(post => post.video && !videoThumbnails[post.id])
     
-    for (const post of posts) {
-      if (post.video) {
-        // Check if we already have a thumbnail
-        setVideoThumbnails(current => {
-          if (!current[post.id]) {
-            // Generate thumbnail asynchronously
-            generateVideoThumbnail(post.video!, 1)
-              .then(thumbnail => {
-                setVideoThumbnails(prev => ({ ...prev, [post.id]: thumbnail }))
-              })
-              .catch(error => {
-                console.error(`Failed to generate thumbnail for post ${post.id}:`, error)
-              })
-          }
-          return current
-        })
+    if (videoPosts.length === 0) return
+
+    // Process thumbnails in small batches with delays to prevent blocking
+    const batchSize = 3
+    for (let i = 0; i < videoPosts.length; i += batchSize) {
+      const batch = videoPosts.slice(i, i + batchSize)
+      
+      // Generate thumbnails for this batch in parallel
+      const thumbnailPromises = batch.map(async (post) => {
+        try {
+          const thumbnail = await generateVideoThumbnail(post.video!, 1)
+          setVideoThumbnails(prev => ({ ...prev, [post.id]: thumbnail }))
+        } catch (error) {
+          console.error(`Failed to generate thumbnail for post ${post.id}:`, error)
+        }
+      })
+      
+      await Promise.allSettled(thumbnailPromises)
+      
+      // Small delay between batches to prevent overwhelming the browser
+      if (i + batchSize < videoPosts.length) {
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
     }
-  }, [])
+  }, [videoThumbnails])
 
   const fetchPosts = useCallback(
     async (targetUserId: string, forceRefresh = false) => {
@@ -279,28 +286,41 @@ export default function ProfilePage() {
         const targetUserId = userId || session?.user?.id
         if (!targetUserId) return
 
-        // Fetch profile
-        const response = await fetch(`/api/users/profile/${targetUserId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-          setEditedAbout(data.user.about || "")
-        }
+        // Fetch all data in parallel for better performance
+        const fetchTasks = []
 
-        // Fetch posts
-        await fetchPosts(targetUserId)
+        // Always fetch profile data
+        fetchTasks.push(
+          fetch(`/api/users/profile/${targetUserId}`).then(async (response) => {
+            if (response.ok) {
+              const data = await response.json()
+              setUser(data.user)
+              setEditedAbout(data.user.about || "")
+            }
+          })
+        )
 
-        // Fetch follow status if not own profile
+        // Always fetch posts
+        fetchTasks.push(fetchPosts(targetUserId))
+
+        // Only fetch follow status and record visit if not own profile
         if (!isOwnProfile) {
-          const followResponse = await fetch(`/api/users/${targetUserId}/follow-status`)
-          if (followResponse.ok) {
-            const followData = await followResponse.json()
-            setIsFollowing(followData.isFollowing)
-          }
+          fetchTasks.push(
+            fetch(`/api/users/${targetUserId}/follow-status`).then(async (response) => {
+              if (response.ok) {
+                const followData = await response.json()
+                setIsFollowing(followData.isFollowing)
+              }
+            })
+          )
 
-          // Record visit
-          await fetch(`/api/users/${targetUserId}/visit`, { method: "POST" })
+          fetchTasks.push(
+            fetch(`/api/users/${targetUserId}/visit`, { method: "POST" })
+          )
         }
+
+        // Wait for all requests to complete
+        await Promise.allSettled(fetchTasks)
       } catch (error: any) {
         console.error("❌ Error fetching profile:", error)
         toast({
@@ -960,7 +980,7 @@ export default function ProfilePage() {
     )
   }
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
@@ -1269,7 +1289,15 @@ export default function ProfilePage() {
 
           {/* Posts Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-            {posts.length > 0 ? (
+            {postsLoading ? (
+              // Show loading skeletons while posts are loading
+              Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="aspect-square bg-gray-800/50 rounded-2xl animate-pulse"
+                />
+              ))
+            ) : posts.length > 0 ? (
               posts.map((post) => (
                 <div
                   key={post.id}
@@ -1278,7 +1306,7 @@ export default function ProfilePage() {
                 >
                   {post.video ? (
                     <div className="relative w-full h-full">
-                      {/* Show thumbnail if available, otherwise use video element */}
+                      {/* Show thumbnail if available, otherwise show loading state */}
                       {videoThumbnails[post.id] ? (
                         <img 
                           src={videoThumbnails[post.id]} 
@@ -1286,14 +1314,9 @@ export default function ProfilePage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <video 
-                          src={post.video} 
-                          className="w-full h-full object-cover" 
-                          preload="metadata"
-                          poster={post.video}
-                          muted
-                          playsInline
-                        />
+                        <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                        </div>
                       )}
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-colors">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
