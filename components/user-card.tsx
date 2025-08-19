@@ -31,7 +31,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
   const usernameInitial = user.username.charAt(0).toUpperCase()
 
   // Direct MP4 URL from Gifer - using MP4 instead of GIF for better performance
-  const DEFAULT_ANIMATED_BG = "https://i.gifer.com/1pX9.mp4"
+  const DEFAULT_ANIMATED_BG = "https://i.gifer.com/4Cb2.mp4"
 
   // Debug logging
   console.log("UserCard received user:", user.username, "image:", user.image, "profileImage:", user.profileImage)
