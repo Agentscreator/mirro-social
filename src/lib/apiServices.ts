@@ -20,10 +20,12 @@ export interface RecommendationsResponse {
 
 export async function fetchRecommendations(
   page: number = 1, 
-  pageSize: number = 2  // Changed from 'limit' to 'pageSize' to match your API
+  pageSize: number = 2,  // Changed from 'limit' to 'pageSize' to match your API
+  randomSeed?: number
 ): Promise<RecommendationsResponse> {
   try {
-    const response = await fetch(`/api/recommendations?page=${page}&pageSize=${pageSize}`, {
+    const seedParam = randomSeed ? `&seed=${randomSeed}` : '';
+    const response = await fetch(`/api/recommendations?page=${page}&pageSize=${pageSize}${seedParam}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

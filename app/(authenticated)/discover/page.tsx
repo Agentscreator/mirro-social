@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X } from "lucide-react"
+import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X, Bookmark } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserCard } from "@/components/user-card"
@@ -47,6 +47,9 @@ export default function DiscoverPage() {
   const [newThought, setNewThought] = useState("")
   const [isTypingThought, setIsTypingThought] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [savedProfiles, setSavedProfiles] = useState<ExtendedRecommendedUser[]>([])
+  const [showSavedProfiles, setShowSavedProfiles] = useState(false)
+  const [savedProfilesLoading, setSavedProfilesLoading] = useState(false)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
   const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
@@ -323,7 +326,8 @@ export default function DiscoverPage() {
     if (!hasMore || loadingMore || isTypingThought) return
     try {
       setLoadingMore(true)
-      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 3)
+      const randomSeed = Math.floor(Math.random() * 1000)
+      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 3, randomSeed)
       const usersWithReasons = [...users]
       const existingUserIds = new Set(users.map((user) => user.id))
 
@@ -391,6 +395,100 @@ export default function DiscoverPage() {
     }
   }
 
+  // Load saved profiles function
+  const loadSavedProfiles = async () => {
+    try {
+      setSavedProfilesLoading(true)
+      const response = await fetch('/api/users/saved', {
+        method: 'GET',
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const { savedProfiles: savedProfilesData } = await response.json()
+        const convertedSavedProfiles = savedProfilesData.map((user: any) => ({
+          ...user,
+          image: getBestImageUrl(user) || "",
+          tags: [],
+          reason: "Saved profile",
+        }))
+        setSavedProfiles(convertedSavedProfiles)
+      }
+    } catch (error) {
+      console.error('Error loading saved profiles:', error)
+    } finally {
+      setSavedProfilesLoading(false)
+    }
+  }
+
+  // Save profile function
+  const handleSaveProfile = async (userId: string | number) => {
+    try {
+      const response = await fetch('/api/users/saved', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ savedUserId: userId.toString() })
+      })
+      
+      if (response.ok) {
+        // Reload saved profiles to get the updated list
+        await loadSavedProfiles()
+        toast({
+          title: "Success",
+          description: "Profile saved successfully!",
+        })
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save profile. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Unsave profile function
+  const handleUnsaveProfile = async (userId: string | number) => {
+    try {
+      const response = await fetch(`/api/users/saved?savedUserId=${userId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        // Remove from local state
+        setSavedProfiles(prev => prev.filter(p => p.id !== userId.toString()))
+        toast({
+          title: "Success",
+          description: "Profile removed from saved list.",
+        })
+      }
+    } catch (error) {
+      console.error('Error unsaving profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to unsave profile. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Check if a user is saved
+  const isUserSaved = (userId: string | number) => {
+    return savedProfiles.some(p => p.id === userId.toString())
+  }
+
+  // Clear local storage position when component mounts to ensure fresh order
+  useEffect(() => {
+    localStorage.removeItem('discover-current-index')
+    setCurrentIndex(0)
+    loadSavedProfiles() // Load saved profiles on mount
+  }, [])
+
   // Initial load of recommendations and thoughts
   useEffect(() => {
     async function loadInitialData() {
@@ -402,9 +500,12 @@ export default function DiscoverPage() {
           setLoading(false)
         }, 800)
         
+        // Generate a random seed for this session to ensure different order
+        const randomSeed = Math.floor(Math.random() * 1000)
+        
         // Load recommendations and thoughts in parallel
         const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 3), // Reduced from 5 to 3 for faster initial load
+          fetchRecommendations(1, 3, randomSeed), // Pass random seed for different results
           loadThoughts()
         ])
         
@@ -515,20 +616,8 @@ export default function DiscoverPage() {
     })
   }
 
-  // Save and restore current index position
-  useEffect(() => {
-    const savedIndex = localStorage.getItem('discover-current-index')
-    if (savedIndex && shuffledUsers.length > 0) {
-      const index = parseInt(savedIndex, 10)
-      if (index >= 0 && index < shuffledUsers.length) {
-        setCurrentIndex(index)
-      }
-    }
-  }, [shuffledUsers.length])
-
-  useEffect(() => {
-    localStorage.setItem('discover-current-index', currentIndex.toString())
-  }, [currentIndex])
+  // Don't save/restore position - start fresh each time for randomization
+  // (Position saving code removed to ensure fresh experience each visit)
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -710,6 +799,14 @@ export default function DiscoverPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-light text-white">Discover</h1>
+          <Button
+            onClick={() => setShowSavedProfiles(!showSavedProfiles)}
+            variant="outline"
+            className="border-gray-600 hover:bg-gray-700 transition-colors"
+          >
+            <Bookmark className={`h-4 w-4 mr-2 ${showSavedProfiles ? 'text-blue-500' : ''}`} />
+            Saved ({savedProfiles.length})
+          </Button>
         </div>
 
         <div className="relative mb-8">
@@ -812,8 +909,47 @@ export default function DiscoverPage() {
           )}
         </div>
 
+        {/* Saved Profiles Section */}
+        {showSavedProfiles && (
+          <div className="mb-8">
+            <h2 className="text-xl font-light text-white mb-4">Your Saved Profiles</h2>
+            {savedProfilesLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <TypingAnimation />
+              </div>
+            ) : savedProfiles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {savedProfiles.map((user) => (
+                  <UserCard
+                    key={user.id}
+                    user={{
+                      id: user.id,
+                      username: user.username,
+                      image: user.image || "",
+                      profileImage: user.profileImage,
+                      reason: user.reason || "Saved profile",
+                      tags: user.tags || [],
+                    }}
+                    onMessage={() => handleMessage(user.id.toString())}
+                    onViewProfile={() => handleViewProfile(user.id.toString())}
+                    onUnsaveProfile={handleUnsaveProfile}
+                    isMessaging={messagingUser === user.id.toString()}
+                    isSaved={true}
+                    isLarge={false}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="text-gray-400 mb-2">No saved profiles yet</div>
+                <p className="text-sm text-gray-500">Save profiles you're interested in to find them easily later</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Main Content */}
-        {!showSearchResults && (
+        {!showSearchResults && !showSavedProfiles && (
           <>
             {filteredUsers.length > 0 ? (
               <>
@@ -867,7 +1003,10 @@ export default function DiscoverPage() {
                           }}
                           onMessage={() => handleMessage(currentUser.id.toString())}
                           onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                          onSaveProfile={handleSaveProfile}
+                          onUnsaveProfile={handleUnsaveProfile}
                           isMessaging={messagingUser === currentUser.id.toString()}
+                          isSaved={isUserSaved(currentUser.id)}
                           isLarge={true}
                         />
                       </div>
@@ -933,7 +1072,10 @@ export default function DiscoverPage() {
                         }}
                         onMessage={() => handleMessage(currentUser.id.toString())}
                         onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                        onSaveProfile={handleSaveProfile}
+                        onUnsaveProfile={handleUnsaveProfile}
                         isMessaging={messagingUser === currentUser.id.toString()}
+                        isSaved={isUserSaved(currentUser.id)}
                         isLarge={true}
                       />
                     </div>

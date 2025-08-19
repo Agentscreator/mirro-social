@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { MessageSquare, User } from "lucide-react"
+import { MessageSquare, User, Bookmark, BookmarkCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
@@ -20,13 +20,26 @@ interface UserCardProps {
   }
   onMessage?: (userId: string | number) => void
   onViewProfile?: () => void
+  onSaveProfile?: (userId: string | number) => Promise<void>
+  onUnsaveProfile?: (userId: string | number) => Promise<void>
   isMessaging?: boolean
   isLarge?: boolean
+  isSaved?: boolean
 }
 
-export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, isLarge = false }: UserCardProps) {
+export function UserCard({ 
+  user, 
+  onMessage, 
+  onViewProfile, 
+  onSaveProfile, 
+  onUnsaveProfile, 
+  isMessaging = false, 
+  isLarge = false, 
+  isSaved = false 
+}: UserCardProps) {
   const [imageError, setImageError] = useState(false)
   const [gifError, setGifError] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
   const usernameInitial = user.username.charAt(0).toUpperCase()
 
@@ -66,6 +79,22 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
   const handleViewProfile = () => {
     if (onViewProfile) {
       onViewProfile()
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    try {
+      if (isSaved && onUnsaveProfile) {
+        await onUnsaveProfile(user.id)
+      } else if (!isSaved && onSaveProfile) {
+        await onSaveProfile(user.id)
+      }
+    } catch (error) {
+      console.error('Error toggling save profile:', error)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -247,6 +276,27 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             )}
             {isMessaging ? "Messaging..." : "Message"}
           </Button>
+          
+          {/* Save Profile Button */}
+          {(onSaveProfile || onUnsaveProfile) && (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSaveProfile()
+              }}
+              variant="outline"
+              className="border-gray-600 hover:bg-gray-700 transition-colors"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <div className="h-4 w-4 animate-spin rounded-full border border-gray-400 border-t-transparent"></div>
+              ) : isSaved ? (
+                <BookmarkCheck className="h-4 w-4 text-blue-500" />
+              ) : (
+                <Bookmark className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
 
       </CardContent>

@@ -600,3 +600,15 @@ export const liveStreamChatTable = pgTable("live_stream_chat", {
   isModerated: integer("is_moderated").notNull().default(0), // 0 = not moderated, 1 = moderated
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// Saved Profiles (NEW TABLE) - Users can save profiles they're interested in
+export const savedProfilesTable = pgTable("saved_profiles", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id), // The user who saves the profile
+  savedUserId: uuid("saved_user_id")
+    .notNull()
+    .references(() => usersTable.id), // The user whose profile is saved
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
