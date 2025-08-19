@@ -101,6 +101,26 @@ const VideoFeedItem = ({
     handleAutoplay();
   }, [isActive, post.id]);
 
+  // Listen for initial autoplay trigger
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo() || !isActive) return;
+
+    const handleInitialAutoplay = async () => {
+      try {
+        // Force play the first video when the trigger event is received
+        await video.play();
+        setIsPlaying(true);
+        console.log('🎬 Initial autoplay triggered for post:', post.id);
+      } catch (error) {
+        console.error('Initial autoplay failed:', error);
+      }
+    };
+
+    window.addEventListener('initialAutoplayTrigger', handleInitialAutoplay);
+    return () => window.removeEventListener('initialAutoplayTrigger', handleInitialAutoplay);
+  }, [isActive, post.id]);
+
   // Intersection Observer for better autoplay control and performance
   useEffect(() => {
     const video = videoRef.current;

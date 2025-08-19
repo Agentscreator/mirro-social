@@ -100,6 +100,44 @@ export default function FeedPage() {
     }
   }, [session?.user?.id, debouncedSearchQuery]);
 
+  // Trigger initial autoplay after posts load
+  useEffect(() => {
+    if (!loading && posts.length > 0 && currentVideoIndex === 0) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        // Trigger a custom event to trigger initial autoplay
+        const container = containerRef.current;
+        if (container) {
+          // Dispatch a custom event to trigger initial autoplay
+          window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, posts.length, currentVideoIndex]);
+
+  // Add click listener to enable autoplay on any user interaction
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      // Once user interacts, trigger autoplay for current video
+      if (posts.length > 0) {
+        window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('click', handleUserInteraction, { once: true });
+      container.addEventListener('touchstart', handleUserInteraction, { once: true });
+      
+      return () => {
+        container.removeEventListener('click', handleUserInteraction);
+        container.removeEventListener('touchstart', handleUserInteraction);
+      };
+    }
+  }, [posts.length]);
+
   // Listen for new posts (refresh feed when posts are created)
   useEffect(() => {
     const handleFeedRefresh = async () => {
