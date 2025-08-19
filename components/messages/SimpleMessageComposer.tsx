@@ -249,7 +249,7 @@ export function SimpleMessageComposer({
   }
 
   return (
-    <div ref={composerRef} className="p-4 bg-gray-900 border-t border-gray-700">
+    <div ref={composerRef} className="message-composer p-4 bg-gray-900 border-t border-gray-700">
       {/* Attachment Preview */}
       {attachment && (
         <div className="mb-3 p-3 bg-gray-800 rounded-lg flex items-center justify-between">
@@ -313,18 +313,13 @@ export function SimpleMessageComposer({
                 
                 if (isMessagePage) {
                   // Check if we're in a group chat (different scroll behavior)
-                  const isGroupChat = window.location.pathname.includes('/groups/')
+                  const isGroupChat = document.body.classList.contains('group-chat')
                   
                   setTimeout(() => {
                     if (isGroupChat) {
-                      // For group chats, just ensure composer is visible without hiding header
-                      const composerRect = composerRef.current?.getBoundingClientRect()
-                      if (composerRect && composerRect.top > window.innerHeight * 0.5) {
-                        window.scrollBy({
-                          top: composerRect.top - window.innerHeight * 0.7,
-                          behavior: 'smooth'
-                        })
-                      }
+                      // For group chats, don't scroll at all - header should stay fixed
+                      // The CSS handles keeping the input visible
+                      return
                     } else {
                       // For DMs, scroll to bottom to ensure composer is visible
                       window.scrollTo({

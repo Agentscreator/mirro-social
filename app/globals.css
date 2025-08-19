@@ -46,6 +46,22 @@
     margin-top: 0 !important;
     height: 100vh !important;
     height: 100dvh !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Force group chat header to always stay visible */
+  html body.message-page.group-chat .group-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 50 !important;
+    background: rgb(17 24 39) !important; /* gray-900 */
+  }
+  
+  /* Add padding to account for fixed header */
+  html body.message-page.group-chat .group-messages {
+    padding-top: 70px !important; /* Account for header height */
   }
   
   html body.message-page #__next,
@@ -87,11 +103,29 @@
   html body.message-typing.message-page.group-chat {
     padding-bottom: 350px !important;
     /* Don't hide browser UI for group chats when typing */
-    position: static !important;
+    position: fixed !important;
     top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     margin-top: 0 !important;
-    height: calc(100vh + 350px) !important;
-    height: calc(100dvh + 350px) !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    overflow: hidden !important; /* Prevent any body scrolling that could hide header */
+  }
+  
+  /* Allow scrolling within messages area for group chats */
+  html body.message-typing.message-page.group-chat .group-messages {
+    overflow-y: auto !important;
+    max-height: calc(100vh - 140px) !important; /* Account for header + input */
+  }
+  
+  /* Keep message composer at bottom for group chats */
+  html body.message-typing.message-page.group-chat .message-composer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 40 !important;
   }
   
   /* Ensure container adapts when typing */
@@ -106,10 +140,15 @@
   /* Group chat container adjustments */
   html body.message-typing.message-page.group-chat #__next,
   html body.message-typing.message-page.group-chat [data-nextjs-container] {
-    height: calc(100vh + 350px) !important;
-    height: calc(100dvh + 350px) !important;
-    min-height: calc(100vh + 350px) !important;
-    min-height: calc(100dvh + 350px) !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    overflow: hidden !important;
   }
   
   /* Ensure content container accounts for the offset */
