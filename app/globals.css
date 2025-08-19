@@ -17,16 +17,21 @@
   /* Push content down to hide browser navigation */
   body {
     position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
+    top: -140px; /* Fine-tuned offset to completely hide browser nav bar */
+    margin-top: 140px; /* Compensate for the negative top */
+    height: calc(100vh + 140px);
+    height: calc(100dvh + 140px);
+    /* Allow scrolling but prevent overscroll */
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   
   /* Ensure content container accounts for the offset */
   #__next, 
   [data-nextjs-container] {
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow: auto;
+    height: calc(100vh + 140px);
+    height: calc(100dvh + 140px);
+    overflow: visible;
     padding-top: 0;
   }
   
@@ -34,8 +39,8 @@
   main, 
   [role="main"],
   .main-content {
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: calc(100vh + 140px);
+    min-height: calc(100dvh + 140px);
   }
 }
 
@@ -66,7 +71,7 @@
 /* Hide browser UI in standalone mode (PWA) */
 @media (display-mode: standalone) {
   body {
-    min-height: 100vh !important;
+    height: 100vh !important;
     overflow-x: hidden;
     overflow-y: auto;
   }
