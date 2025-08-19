@@ -68,6 +68,8 @@ export default function FeedPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("explore");
   const containerRef = useRef<HTMLDivElement>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const router = useRouter();
   const { data: session } = useSession();
   
@@ -371,35 +373,82 @@ export default function FeedPage() {
     );
   }
 
+  // Handle touch events for swipe navigation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartX || !touchStartY) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+    
+    // Only trigger swipe if horizontal movement is greater than vertical (to avoid conflicts with vertical scrolling)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        // Swipe left - go to next tab
+        if (activeTab === "explore") {
+          setActiveTab("following");
+        } else if (activeTab === "following") {
+          setActiveTab("live");
+        }
+      } else {
+        // Swipe right - go to previous tab
+        if (activeTab === "following") {
+          setActiveTab("explore");
+        } else if (activeTab === "live") {
+          setActiveTab("following");
+        }
+      }
+    }
+    
+    setTouchStartX(null);
+    setTouchStartY(null);
+  };
+
   return (
     <>
-      <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page">
+      <div 
+        className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         
         {/* Feed Tabs */}
-        <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/95 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/60 to-transparent">
           <div className="px-4 pt-8 pb-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-black/50 backdrop-blur-md border border-white/10">
+              <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm">
                 <TabsTrigger 
                   value="explore" 
-                  className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
                 >
-                  <Heart className="w-4 h-4 mr-1" />
                   For You
+                  {activeTab === "explore" && (
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
-                  className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
                 >
-                  <UserPlus className="w-4 h-4 mr-1" />
                   Following
+                  {activeTab === "following" && (
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="live" 
-                  className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
                 >
-                  <Radio className="w-4 h-4 mr-1" />
                   Live
+                  {activeTab === "live" && (
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                  )}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
