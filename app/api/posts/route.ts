@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable } from "@/src/db/schema"
+import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable, liveEventsTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
 import { put } from "@vercel/blob"
 
@@ -348,6 +348,16 @@ export async function POST(request: NextRequest) {
     const inviteDescription = formData.get("inviteDescription") as string
     const inviteLimit = formData.get("inviteLimit") ? parseInt(formData.get("inviteLimit") as string) : 10
     
+    // Event data
+    const isEvent = formData.get("isEvent") === "true"
+    const eventTitle = formData.get("eventTitle") as string
+    const eventDescription = formData.get("eventDescription") as string
+    const eventDate = formData.get("eventDate") as string
+    const eventTime = formData.get("eventTime") as string
+    const eventEndTime = formData.get("eventEndTime") as string
+    const eventLocation = formData.get("eventLocation") as string
+    const maxParticipants = formData.get("maxParticipants") ? parseInt(formData.get("maxParticipants") as string) : 50
+    
     // Location data
     const hasLocation = formData.get("hasPrivateLocation") === "true" // Keep the form field name for backwards compatibility
     const locationName = formData.get("locationName") as string
@@ -370,6 +380,10 @@ export async function POST(request: NextRequest) {
         : null,
       isInvite,
       inviteLimit,
+      isEvent,
+      eventTitle: eventTitle?.substring(0, 50),
+      eventDate,
+      eventTime,
       hasLocation,
       locationName: locationName?.substring(0, 50),
       communityName: communityName?.substring(0, 50),
@@ -384,6 +398,32 @@ export async function POST(request: NextRequest) {
     if (!content?.trim()) {
       console.error("❌ VALIDATION ERROR: Content is required")
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
+    }
+
+    // Validate event data if creating an event
+    if (isEvent) {
+      if (!eventTitle?.trim()) {
+        console.error("❌ VALIDATION ERROR: Event title is required")
+        return NextResponse.json({ error: "Event title is required" }, { status: 400 })
+      }
+
+      if (!eventDate || !eventTime) {
+        console.error("❌ VALIDATION ERROR: Event date and time are required")
+        return NextResponse.json({ error: "Event date and time are required" }, { status: 400 })
+      }
+
+      // Check if event is in the future
+      const eventDateTime = new Date(`${eventDate}T${eventTime}`)
+      if (eventDateTime <= new Date()) {
+        console.error("❌ VALIDATION ERROR: Event must be in the future")
+        return NextResponse.json({ error: "Event must be scheduled for a future time" }, { status: 400 })
+      }
+
+      // Validate max participants
+      if (maxParticipants < 1 || maxParticipants > 1000) {
+        console.error("❌ VALIDATION ERROR: Invalid max participants")
+        return NextResponse.json({ error: "Max participants must be between 1 and 1000" }, { status: 400 })
+      }
     }
 
     let mediaUrl = null
@@ -523,6 +563,44 @@ export async function POST(request: NextRequest) {
         })
       } catch (locationError) {
         console.error("❌ LOCATION CREATION FAILED:", locationError)
+        // Don't fail the entire post creation, just log the error
+      }
+    }
+
+    // Create live event entry if this is an event post
+    if (isEvent) {
+      console.log("=== CREATING LIVE EVENT ENTRY ===")
+      try {
+        const scheduledStartTime = new Date(`${eventDate}T${eventTime}`)
+        let scheduledEndTime = null
+        if (eventEndTime) {
+          scheduledEndTime = new Date(`${eventDate}T${eventEndTime}`)
+        }
+
+        const eventEntry = await db
+          .insert(liveEventsTable)
+          .values({
+            postId: post[0].id,
+            userId: session.user.id,
+            title: eventTitle.trim(),
+            description: eventDescription?.trim() || null,
+            scheduledStartTime,
+            scheduledEndTime,
+            maxParticipants,
+            location: eventLocation?.trim() || null,
+            latitude: eventLocation?.trim() ? latitude : null,
+            longitude: eventLocation?.trim() ? longitude : null,
+          })
+          .returning()
+
+        console.log("✅ LIVE EVENT CREATED SUCCESSFULLY:", {
+          eventId: eventEntry[0].id,
+          postId: eventEntry[0].postId,
+          title: eventEntry[0].title,
+          scheduledStartTime: eventEntry[0].scheduledStartTime,
+        })
+      } catch (eventError) {
+        console.error("❌ LIVE EVENT CREATION FAILED:", eventError)
         // Don't fail the entire post creation, just log the error
       }
     }

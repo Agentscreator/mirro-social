@@ -508,3 +508,95 @@ export const passwordResetTokensTable = pgTable("password_reset_tokens", {
   used: integer("used").notNull().default(0), // 0 = unused, 1 = used
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// Live Events (NEW TABLE) - Scheduled events that become active at specific times
+export const liveEventsTable = pgTable("live_events", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  postId: integer("post_id")
+    .notNull()
+    .references(() => postsTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  scheduledStartTime: timestamp("scheduled_start_time").notNull(),
+  scheduledEndTime: timestamp("scheduled_end_time"),
+  actualStartTime: timestamp("actual_start_time"),
+  actualEndTime: timestamp("actual_end_time"),
+  isActive: integer("is_active").notNull().default(0), // 0 = inactive, 1 = active
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // "scheduled", "live", "ended", "cancelled"
+  maxParticipants: integer("max_participants").default(50),
+  currentParticipants: integer("current_participants").notNull().default(0),
+  location: varchar("location", { length: 500 }),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Live Event Participants (NEW TABLE)
+export const liveEventParticipantsTable = pgTable("live_event_participants", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  eventId: integer("event_id")
+    .notNull()
+    .references(() => liveEventsTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  leftAt: timestamp("left_at"),
+  isHost: integer("is_host").notNull().default(0), // 0 = participant, 1 = host
+})
+
+// Live Streams (NEW TABLE) - Real-time streaming sessions
+export const liveStreamsTable = pgTable("live_streams", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  streamKey: varchar("stream_key", { length: 255 }).notNull().unique(),
+  streamUrl: varchar("stream_url", { length: 500 }),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+  isLive: integer("is_live").notNull().default(0), // 0 = offline, 1 = live
+  viewerCount: integer("viewer_count").notNull().default(0),
+  maxViewers: integer("max_viewers").notNull().default(0),
+  category: varchar("category", { length: 100 }),
+  tags: text("tags"), // JSON array of tags
+  isPrivate: integer("is_private").notNull().default(0), // 0 = public, 1 = private
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  duration: integer("duration"), // in seconds
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Live Stream Viewers (NEW TABLE)
+export const liveStreamViewersTable = pgTable("live_stream_viewers", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  streamId: integer("stream_id")
+    .notNull()
+    .references(() => liveStreamsTable.id),
+  userId: uuid("user_id")
+    .references(() => usersTable.id), // nullable for anonymous viewers
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  leftAt: timestamp("left_at"),
+  totalWatchTime: integer("total_watch_time").notNull().default(0), // in seconds
+})
+
+// Live Stream Chat (NEW TABLE)
+export const liveStreamChatTable = pgTable("live_stream_chat", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  streamId: integer("stream_id")
+    .notNull()
+    .references(() => liveStreamsTable.id),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  message: text("message").notNull(),
+  messageType: varchar("message_type", { length: 20 }).notNull().default("text"), // "text", "emoji", "system"
+  isModerated: integer("is_moderated").notNull().default(0), // 0 = not moderated, 1 = moderated
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})

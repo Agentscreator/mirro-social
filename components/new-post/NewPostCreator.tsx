@@ -3,8 +3,11 @@
 import React, { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Upload, X, Loader2, Video, Image as ImageIcon, Camera } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Upload, X, Loader2, Video, Image as ImageIcon, Camera, Calendar, Clock, MapPin } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { TikTokVideoCreator } from "@/components/tiktok-video-creator/TikTokVideoCreator"
 
@@ -21,6 +24,16 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [isUploading, setIsUploading] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Event-related state
+  const [isEvent, setIsEvent] = useState(false)
+  const [eventTitle, setEventTitle] = useState("")
+  const [eventDescription, setEventDescription] = useState("")
+  const [eventDate, setEventDate] = useState("")
+  const [eventTime, setEventTime] = useState("")
+  const [eventEndTime, setEventEndTime] = useState("")
+  const [eventLocation, setEventLocation] = useState("")
+  const [maxParticipants, setMaxParticipants] = useState(50)
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +96,38 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       return
     }
 
+    // Validate event fields if creating an event
+    if (isEvent) {
+      if (!eventTitle.trim()) {
+        toast({
+          title: "Event title required",
+          description: "Please enter a title for your event",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!eventDate || !eventTime) {
+        toast({
+          title: "Event time required",
+          description: "Please select a date and time for your event",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check if event is in the future
+      const eventDateTime = new Date(`${eventDate}T${eventTime}`)
+      if (eventDateTime <= new Date()) {
+        toast({
+          title: "Invalid event time",
+          description: "Event must be scheduled for a future time",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     setIsUploading(true)
     
     try {
@@ -91,6 +136,18 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       
       if (selectedFile) {
         formData.append('media', selectedFile)
+      }
+
+      // Add event data if creating an event
+      if (isEvent) {
+        formData.append('isEvent', 'true')
+        formData.append('eventTitle', eventTitle.trim())
+        formData.append('eventDescription', eventDescription.trim())
+        formData.append('eventDate', eventDate)
+        formData.append('eventTime', eventTime)
+        if (eventEndTime) formData.append('eventEndTime', eventEndTime)
+        if (eventLocation.trim()) formData.append('eventLocation', eventLocation.trim())
+        formData.append('maxParticipants', maxParticipants.toString())
       }
 
       const response = await fetch('/api/posts', {
@@ -140,6 +197,17 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setPreviewUrl(null)
     setIsUploading(false)
     setShowCamera(false)
+    
+    // Reset event fields
+    setIsEvent(false)
+    setEventTitle("")
+    setEventDescription("")
+    setEventDate("")
+    setEventTime("")
+    setEventEndTime("")
+    setEventLocation("")
+    setMaxParticipants(50)
+    
     onClose()
   }
 
@@ -216,6 +284,135 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
               {caption.length}/2000
             </div>
           </div>
+
+          {/* Event Toggle */}
+          <div className="flex items-center space-x-2 p-4 bg-gray-800 rounded-lg">
+            <Switch
+              id="event-mode"
+              checked={isEvent}
+              onCheckedChange={setIsEvent}
+            />
+            <Label htmlFor="event-mode" className="text-white font-medium">
+              <Calendar className="w-4 h-4 inline mr-2" />
+              Create Live Event
+            </Label>
+          </div>
+
+          {/* Event Details (shown when isEvent is true) */}
+          {isEvent && (
+            <div className="space-y-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                Event Details
+              </h3>
+
+              {/* Event Title */}
+              <div className="space-y-2">
+                <Label htmlFor="event-title" className="text-sm font-medium text-white">
+                  Event Title *
+                </Label>
+                <Input
+                  id="event-title"
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  placeholder="What's your event about?"
+                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  maxLength={200}
+                />
+              </div>
+
+              {/* Event Description */}
+              <div className="space-y-2">
+                <Label htmlFor="event-description" className="text-sm font-medium text-white">
+                  Event Description
+                </Label>
+                <Textarea
+                  id="event-description"
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  placeholder="Tell people more about your event..."
+                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  maxLength={500}
+                  rows={3}
+                />
+              </div>
+
+              {/* Date and Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="event-date" className="text-sm font-medium text-white">
+                    Date *
+                  </Label>
+                  <Input
+                    id="event-date"
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event-time" className="text-sm font-medium text-white">
+                    Start Time *
+                  </Label>
+                  <Input
+                    id="event-time"
+                    type="time"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    className="bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* End Time (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="event-end-time" className="text-sm font-medium text-white">
+                  End Time (Optional)
+                </Label>
+                <Input
+                  id="event-end-time"
+                  type="time"
+                  value={eventEndTime}
+                  onChange={(e) => setEventEndTime(e.target.value)}
+                  className="bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Location */}
+              <div className="space-y-2">
+                <Label htmlFor="event-location" className="text-sm font-medium text-white">
+                  <MapPin className="w-4 h-4 inline mr-1" />
+                  Location (Optional)
+                </Label>
+                <Input
+                  id="event-location"
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
+                  placeholder="Where is your event?"
+                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  maxLength={200}
+                />
+              </div>
+
+              {/* Max Participants */}
+              <div className="space-y-2">
+                <Label htmlFor="max-participants" className="text-sm font-medium text-white">
+                  Max Participants
+                </Label>
+                <Input
+                  id="max-participants"
+                  type="number"
+                  value={maxParticipants}
+                  onChange={(e) => setMaxParticipants(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  max="1000"
+                  className="bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          )}
 
           {/* File Upload */}
           <div className="space-y-2">
