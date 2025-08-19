@@ -195,8 +195,8 @@ export default function MessagesPage() {
                         src={group.image}
                         alt={group.name}
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white font-semibold">
-                        {group.name[0]?.toUpperCase()}
+                      <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
+                        <Users className="h-6 w-6" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">

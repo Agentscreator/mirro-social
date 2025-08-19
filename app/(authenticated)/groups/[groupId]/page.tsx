@@ -271,10 +271,8 @@ export default function GroupChatPage() {
   useEffect(() => {
     document.body.classList.add('message-page')
     
-    // Scroll down initially to hide browser UI (double navigation fix)
-    setTimeout(() => {
-      window.scrollTo(0, 140)
-    }, 100)
+    // For group chats, don't scroll to hide UI - keep header visible
+    // The CSS will handle the browser UI hiding
     
     return () => {
       document.body.classList.remove('message-page')
@@ -339,8 +337,8 @@ export default function GroupChatPage() {
           >
             <Avatar className="h-10 w-10">
               <AvatarImage src={group.image} alt={group.name} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                {group.name[0]?.toUpperCase()}
+              <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
+                <Users className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
             
@@ -443,8 +441,8 @@ export default function GroupChatPage() {
               <div className="relative group">
                 <Avatar className="w-20 h-20 mb-3">
                   <AvatarImage src={group.image} alt={group.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
-                    {group.name[0]?.toUpperCase()}
+                  <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
+                    <Users className="h-8 w-8" />
                   </AvatarFallback>
                 </Avatar>
                 

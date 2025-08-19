@@ -300,13 +300,26 @@ export function SimpleMessageComposer({
                 const isCapacitor = !!(window as any).Capacitor
                 
                 if (isMessagePage) {
-                  // For message pages, immediate scroll to ensure composer is visible
+                  // Check if we're in a group chat (different scroll behavior)
+                  const isGroupChat = window.location.pathname.includes('/groups/')
+                  
                   setTimeout(() => {
-                    // Scroll to bottom to ensure composer is visible
-                    window.scrollTo({
-                      top: document.body.scrollHeight,
-                      behavior: 'smooth'
-                    })
+                    if (isGroupChat) {
+                      // For group chats, just ensure composer is visible without hiding header
+                      const composerRect = composerRef.current?.getBoundingClientRect()
+                      if (composerRect && composerRect.top > window.innerHeight * 0.5) {
+                        window.scrollBy({
+                          top: composerRect.top - window.innerHeight * 0.7,
+                          behavior: 'smooth'
+                        })
+                      }
+                    } else {
+                      // For DMs, scroll to bottom to ensure composer is visible
+                      window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                      })
+                    }
                   }, 50)
                 } else {
                   // For other pages, use the original scrollIntoView approach

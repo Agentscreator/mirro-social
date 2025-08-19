@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Camera, Video, X, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Camera, Video, X, ChevronDown, ChevronUp, Users } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface CommunityStory {
@@ -242,8 +242,8 @@ export function CommunityStories({
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={group.image} alt={group.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
-                    {group.name[0]?.toUpperCase()}
+                  <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
+                    <Users className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
