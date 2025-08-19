@@ -52,6 +52,12 @@
     margin-top: 140px !important;
   }
   
+  /* Ensure message input stays visible when typing */
+  body.message-typing.message-page {
+    padding-bottom: 300px !important;
+    overflow-y: auto !important;
+  }
+  
   /* Ensure content container accounts for the offset */
   #__next, 
   [data-nextjs-container] {

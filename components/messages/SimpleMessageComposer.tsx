@@ -197,15 +197,24 @@ export function SimpleMessageComposer({
       const keyboard = (window as any).Capacitor.Plugins.Keyboard
       
       const keyboardWillShow = () => {
-        // Minimal adjustment for keyboard - layout should handle this naturally
+        // Adjust padding based on whether we're on a message page
+        const isMessagePage = document.body.classList.contains('message-page')
         if (isInActiveConversation) {
-          document.body.style.paddingBottom = '20px'
+          if (isMessagePage) {
+            // For message pages with normal scrolling, add more padding
+            document.body.style.paddingBottom = '320px'
+          } else {
+            // For other pages, minimal padding
+            document.body.style.paddingBottom = '20px'
+          }
         }
       }
       
       const keyboardWillHide = () => {
         // Reset padding
         document.body.style.paddingBottom = '0px'
+        // Remove typing class if still present
+        document.body.classList.remove('message-typing')
       }
       
       keyboard.addListener('keyboardWillShow', keyboardWillShow)
@@ -275,29 +284,40 @@ export function SimpleMessageComposer({
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             onFocus={() => {
+              // Add class to ensure input stays visible
+              document.body.classList.add('message-typing')
+              
               // Handle keyboard display for both web and Capacitor apps
               if (window.innerWidth < 1024) {
-                // Check if running in Capacitor
+                // Check if we're on a message page (with normal scrolling)
+                const isMessagePage = document.body.classList.contains('message-page')
                 const isCapacitor = !!(window as any).Capacitor
                 
-                if (isCapacitor) {
-                  // For Capacitor apps, scroll to keep composer visible
+                if (isMessagePage) {
+                  // For message pages with normal scrolling, just ensure composer is visible
                   setTimeout(() => {
-                    composerRef.current?.scrollIntoView({ 
-                      behavior: 'smooth', 
-                      block: 'end' 
-                    })
-                  }, 100)
+                    const composerRect = composerRef.current?.getBoundingClientRect()
+                    if (composerRect && composerRect.bottom > window.innerHeight * 0.7) {
+                      window.scrollBy({ 
+                        top: composerRect.bottom - window.innerHeight * 0.7,
+                        behavior: 'smooth' 
+                      })
+                    }
+                  }, isCapacitor ? 100 : 300)
                 } else {
-                  // For web browsers
+                  // For other pages, use the original scrollIntoView approach
                   setTimeout(() => {
                     composerRef.current?.scrollIntoView({ 
                       behavior: 'smooth', 
                       block: 'end' 
                     })
-                  }, 300)
+                  }, isCapacitor ? 100 : 300)
                 }
               }
+            }}
+            onBlur={() => {
+              // Remove typing class when input loses focus
+              document.body.classList.remove('message-typing')
             }}
             className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
             disabled={disabled || sending}
