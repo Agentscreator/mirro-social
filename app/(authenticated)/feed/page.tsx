@@ -5,7 +5,7 @@ import VideoFeedItem from "@/components/VideoFeedItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, ChevronUp, ChevronDown, Loader2, Clock, Radio, Heart, UserPlus, MapPin } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Loader2, Clock, Heart, UserPlus, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
@@ -46,20 +46,6 @@ interface LiveEvent {
   };
 }
 
-interface LiveStream {
-  id: number;
-  title: string;
-  description?: string;
-  viewerCount: number;
-  category?: string;
-  thumbnailUrl?: string;
-  user: {
-    id: string;
-    username: string;
-    profileImage?: string;
-    image?: string;
-  };
-}
 
 export default function FeedPage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -77,7 +63,6 @@ export default function FeedPage() {
   const [explorePosts, setExplorePosts] = useState<Post[]>([]);
   const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -137,17 +122,6 @@ export default function FeedPage() {
     }
   };
 
-  // Fetch live streams
-  const fetchLiveStreams = async () => {
-    try {
-      const response = await fetch('/api/live/streams');
-      if (!response.ok) throw new Error('Failed to fetch live streams');
-      const data = await response.json();
-      setLiveStreams(data.streams || []);
-    } catch (error) {
-      console.error('Error fetching live streams:', error);
-    }
-  };
   
   // Debounce search query
   useEffect(() => {
@@ -167,7 +141,7 @@ export default function FeedPage() {
       setCurrentVideoIndex(0);
 
       if (activeTab === "live") {
-        await Promise.all([fetchLiveEvents(), fetchLiveStreams()]);
+        await fetchLiveEvents();
       } else {
         const data = await fetchPosts(undefined, [], debouncedSearchQuery || undefined, activeTab);
         
@@ -338,10 +312,6 @@ export default function FeedPage() {
     }
   };
 
-  // Handle live stream viewing
-  const handleWatchStream = (streamId: number) => {
-    router.push(`/live/stream/${streamId}`);
-  };
 
   // Show loading if no session
   if (!session) {
@@ -761,71 +731,6 @@ export default function FeedPage() {
                   )}
                 </div>
 
-                {/* Live Streams Section */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Radio className="w-5 h-5 text-blue-500" />
-                    <h2 className="text-xl font-bold text-white">Live Streams</h2>
-                  </div>
-                  
-                  {liveStreams.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
-                        <Radio className="w-8 h-8 text-blue-500" />
-                      </div>
-                      <p className="text-white/70">No live streams at the moment</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {liveStreams.map((stream) => (
-                        <div 
-                          key={stream.id} 
-                          className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-colors"
-                          onClick={() => handleWatchStream(stream.id)}
-                        >
-                          <div className="aspect-video bg-gray-800 relative">
-                            {stream.thumbnailUrl ? (
-                              <img 
-                                src={stream.thumbnailUrl} 
-                                alt={stream.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Radio className="w-12 h-12 text-gray-600" />
-                              </div>
-                            )}
-                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-medium">
-                              LIVE
-                            </div>
-                            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                              {stream.viewerCount} viewers
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <h3 className="text-white font-medium mb-1 line-clamp-1">{stream.title}</h3>
-                            <p className="text-gray-400 text-sm mb-2 line-clamp-2">{stream.description}</p>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
-                                  <span className="text-white text-xs font-semibold">
-                                    {stream.user.username[0]?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <span className="text-gray-400 text-sm">{stream.user.username}</span>
-                              </div>
-                              {stream.category && (
-                                <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
-                                  {stream.category}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </TabsContent>
