@@ -32,6 +32,14 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages])
 
+  // Add message-page class to body for special styling
+  useEffect(() => {
+    document.body.classList.add('message-page')
+    return () => {
+      document.body.classList.remove('message-page')
+    }
+  }, [])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -121,7 +129,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8 -mt-16 md:-mt-8 pt-0">
+    <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8 -mt-16 md:-mt-8 pt-0" data-message-page>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-3">

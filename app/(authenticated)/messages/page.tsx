@@ -29,6 +29,14 @@ export default function MessagesPage() {
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
 
+  // Add message-page class to body for special styling
+  useEffect(() => {
+    document.body.classList.add('message-page')
+    return () => {
+      document.body.classList.remove('message-page')
+    }
+  }, [])
+
   const handleGroupClick = (groupId: number) => {
     router.push(`/groups/${groupId}`)
   }

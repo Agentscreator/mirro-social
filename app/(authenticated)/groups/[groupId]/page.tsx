@@ -267,6 +267,14 @@ export default function GroupChatPage() {
     scrollToBottom()
   }, [messages])
 
+  // Add message-page class to body for special styling
+  useEffect(() => {
+    document.body.classList.add('message-page')
+    return () => {
+      document.body.classList.remove('message-page')
+    }
+  }, [])
+
   // Auto-refresh messages every 3 seconds
   useEffect(() => {
     if (!groupId) return

@@ -509,13 +509,17 @@ export default function DiscoverPage() {
       const keyboard = (window as any).Capacitor.Plugins.Keyboard
       
       const keyboardWillShow = () => {
-        // Add padding to body to prevent content from being hidden
-        document.body.style.paddingBottom = '250px'
+        // Add minimal padding to body, don't interfere with scrolling
+        document.body.style.paddingBottom = '100px'
+        // Ensure body can still be scrolled
+        document.body.style.overflowY = 'auto'
       }
       
       const keyboardWillHide = () => {
         // Remove padding when keyboard hides
         document.body.style.paddingBottom = '0px'
+        // Restore original overflow
+        document.body.style.overflowY = 'auto'
       }
       
       keyboard.addListener('keyboardWillShow', keyboardWillShow)
@@ -609,37 +613,28 @@ export default function DiscoverPage() {
             spellCheck="false"
             data-testid="thought-input"
             onFocus={() => {
-              // Handle keyboard display for both web and Capacitor apps
+              // Add class to ensure scrolling works while typing
+              document.body.classList.add('typing-thought')
+              
+              // Gentle scroll adjustment only if input is not visible
               if (window.innerWidth < 1024) {
-                // Check if running in Capacitor
                 const isCapacitor = !!(window as any).Capacitor
                 
-                if (isCapacitor) {
-                  // For Capacitor apps, use a different approach
-                  setTimeout(() => {
-                    const viewportHeight = window.innerHeight
-                    const keyboardHeight = viewportHeight * 0.4 // Estimate keyboard takes ~40% of screen
-                    const availableHeight = viewportHeight - keyboardHeight
-                    
-                    // Scroll to ensure the container fits in available space
-                    const containerRect = thoughtsContainerRef.current?.getBoundingClientRect()
-                    if (containerRect) {
-                      const scrollY = window.scrollY + containerRect.bottom - availableHeight + 20
-                      if (scrollY > window.scrollY) {
-                        window.scrollTo({ top: scrollY, behavior: 'smooth' })
-                      }
-                    }
-                  }, 100) // Shorter delay for Capacitor
-                } else {
-                  // For web browsers
-                  setTimeout(() => {
-                    thoughtsContainerRef.current?.scrollIntoView({ 
-                      behavior: 'smooth', 
-                      block: 'end' 
+                setTimeout(() => {
+                  const inputRect = thoughtInputRef.current?.getBoundingClientRect()
+                  if (inputRect && inputRect.bottom > window.innerHeight * 0.6) {
+                    // Only adjust if the input is mostly hidden by keyboard
+                    window.scrollBy({ 
+                      top: Math.min(200, inputRect.bottom - window.innerHeight * 0.6),
+                      behavior: 'smooth' 
                     })
-                  }, 300)
-                }
+                  }
+                }, isCapacitor ? 100 : 300)
               }
+            }}
+            onBlur={() => {
+              // Remove class when input loses focus
+              document.body.classList.remove('typing-thought')
             }}
           />
           
