@@ -36,7 +36,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [explanationLoading, setExplanationLoading] = useState<number>(-1)
+  const [explanationLoading, setExplanationLoading] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -288,6 +288,9 @@ export default function DiscoverPage() {
 
   // Navigation functions
   const goToPrevious = () => {
+    // Don't allow navigation while generating explanation for current user
+    if (explanationLoading === currentUser?.id) return
+    
     // Left button: go back to previous user if available
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
@@ -295,6 +298,9 @@ export default function DiscoverPage() {
   }
 
   const goToNext = async () => {
+    // Don't allow navigation while generating explanation for current user
+    if (explanationLoading === currentUser?.id) return
+    
     if (currentIndex < shuffledUsers.length - 1) {
       setCurrentIndex(currentIndex + 1)
       
@@ -337,9 +343,10 @@ export default function DiscoverPage() {
       // Update users immediately so navigation is fast
       setUsers([...usersWithReasons])
       
-      // Generate explanations in background without blocking navigation
-      newConvertedUsers.forEach(async ({ originalUser, convertedUser }, index) => {
+      // Generate explanations sequentially for better UX
+      for (const { originalUser, convertedUser } of newConvertedUsers) {
         try {
+          setExplanationLoading(convertedUser.id)
           const explanation = await generateExplanation(originalUser)
           // Update the specific user's reason
           setUsers(prevUsers => {
@@ -360,8 +367,10 @@ export default function DiscoverPage() {
             }
             return updatedUsers
           })
+        } finally {
+          setExplanationLoading(null)
         }
-      })
+      }
 
       // Users already updated above for faster navigation
       setHasMore(moreAvailable)
@@ -370,7 +379,6 @@ export default function DiscoverPage() {
       console.error("Failed to load more recommendations:", error)
     } finally {
       setLoadingMore(false)
-      setExplanationLoading(-1)
     }
   }
 
@@ -400,30 +408,35 @@ export default function DiscoverPage() {
         setCurrentPage(nextPage ?? 1)
         setLoading(false) // Stop loading here to show users faster
         
-        // Generate explanations in parallel after showing users
-        const explanationPromises = recommendedUsers.map(async (user, index) => {
+        // Generate explanations sequentially after showing users
+        for (let index = 0; index < recommendedUsers.length; index++) {
+          const user = recommendedUsers[index]
+          const convertedUser = usersWithBasicData[index]
+          
           try {
+            setExplanationLoading(convertedUser.id)
             const explanation = await generateExplanation(user)
-            return { index, explanation }
+            
+            setUsers(prevUsers => {
+              const newUsers = [...prevUsers]
+              if (newUsers[index]) {
+                newUsers[index].reason = explanation
+              }
+              return newUsers
+            })
           } catch (error) {
             console.error(`Failed to generate explanation for user ${user.id}:`, error)
-            return { index, explanation: "Unable to generate match explanation" }
+            setUsers(prevUsers => {
+              const newUsers = [...prevUsers]
+              if (newUsers[index]) {
+                newUsers[index].reason = "Unable to generate match explanation"
+              }
+              return newUsers
+            })
+          } finally {
+            setExplanationLoading(null)
           }
-        })
-        
-        // Update explanations as they come in
-        explanationPromises.forEach(async (promise) => {
-          const { index, explanation } = await promise
-          setUsers(prevUsers => {
-            const newUsers = [...prevUsers]
-            if (newUsers[index]) {
-              newUsers[index].reason = explanation
-            }
-            return newUsers
-          })
-        })
-        
-        setExplanationLoading(-1)
+        }
       } catch (error) {
         console.error("Failed to load initial data:", error)
         setLoading(false)
@@ -783,7 +796,7 @@ export default function DiscoverPage() {
                   <div className="flex items-center justify-center gap-8 mb-8">
                     <Button
                       onClick={goToPrevious}
-                      disabled={currentIndex === 0}
+                      disabled={currentIndex === 0 || explanationLoading === currentUser?.id}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
@@ -797,10 +810,10 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={false}
+                      disabled={explanationLoading === currentUser?.id}
                       variant="ghost"
                       size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 transition-colors"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
                       {loadingMore ? (
                         <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
@@ -846,7 +859,7 @@ export default function DiscoverPage() {
                   <div className="flex items-center justify-center gap-6">
                     <Button
                       onClick={goToPrevious}
-                      disabled={currentIndex === 0}
+                      disabled={currentIndex === 0 || explanationLoading === currentUser?.id}
                       variant="ghost"
                       size="lg"
                       className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
@@ -860,10 +873,10 @@ export default function DiscoverPage() {
 
                     <Button
                       onClick={goToNext}
-                      disabled={false}
+                      disabled={explanationLoading === currentUser?.id}
                       variant="ghost"
                       size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 transition-colors"
+                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
                     >
                       {loadingMore ? (
                         <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
@@ -903,8 +916,15 @@ export default function DiscoverPage() {
                   {ThoughtsUploadArea}
                 </div>
 
-                {explanationLoading !== -1 && (
-                  <div className="text-center text-sm text-gray-500 mt-4">Generating connection explanation...</div>
+                {explanationLoading === currentUser?.id && (
+                  <div className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                    Generating connection recommendation...
+                  </div>
                 )}
               </>
             ) : (

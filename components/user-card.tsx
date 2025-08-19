@@ -182,10 +182,35 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
           </div>
         </div>
 
-        {/* Reason text - simple without animation */}
+        {/* Reason text with shimmer effect for generating state */}
         {user.reason && (
           <div className="mb-4">
-            <p className="text-gray-300 leading-relaxed">{user.reason}</p>
+            {user.reason === "Generating match explanation..." ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex space-x-1">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                  <span className="text-blue-400 text-sm font-medium">Generating match explanation...</span>
+                </div>
+                {/* Shimmer placeholder lines using the global shimmer animation */}
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-700 rounded-md relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-500/30 to-transparent animate-[shimmer_2s_infinite]"></div>
+                  </div>
+                  <div className="h-4 bg-gray-700 rounded-md w-4/5 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-500/30 to-transparent animate-[shimmer_2s_infinite]" style={{ animationDelay: '0.3s' }}></div>
+                  </div>
+                  <div className="h-4 bg-gray-700 rounded-md w-3/5 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-500/30 to-transparent animate-[shimmer_2s_infinite]" style={{ animationDelay: '0.6s' }}></div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-300 leading-relaxed">{user.reason}</p>
+            )}
           </div>
         )}
 
