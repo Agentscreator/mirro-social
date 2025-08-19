@@ -148,15 +148,15 @@ export default function SignupPage() {
   }
 
   const validateDOB = (dob: string) => {
-    // Check format DD/MM/YYYY
+    // Check format MM/DD/YYYY
     const dobRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/
     const match = dob.match(dobRegex)
     
     if (!match) {
-      return { valid: false, message: "Please enter date in DD/MM/YYYY format" }
+      return { valid: false, message: "Please enter date in MM/DD/YYYY format" }
     }
 
-    const [, day, month, year] = match
+    const [, month, day, year] = match
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
     
     // Check if the date is valid
@@ -166,7 +166,7 @@ export default function SignupPage() {
       return { valid: false, message: "Please enter a valid date" }
     }
 
-    // Check if user is at least 13 years old
+    // Check if user is at least 16 years old
     const today = new Date()
     let age = today.getFullYear() - date.getFullYear()
     const monthDiff = today.getMonth() - date.getMonth()
@@ -175,8 +175,8 @@ export default function SignupPage() {
       age--
     }
 
-    if (age < 13) {
-      return { valid: false, message: "You must be at least 13 years old" }
+    if (age < 16) {
+      return { valid: false, message: "You must be at least 16 years old" }
     }
 
     if (age > 100) {
@@ -187,8 +187,8 @@ export default function SignupPage() {
   }
 
   const formatDOBForAPI = (dob: string) => {
-    // Convert DD/MM/YYYY to YYYY-MM-DD
-    const [day, month, year] = dob.split('/')
+    // Convert MM/DD/YYYY to YYYY-MM-DD
+    const [month, day, year] = dob.split('/')
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
   }
 
@@ -446,7 +446,7 @@ export default function SignupPage() {
                   <Input
                     id="dob"
                     name="dob"
-                    placeholder="DD/MM/YYYY"
+                    placeholder="MM/DD/YYYY"
                     value={formData.dob}
                     onChange={handleChange}
                     required
@@ -454,7 +454,7 @@ export default function SignupPage() {
                     maxLength={10}
                   />
                   {dobError && <p className="text-sm text-red-400 font-medium">{dobError}</p>}
-                  <p className="text-sm text-gray-500">You must be at least 13 years old to join</p>
+                  <p className="text-sm text-gray-500">You must be at least 16 years old to join</p>
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="password" className="text-white font-medium text-sm tracking-wide">Password</Label>
