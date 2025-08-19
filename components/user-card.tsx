@@ -110,7 +110,13 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
   const imageSize = "h-12 w-12"
 
   return (
-    <Card className={cardClasses}>
+    <Card 
+      className={cn(cardClasses, "cursor-pointer")} 
+      onClick={() => {
+        console.log("Card clicked for user:", user.id, user.username)
+        handleViewProfile()
+      }}
+    >
       <CardContent className={contentClasses}>
         {/* Header with profile picture and username inline */}
         <div className="flex items-center gap-4 mb-6">
@@ -162,7 +168,10 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
           <div className="flex-1 flex items-center justify-between">
             <h3 className="text-xl font-semibold text-white">@{user.username}</h3>
             <Button
-              onClick={handleViewProfile}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewProfile()
+              }}
               variant="ghost"
               size="sm"
               className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-1.5 text-sm font-medium"
@@ -195,6 +204,25 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
             </div>
           </div>
         )}
+
+        {/* Action buttons */}
+        <div className="flex gap-3">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleMessage()
+            }}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            disabled={isMessaging}
+          >
+            {isMessaging ? (
+              <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
+            ) : (
+              <MessageSquare className="h-4 w-4 mr-2" />
+            )}
+            {isMessaging ? "Messaging..." : "Message"}
+          </Button>
+        </div>
 
       </CardContent>
     </Card>
