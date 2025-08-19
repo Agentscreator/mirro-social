@@ -39,12 +39,28 @@
     overflow-behavior: auto !important;
   }
   
+  /* Special styling for group chats - always keep header visible */
+  html body.message-page.group-chat {
+    position: static !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+  
   html body.message-page #__next,
   html body.message-page [data-nextjs-container] {
     height: calc(100vh + 140px) !important;
     height: calc(100dvh + 140px) !important;
     overflow: visible !important;
     transform: none !important;
+  }
+  
+  /* Group chat container adjustments when not typing */
+  html body.message-page.group-chat #__next,
+  html body.message-page.group-chat [data-nextjs-container] {
+    height: 100vh !important;
+    height: 100dvh !important;
   }
   
   /* Ensure scrolling works when thought input is focused */
@@ -67,6 +83,17 @@
     height: calc(100dvh + 140px + 400px) !important;
   }
   
+  /* Special handling for group chats - keep header visible */
+  html body.message-typing.message-page.group-chat {
+    padding-bottom: 350px !important;
+    /* Don't hide browser UI for group chats when typing */
+    position: static !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    height: calc(100vh + 350px) !important;
+    height: calc(100dvh + 350px) !important;
+  }
+  
   /* Ensure container adapts when typing */
   html body.message-typing.message-page #__next,
   html body.message-typing.message-page [data-nextjs-container] {
@@ -74,6 +101,15 @@
     height: calc(100dvh + 140px + 400px) !important;
     min-height: calc(100vh + 140px + 400px) !important;
     min-height: calc(100dvh + 140px + 400px) !important;
+  }
+  
+  /* Group chat container adjustments */
+  html body.message-typing.message-page.group-chat #__next,
+  html body.message-typing.message-page.group-chat [data-nextjs-container] {
+    height: calc(100vh + 350px) !important;
+    height: calc(100dvh + 350px) !important;
+    min-height: calc(100vh + 350px) !important;
+    min-height: calc(100dvh + 350px) !important;
   }
   
   /* Ensure content container accounts for the offset */

@@ -267,15 +267,15 @@ export default function GroupChatPage() {
     scrollToBottom()
   }, [messages])
 
-  // Add message-page class to body for special styling
+  // Add message-page and group-chat classes to body for special styling
   useEffect(() => {
-    document.body.classList.add('message-page')
+    document.body.classList.add('message-page', 'group-chat')
     
     // For group chats, don't scroll to hide UI - keep header visible
     // The CSS will handle the browser UI hiding
     
     return () => {
-      document.body.classList.remove('message-page')
+      document.body.classList.remove('message-page', 'group-chat')
     }
   }, [])
 
@@ -320,7 +320,7 @@ export default function GroupChatPage() {
   return (
     <div className="flex flex-col h-screen bg-black -mx-4 -my-4 md:-mx-6 md:-my-8 -mt-16 md:-mt-8 pt-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 shadow-sm sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -353,11 +353,6 @@ export default function GroupChatPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-gray-800">
-            <Info className="h-5 w-5" />
-          </Button>
-        </div>
       </div>
 
       {/* Messages */}

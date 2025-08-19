@@ -199,11 +199,18 @@ export function SimpleMessageComposer({
       const keyboardWillShow = () => {
         // Adjust padding based on whether we're on a message page
         const isMessagePage = document.body.classList.contains('message-page')
+        const isGroupChat = document.body.classList.contains('group-chat')
         if (isInActiveConversation) {
           if (isMessagePage) {
             // For message pages, add substantial padding and ensure typing class
             document.body.classList.add('message-typing')
-            document.body.style.paddingBottom = '400px'
+            if (isGroupChat) {
+              // Group chats need less padding to keep header visible
+              document.body.style.paddingBottom = '350px'
+            } else {
+              // Regular messages need more padding
+              document.body.style.paddingBottom = '400px'
+            }
           } else {
             // For other pages, minimal padding
             document.body.style.paddingBottom = '20px'
@@ -287,12 +294,17 @@ export function SimpleMessageComposer({
             onFocus={() => {
               // Check if we're on a message page
               const isMessagePage = document.body.classList.contains('message-page')
+              const isGroupChat = document.body.classList.contains('group-chat')
               
               // Add class immediately to ensure input stays visible
               if (isMessagePage) {
                 document.body.classList.add('message-typing')
-                // Force immediate styling update
-                document.body.style.paddingBottom = '400px'
+                // Different padding for group chats to keep header visible
+                if (isGroupChat) {
+                  document.body.style.paddingBottom = '350px'
+                } else {
+                  document.body.style.paddingBottom = '400px'
+                }
               }
               
               // Handle keyboard display for both web and Capacitor apps
@@ -335,11 +347,17 @@ export function SimpleMessageComposer({
             onBlur={() => {
               // Remove typing class and reset padding when input loses focus
               const isMessagePage = document.body.classList.contains('message-page')
+              const isGroupChat = document.body.classList.contains('group-chat')
               document.body.classList.remove('message-typing')
               
               if (isMessagePage) {
-                // Reset padding but keep a small amount for keyboard
-                document.body.style.paddingBottom = '20px'
+                if (isGroupChat) {
+                  // Group chats can reset completely since header should stay visible
+                  document.body.style.paddingBottom = '0px'
+                } else {
+                  // Regular messages keep a small amount for keyboard
+                  document.body.style.paddingBottom = '20px'
+                }
               }
             }}
             className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
