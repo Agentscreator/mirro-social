@@ -8,6 +8,90 @@ import { Plus, Camera, Users } from "lucide-react"
 import { StoriesViewer } from "./StoriesViewer"
 import { toast } from "@/hooks/use-toast"
 
+// Component for rotating contributor profile pictures
+function RotatingContributors({ stories }: { stories: Story[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  
+  // Get unique contributors with their profile images, prioritize those with images
+  const contributors = stories.reduce((acc, story) => {
+    const userId = story.user.id
+    if (!acc.find(c => c.id === userId)) {
+      acc.push({
+        id: story.user.id,
+        username: story.user.username,
+        profileImage: story.user.profileImage
+      })
+    }
+    return acc
+  }, [] as Array<{ id: string; username: string; profileImage?: string }>)
+  
+  // Sort contributors to show those with profile images first
+  const sortedContributors = contributors.sort((a, b) => {
+    if (a.profileImage && !b.profileImage) return -1
+    if (!a.profileImage && b.profileImage) return 1
+    return 0
+  })
+  
+  // Rotate every 3 seconds if there are multiple contributors
+  useEffect(() => {
+    if (sortedContributors.length <= 1) return
+    
+    const interval = setInterval(() => {
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % sortedContributors.length)
+        setIsTransitioning(false)
+      }, 150) // Half of transition duration
+    }, 3000)
+    
+    return () => clearInterval(interval)
+  }, [sortedContributors.length])
+  
+  if (sortedContributors.length === 0) {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+        ?
+      </div>
+    )
+  }
+  
+  const currentContributor = sortedContributors[currentIndex]
+  
+  return (
+    <div className="w-full h-full relative overflow-hidden">
+      <div className={`w-full h-full transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        {currentContributor.profileImage ? (
+          <img
+            src={currentContributor.profileImage}
+            alt={currentContributor.username}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              e.currentTarget.style.display = 'none'
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement
+              if (fallback) fallback.style.display = 'flex'
+            }}
+          />
+        ) : null}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xl"
+          style={{ display: currentContributor.profileImage ? "none" : "flex" }}
+        >
+          {currentContributor.username[0]?.toUpperCase()}
+        </div>
+      </div>
+      
+      {/* Multiple contributors indicator */}
+      {sortedContributors.length > 1 && (
+        <div className="absolute bottom-1 right-1 w-3 h-3 bg-black/50 rounded-full flex items-center justify-center">
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface Story {
   id: number
   userId: string
@@ -165,12 +249,9 @@ export function StoriesFeed() {
                 onClick={() => handleStoryClick(communityStory)}
               >
                 <div className={`p-0.5 rounded-full ${communityStory.hasUnviewed ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-gray-600'} group-hover:scale-105 transition-transform`}>
-                  <Avatar className="w-16 h-16 border-2 border-gray-950">
-                    <AvatarImage src={communityStory.community.image} />
-                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white font-semibold">
-                      {communityStory.community.name[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-16 h-16 border-2 border-gray-950 rounded-full overflow-hidden">
+                    <RotatingContributors stories={communityStory.stories} />
+                  </div>
                 </div>
                 {communityStory.stories.length > 1 && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">

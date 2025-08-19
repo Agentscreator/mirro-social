@@ -35,6 +35,12 @@ export default function ChatPage() {
   // Add message-page class to body for special styling
   useEffect(() => {
     document.body.classList.add('message-page')
+    
+    // Scroll down initially to hide browser UI (double navigation fix)
+    setTimeout(() => {
+      window.scrollTo(0, 140)
+    }, 100)
+    
     return () => {
       document.body.classList.remove('message-page')
     }
