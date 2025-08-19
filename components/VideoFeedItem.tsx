@@ -43,7 +43,7 @@ const VideoFeedItem = ({
   isActive = false
 }: VideoFeedItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false); // Always unmuted
+  const [isMuted, setIsMuted] = useState(true); // Start muted for autoplay
   const [currentLikes, setCurrentLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isLiking, setIsLiking] = useState(false);
@@ -109,6 +109,7 @@ const VideoFeedItem = ({
     const handleInitialAutoplay = async () => {
       try {
         // Force play the first video when the trigger event is received
+        video.muted = true; // Ensure muted for autoplay policy
         await video.play();
         setIsPlaying(true);
         console.log('🎬 Initial autoplay triggered for post:', post.id);
@@ -119,6 +120,35 @@ const VideoFeedItem = ({
 
     window.addEventListener('initialAutoplayTrigger', handleInitialAutoplay);
     return () => window.removeEventListener('initialAutoplayTrigger', handleInitialAutoplay);
+  }, [isActive, post.id]);
+
+  // Aggressive autoplay attempt when video becomes active
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo() || !isActive) return;
+
+    const attemptAutoplay = async () => {
+      try {
+        // Multiple attempts to start autoplay
+        if (video.paused) {
+          video.muted = true; // Essential for autoplay policy
+          await video.play();
+          setIsPlaying(true);
+          console.log('🎥 Aggressive autoplay successful for post:', post.id);
+        }
+      } catch (error) {
+        console.log('Autoplay blocked, waiting for user interaction');
+        setIsPlaying(false);
+      }
+    };
+
+    // Try immediately
+    attemptAutoplay();
+
+    // Try again after a short delay
+    const timer = setTimeout(attemptAutoplay, 100);
+    
+    return () => clearTimeout(timer);
   }, [isActive, post.id]);
 
   // Intersection Observer for better autoplay control and performance
@@ -292,17 +322,20 @@ const VideoFeedItem = ({
             ref={videoRef}
             className="w-full h-full object-cover"
             src={getMediaUrl()}
-            muted={isMuted}
+            muted={true}
             loop
             playsInline
             preload="metadata"
             poster={getMediaUrl()}
+            autoPlay={isActive}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
               // Attempt autoplay when video is loaded and active
               if (isActive && videoRef.current) {
-                videoRef.current.play().catch(console.error);
+                const video = videoRef.current;
+                video.muted = true; // Ensure muted for autoplay
+                video.play().catch(console.error);
               }
             }}
 

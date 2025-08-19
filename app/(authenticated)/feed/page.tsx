@@ -103,17 +103,24 @@ export default function FeedPage() {
   // Trigger initial autoplay after posts load
   useEffect(() => {
     if (!loading && posts.length > 0 && currentVideoIndex === 0) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        // Trigger a custom event to trigger initial autoplay
-        const container = containerRef.current;
-        if (container) {
-          // Dispatch a custom event to trigger initial autoplay
-          window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
-        }
-      }, 500);
+      // Multiple attempts to trigger autoplay
+      const triggerAutoplay = () => {
+        window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
+      };
+
+      // Try immediately
+      triggerAutoplay();
       
-      return () => clearTimeout(timer);
+      // Try after DOM is ready
+      const timer1 = setTimeout(triggerAutoplay, 100);
+      const timer2 = setTimeout(triggerAutoplay, 500);
+      const timer3 = setTimeout(triggerAutoplay, 1000);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
     }
   }, [loading, posts.length, currentVideoIndex]);
 
@@ -136,6 +143,19 @@ export default function FeedPage() {
         container.removeEventListener('touchstart', handleUserInteraction);
       };
     }
+  }, [posts.length]);
+
+  // Trigger autoplay on page visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && posts.length > 0) {
+        // Page is visible again, trigger autoplay
+        window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [posts.length]);
 
   // Listen for new posts (refresh feed when posts are created)
