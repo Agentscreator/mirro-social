@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth(request)
+    const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -31,15 +31,21 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/users/saved called')
   try {
-    const session = await auth(request)
+    const session = await auth()
+    console.log('Session:', session)
     if (!session?.user?.id) {
+      console.log('No session or user ID')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { savedUserId } = await request.json()
+    const body = await request.json()
+    console.log('Request body:', body)
+    const { savedUserId } = body
 
     if (!savedUserId) {
+      console.log('No savedUserId provided')
       return NextResponse.json({ error: 'savedUserId is required' }, { status: 400 })
     }
 
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth(request)
+    const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

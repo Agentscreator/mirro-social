@@ -423,6 +423,7 @@ export default function DiscoverPage() {
 
   // Save profile function
   const handleSaveProfile = async (userId: string | number) => {
+    console.log('handleSaveProfile called in discover page:', userId)
     try {
       const response = await fetch('/api/users/saved', {
         method: 'POST',
@@ -433,12 +434,22 @@ export default function DiscoverPage() {
         body: JSON.stringify({ savedUserId: userId.toString() })
       })
       
+      console.log('Save response status:', response.status)
+      const responseData = await response.json()
+      console.log('Save response data:', responseData)
+      
       if (response.ok) {
         // Reload saved profiles to get the updated list
         await loadSavedProfiles()
         toast({
           title: "Success",
           description: "Profile saved successfully!",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: responseData.error || "Failed to save profile",
+          variant: "destructive",
         })
       }
     } catch (error) {

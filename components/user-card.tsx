@@ -83,13 +83,24 @@ export function UserCard({
   }
 
   const handleSaveProfile = async () => {
+    console.log('handleSaveProfile called', { 
+      isSaved, 
+      onSaveProfile: !!onSaveProfile, 
+      onUnsaveProfile: !!onUnsaveProfile, 
+      userId: user.id 
+    })
+    
     if (isSaving) return
     setIsSaving(true)
     try {
       if (isSaved && onUnsaveProfile) {
+        console.log('Calling onUnsaveProfile')
         await onUnsaveProfile(user.id)
       } else if (!isSaved && onSaveProfile) {
+        console.log('Calling onSaveProfile')
         await onSaveProfile(user.id)
+      } else {
+        console.log('No appropriate callback found')
       }
     } catch (error) {
       console.error('Error toggling save profile:', error)
