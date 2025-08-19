@@ -5,7 +5,7 @@ import VideoFeedItem from "@/components/VideoFeedItem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, ChevronUp, ChevronDown, Loader2, Clock, Radio, Heart, UserPlus } from "lucide-react";
+import { Search, Users, ChevronUp, ChevronDown, Loader2, Clock, Radio, Heart, UserPlus, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
@@ -622,42 +622,92 @@ export default function FeedPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {liveEvents.map((event) => (
-                        <div key={event.id} className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="text-lg font-semibold text-white mb-1">{event.title}</h3>
-                              {event.description && (
-                                <p className="text-gray-400 text-sm mb-2">{event.description}</p>
-                              )}
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Clock className="w-4 h-4" />
-                                {new Date(event.scheduledStartTime).toLocaleTimeString()}
+                      {liveEvents.map((event) => {
+                        const eventDate = new Date(event.scheduledStartTime)
+                        const now = new Date()
+                        const isLive = event.status === 'live'
+                        const isScheduled = event.status === 'scheduled'
+                        const timeUntilStart = eventDate.getTime() - now.getTime()
+                        const minutesUntilStart = Math.ceil(timeUntilStart / (1000 * 60))
+                        
+                        return (
+                          <div key={event.id} className={`bg-gray-900/50 backdrop-blur-sm rounded-xl border p-6 transition-all ${
+                            isLive 
+                              ? 'border-red-500/50 bg-red-500/10' 
+                              : 'border-gray-700/50'
+                          }`}>
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-lg font-semibold text-white">{event.title}</h3>
+                                  {isLive && (
+                                    <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium animate-pulse">
+                                      LIVE
+                                    </div>
+                                  )}
+                                  {isScheduled && minutesUntilStart <= 60 && minutesUntilStart > 0 && (
+                                    <div className="bg-orange-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                      Starts in {minutesUntilStart}m
+                                    </div>
+                                  )}
+                                </div>
+                                {event.description && (
+                                  <p className="text-gray-400 text-sm mb-2">{event.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Clock className="w-4 h-4" />
+                                  {isLive ? (
+                                    <span className="text-red-400 font-medium">Live now</span>
+                                  ) : (
+                                    <span>
+                                      {eventDate.toLocaleDateString()} at {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  )}
+                                </div>
+                                {event.location && (
+                                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                                    <MapPin className="w-3 h-3" />
+                                    <span className="truncate">{event.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                  <span className="text-white text-xs font-semibold">
+                                    {event.user.username[0]?.toUpperCase()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                <span className="text-white text-xs font-semibold">
-                                  {event.user.username[0]?.toUpperCase()}
-                                </span>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-400">
+                                {event.currentParticipants}/{event.maxParticipants} participants
                               </div>
+                              <Button
+                                size="sm"
+                                className={isLive 
+                                  ? "bg-red-600 hover:bg-red-700" 
+                                  : "bg-gray-600 hover:bg-gray-700"
+                                }
+                                onClick={() => handleJoinEvent(event.id)}
+                                disabled={!isLive}
+                              >
+                                {isLive ? 'Join Live Event' : 'Waiting to Start'}
+                              </Button>
                             </div>
+                            
+                            {/* Auto-activation message for scheduled events */}
+                            {isScheduled && (
+                              <div className="mt-3 p-2 bg-blue-900/30 border border-blue-700/30 rounded-lg">
+                                <p className="text-xs text-blue-200">
+                                  ⏰ This event will automatically go live at the scheduled time
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-400">
-                              {event.currentParticipants}/{event.maxParticipants} participants
-                            </div>
-                            <Button
-                              size="sm"
-                              className="bg-red-600 hover:bg-red-700"
-                              onClick={() => handleJoinEvent(event.id)}
-                            >
-                              Join Event
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>

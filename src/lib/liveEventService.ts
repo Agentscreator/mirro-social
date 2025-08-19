@@ -9,14 +9,12 @@ export class LiveEventService {
     const now = new Date()
     
     try {
-      // Mark events as live if they've reached their start time
-      await db
-        .update(liveEventsTable)
-        .set({
-          status: "live",
-          isActive: 1,
-          actualStartTime: now,
-        })
+      console.log(`🕒 Checking event statuses at ${now.toISOString()}`)
+      
+      // Get events that should be activated
+      const eventsToActivate = await db
+        .select()
+        .from(liveEventsTable)
         .where(
           and(
             eq(liveEventsTable.status, "scheduled"),
@@ -24,14 +22,36 @@ export class LiveEventService {
           )
         )
 
-      // Mark events as ended if they've passed their end time
-      await db
-        .update(liveEventsTable)
-        .set({
-          status: "ended",
-          isActive: 0,
-          actualEndTime: now,
+      console.log(`📅 Found ${eventsToActivate.length} events ready to activate`)
+
+      // Mark events as live if they've reached their start time
+      if (eventsToActivate.length > 0) {
+        const activatedResult = await db
+          .update(liveEventsTable)
+          .set({
+            status: "live",
+            isActive: 1,
+            actualStartTime: now,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(liveEventsTable.status, "scheduled"),
+              lte(liveEventsTable.scheduledStartTime, now)
+            )
+          )
+          .returning()
+
+        console.log(`✅ Activated ${activatedResult.length} events:`)
+        activatedResult.forEach(event => {
+          console.log(`   - Event "${event.title}" (ID: ${event.id}) is now LIVE!`)
         })
+      }
+
+      // Get events that should be ended
+      const eventsToEnd = await db
+        .select()
+        .from(liveEventsTable)
         .where(
           and(
             eq(liveEventsTable.status, "live"),
@@ -40,9 +60,37 @@ export class LiveEventService {
           )
         )
 
-      console.log("Live event statuses updated successfully")
+      console.log(`🏁 Found ${eventsToEnd.length} events ready to end`)
+
+      // Mark events as ended if they've passed their end time
+      if (eventsToEnd.length > 0) {
+        const endedResult = await db
+          .update(liveEventsTable)
+          .set({
+            status: "ended",
+            isActive: 0,
+            actualEndTime: now,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(liveEventsTable.status, "live"),
+              sql`${liveEventsTable.scheduledEndTime} IS NOT NULL`,
+              lte(liveEventsTable.scheduledEndTime, now)
+            )
+          )
+          .returning()
+
+        console.log(`🏁 Ended ${endedResult.length} events:`)
+        endedResult.forEach(event => {
+          console.log(`   - Event "${event.title}" (ID: ${event.id}) has ended`)
+        })
+      }
+
+      console.log("✅ Live event statuses updated successfully")
     } catch (error) {
-      console.error("Error updating live event statuses:", error)
+      console.error("❌ Error updating live event statuses:", error)
+      throw error
     }
   }
 
@@ -155,6 +203,93 @@ export class LiveEventService {
       console.log("Old events cleaned up successfully")
     } catch (error) {
       console.error("Error cleaning up old events:", error)
+    }
+  }
+
+  // Check for events that should have been activated but weren't (recovery mechanism)
+  static async checkMissedEvents() {
+    const now = new Date()
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    
+    try {
+      console.log("🔍 Checking for missed events that should have been activated...")
+      
+      // Find events that were scheduled to start in the past but are still marked as "scheduled"
+      const missedEvents = await db
+        .select()
+        .from(liveEventsTable)
+        .where(
+          and(
+            eq(liveEventsTable.status, "scheduled"),
+            lte(liveEventsTable.scheduledStartTime, now),
+            gte(liveEventsTable.scheduledStartTime, oneDayAgo) // Only check events from last 24 hours
+          )
+        )
+
+      if (missedEvents.length > 0) {
+        console.log(`⚠️  Found ${missedEvents.length} missed events that should be activated:`)
+        
+        for (const event of missedEvents) {
+          console.log(`   - Event "${event.title}" (ID: ${event.id}) scheduled for ${event.scheduledStartTime}`)
+          
+          // Check if event should still be live or if it's already past its end time
+          const shouldBeEnded = event.scheduledEndTime && new Date(event.scheduledEndTime) <= now
+          
+          if (shouldBeEnded) {
+            // Event should have ended already
+            await db
+              .update(liveEventsTable)
+              .set({
+                status: "ended",
+                isActive: 0,
+                actualStartTime: new Date(event.scheduledStartTime),
+                actualEndTime: new Date(event.scheduledEndTime!),
+                updatedAt: now,
+              })
+              .where(eq(liveEventsTable.id, event.id))
+            
+            console.log(`   ⏰ Event "${event.title}" marked as ended (missed its window)`)
+          } else {
+            // Event should be activated now
+            await db
+              .update(liveEventsTable)
+              .set({
+                status: "live",
+                isActive: 1,
+                actualStartTime: new Date(event.scheduledStartTime),
+                updatedAt: now,
+              })
+              .where(eq(liveEventsTable.id, event.id))
+            
+            console.log(`   ✅ Event "${event.title}" activated (was missed)`)
+          }
+        }
+      } else {
+        console.log("✅ No missed events found")
+      }
+    } catch (error) {
+      console.error("❌ Error checking for missed events:", error)
+    }
+  }
+
+  // Run a complete event status check (used by cron job)
+  static async performCompleteEventCheck() {
+    console.log("🚀 Starting complete event status check...")
+    
+    try {
+      // First check for missed events
+      await this.checkMissedEvents()
+      
+      // Then run normal status updates
+      await this.updateEventStatuses()
+      
+      // Clean up old events
+      await this.cleanupOldEvents()
+      
+      console.log("🎉 Complete event status check finished successfully")
+    } catch (error) {
+      console.error("❌ Complete event status check failed:", error)
+      throw error
     }
   }
 

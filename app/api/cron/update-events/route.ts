@@ -14,11 +14,8 @@ export async function GET(request: NextRequest) {
 
     console.log("Starting scheduled event status update...")
 
-    // Update event statuses
-    await LiveEventService.updateEventStatuses()
-    
-    // Clean up old events
-    await LiveEventService.cleanupOldEvents()
+    // Run complete event status check (includes missed events, status updates, and cleanup)
+    await LiveEventService.performCompleteEventCheck()
 
     // Get current stats
     const activeEvents = await LiveEventService.getActiveEvents()

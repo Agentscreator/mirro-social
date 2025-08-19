@@ -301,10 +301,25 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
           {/* Event Details (shown when isEvent is true) */}
           {isEvent && (
             <div className="space-y-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
-                Event Details
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Event Details
+                </h3>
+              </div>
+              
+              {/* Auto-activation info */}
+              <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <div className="text-sm text-blue-100">
+                    <p className="font-medium mb-1">Automatic Event Activation</p>
+                    <p className="text-blue-200">Your event will automatically appear in the Live Events tab when the scheduled time is reached. People can join and participate once it goes live!</p>
+                  </div>
+                </div>
+              </div>
 
               {/* Event Title */}
               <div className="space-y-2">
