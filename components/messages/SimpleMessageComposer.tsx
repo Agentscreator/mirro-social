@@ -285,32 +285,29 @@ export function SimpleMessageComposer({
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             onFocus={() => {
-              // Add class to ensure input stays visible
-              document.body.classList.add('message-typing')
+              // Check if we're on a message page
+              const isMessagePage = document.body.classList.contains('message-page')
+              
+              // Add class immediately to ensure input stays visible
+              if (isMessagePage) {
+                document.body.classList.add('message-typing')
+                // Force immediate styling update
+                document.body.style.paddingBottom = '400px'
+              }
               
               // Handle keyboard display for both web and Capacitor apps
               if (window.innerWidth < 1024) {
-                // Check if we're on a message page (with normal scrolling)
-                const isMessagePage = document.body.classList.contains('message-page')
                 const isCapacitor = !!(window as any).Capacitor
                 
                 if (isMessagePage) {
-                  // For message pages, scroll to ensure composer is above keyboard
+                  // For message pages, immediate scroll to ensure composer is visible
                   setTimeout(() => {
-                    const composerRect = composerRef.current?.getBoundingClientRect()
-                    if (composerRect) {
-                      // Calculate keyboard height estimate
-                      const keyboardHeight = window.innerHeight * 0.4
-                      const targetPosition = window.innerHeight - keyboardHeight - 100
-                      
-                      if (composerRect.bottom > targetPosition) {
-                        window.scrollBy({ 
-                          top: composerRect.bottom - targetPosition + 50,
-                          behavior: 'smooth' 
-                        })
-                      }
-                    }
-                  }, isCapacitor ? 150 : 400)
+                    // Scroll to bottom to ensure composer is visible
+                    window.scrollTo({
+                      top: document.body.scrollHeight,
+                      behavior: 'smooth'
+                    })
+                  }, 50)
                 } else {
                   // For other pages, use the original scrollIntoView approach
                   setTimeout(() => {
@@ -323,20 +320,19 @@ export function SimpleMessageComposer({
               }
             }}
             onBlur={() => {
-              // Remove typing class when input loses focus
+              // Remove typing class and reset padding when input loses focus
+              const isMessagePage = document.body.classList.contains('message-page')
               document.body.classList.remove('message-typing')
+              
+              if (isMessagePage) {
+                // Reset padding but keep a small amount for keyboard
+                document.body.style.paddingBottom = '20px'
+              }
             }}
-            className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
+            className="min-h-[44px] max-h-[120px] resize-none rounded-3xl border-gray-600 bg-gray-800 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-gray-400"
             disabled={disabled || sending}
             rows={1}
           />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-gray-400 hover:text-gray-300"
-          >
-            <Smile className="h-5 w-5" />
-          </Button>
         </div>
         
         <Button

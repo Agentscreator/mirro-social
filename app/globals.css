@@ -27,7 +27,7 @@
   }
   
   /* Exception for message pages - allow scrolling while maintaining UI hiding */
-  body.message-page {
+  html body.message-page {
     position: relative !important;
     top: -140px !important;
     margin-top: 140px !important;
@@ -39,11 +39,12 @@
     overflow-behavior: auto !important;
   }
   
-  body.message-page #__next,
-  body.message-page [data-nextjs-container] {
+  html body.message-page #__next,
+  html body.message-page [data-nextjs-container] {
     height: calc(100vh + 140px) !important;
     height: calc(100dvh + 140px) !important;
     overflow: visible !important;
+    transform: none !important;
   }
   
   /* Ensure scrolling works when thought input is focused */
@@ -55,24 +56,24 @@
   }
   
   /* Ensure message input stays visible when typing */
-  body.message-typing.message-page {
-    padding-bottom: 350px !important;
+  html body.message-typing.message-page {
+    padding-bottom: 400px !important;
     overflow-y: auto !important;
     /* Maintain UI hiding while ensuring input visibility */
     position: relative !important;
     top: -140px !important;
     margin-top: 140px !important;
-    height: calc(100vh + 140px + 350px) !important;
-    height: calc(100dvh + 140px + 350px) !important;
+    height: calc(100vh + 140px + 400px) !important;
+    height: calc(100dvh + 140px + 400px) !important;
   }
   
   /* Ensure container adapts when typing */
-  body.message-typing.message-page #__next,
-  body.message-typing.message-page [data-nextjs-container] {
-    height: calc(100vh + 140px + 350px) !important;
-    height: calc(100dvh + 140px + 350px) !important;
-    min-height: calc(100vh + 140px + 350px) !important;
-    min-height: calc(100dvh + 140px + 350px) !important;
+  html body.message-typing.message-page #__next,
+  html body.message-typing.message-page [data-nextjs-container] {
+    height: calc(100vh + 140px + 400px) !important;
+    height: calc(100dvh + 140px + 400px) !important;
+    min-height: calc(100vh + 140px + 400px) !important;
+    min-height: calc(100dvh + 140px + 400px) !important;
   }
   
   /* Ensure content container accounts for the offset */
