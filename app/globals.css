@@ -26,21 +26,23 @@
     overflow-x: hidden;
   }
   
-  /* Exception for message pages - allow normal scrolling */
+  /* Exception for message pages - allow scrolling while maintaining UI hiding */
   body.message-page {
-    position: static !important;
-    top: 0 !important;
-    margin-top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    position: relative !important;
+    top: -140px !important;
+    margin-top: 140px !important;
+    height: calc(100vh + 140px) !important;
+    height: calc(100dvh + 140px) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    /* Ensure scrolling works properly */
+    overflow-behavior: auto !important;
   }
   
   body.message-page #__next,
   body.message-page [data-nextjs-container] {
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: calc(100vh + 140px) !important;
+    height: calc(100dvh + 140px) !important;
     overflow: visible !important;
   }
   
@@ -54,8 +56,23 @@
   
   /* Ensure message input stays visible when typing */
   body.message-typing.message-page {
-    padding-bottom: 300px !important;
+    padding-bottom: 350px !important;
     overflow-y: auto !important;
+    /* Maintain UI hiding while ensuring input visibility */
+    position: relative !important;
+    top: -140px !important;
+    margin-top: 140px !important;
+    height: calc(100vh + 140px + 350px) !important;
+    height: calc(100dvh + 140px + 350px) !important;
+  }
+  
+  /* Ensure container adapts when typing */
+  body.message-typing.message-page #__next,
+  body.message-typing.message-page [data-nextjs-container] {
+    height: calc(100vh + 140px + 350px) !important;
+    height: calc(100dvh + 140px + 350px) !important;
+    min-height: calc(100vh + 140px + 350px) !important;
+    min-height: calc(100dvh + 140px + 350px) !important;
   }
   
   /* Ensure content container accounts for the offset */

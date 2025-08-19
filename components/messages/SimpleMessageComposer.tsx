@@ -201,8 +201,9 @@ export function SimpleMessageComposer({
         const isMessagePage = document.body.classList.contains('message-page')
         if (isInActiveConversation) {
           if (isMessagePage) {
-            // For message pages with normal scrolling, add more padding
-            document.body.style.paddingBottom = '320px'
+            // For message pages, add substantial padding and ensure typing class
+            document.body.classList.add('message-typing')
+            document.body.style.paddingBottom = '400px'
           } else {
             // For other pages, minimal padding
             document.body.style.paddingBottom = '20px'
@@ -294,16 +295,22 @@ export function SimpleMessageComposer({
                 const isCapacitor = !!(window as any).Capacitor
                 
                 if (isMessagePage) {
-                  // For message pages with normal scrolling, just ensure composer is visible
+                  // For message pages, scroll to ensure composer is above keyboard
                   setTimeout(() => {
                     const composerRect = composerRef.current?.getBoundingClientRect()
-                    if (composerRect && composerRect.bottom > window.innerHeight * 0.7) {
-                      window.scrollBy({ 
-                        top: composerRect.bottom - window.innerHeight * 0.7,
-                        behavior: 'smooth' 
-                      })
+                    if (composerRect) {
+                      // Calculate keyboard height estimate
+                      const keyboardHeight = window.innerHeight * 0.4
+                      const targetPosition = window.innerHeight - keyboardHeight - 100
+                      
+                      if (composerRect.bottom > targetPosition) {
+                        window.scrollBy({ 
+                          top: composerRect.bottom - targetPosition + 50,
+                          behavior: 'smooth' 
+                        })
+                      }
                     }
-                  }, isCapacitor ? 100 : 300)
+                  }, isCapacitor ? 150 : 400)
                 } else {
                   // For other pages, use the original scrollIntoView approach
                   setTimeout(() => {
