@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createHash, pbkdf2Sync, randomBytes } from "crypto"
 import { db } from "@/src/db"
-import { usersTable, tagsTable, userTagsTable } from "@/src/db/schema"
+import { usersTable } from "@/src/db/schema"
 import { eq, or } from "drizzle-orm"
 
 export async function POST(req: Request) {
@@ -24,13 +24,10 @@ export async function POST(req: Request) {
       metro_area,
       latitude,
       longitude,
-      interestTags,
-      contextTags,
-      intentionTags,
     } = body
 
     // Validate required fields
-    if (!username || !email || !password || !dob || !gender) {
+    if (!username || !email || !password || !dob || !nickname) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -75,13 +72,8 @@ export async function POST(req: Request) {
         username,
         email,
         password: hashedPassword,
-        nickname: nickname || username,
+        nickname,
         dob,
-        gender,
-        genderPreference,
-        preferredAgeMin,
-        preferredAgeMax,
-        proximity,
         timezone,
         metro_area: metro_area || "Unknown",
         latitude: latitude || 0,
@@ -91,79 +83,13 @@ export async function POST(req: Request) {
 
     console.log('User created:', newUser.id)
 
-    // Handle tags
-    const allTags = [
-      ...(interestTags || []).map((tag: string) => ({ name: tag, category: 'interest' as const })),
-      ...(contextTags || []).map((tag: string) => ({ name: tag, category: 'context' as const })),
-      ...(intentionTags || []).map((tag: string) => ({ name: tag, category: 'intention' as const })),
-    ]
-
-    if (allTags.length > 0) {
-      console.log('Processing tags:', allTags)
-
-      // Create or get existing tags
-      const tagIds: number[] = []
-      
-      for (const tagData of allTags) {
-        try {
-          // Try to find existing tag
-          const existingTag = await db
-            .select()
-            .from(tagsTable)
-            .where(eq(tagsTable.name, tagData.name))
-            .limit(1)
-
-          let tagId: number
-
-          if (existingTag.length > 0) {
-            tagId = existingTag[0].id
-            console.log(`Found existing tag: ${tagData.name} with id: ${tagId}`)
-          } else {
-            // Create new tag
-            const [newTag] = await db
-              .insert(tagsTable)
-              .values({
-                name: tagData.name,
-                category: tagData.category,
-              })
-              .returning()
-            
-            tagId = newTag.id
-            console.log(`Created new tag: ${tagData.name} with id: ${tagId}`)
-          }
-
-          tagIds.push(tagId)
-        } catch (tagError) {
-          console.error(`Error processing tag ${tagData.name}:`, tagError)
-          // Continue with other tags even if one fails
-        }
-      }
-
-      // Create user-tag relationships
-      if (tagIds.length > 0) {
-        const userTagData = tagIds.map(tagId => ({
-          userId: newUser.id,
-          tagId: tagId,
-        }))
-
-        try {
-          await db.insert(userTagsTable).values(userTagData)
-          console.log(`Created ${userTagData.length} user-tag relationships`)
-        } catch (userTagError) {
-          console.error('Error creating user-tag relationships:', userTagError)
-          // Don't fail the entire registration for tag relationship errors
-        }
-      }
-    }
-
     // Remove password from response
     const { password: _, ...userWithoutPassword } = newUser
 
     return NextResponse.json(
       { 
         user: userWithoutPassword, 
-        message: "User created successfully",
-        tagsProcessed: allTags.length 
+        message: "User created successfully"
       },
       { status: 201 }
     )

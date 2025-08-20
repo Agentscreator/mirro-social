@@ -1,6 +1,20 @@
 
 import { db } from "../db"
-import { usersTable, userTagsTable, tagsTable, thoughtsTable, communityMembersTable, communitiesTable } from "../db/schema"
+import { 
+  usersTable, 
+  userTagsTable, 
+  tagsTable, 
+  thoughtsTable, 
+  communityMembersTable, 
+  communitiesTable,
+  liveEventParticipantsTable,
+  liveEventsTable,
+  postInviteParticipantsTable,
+  postInvitesTable,
+  postsTable,
+  postLikesTable,
+  postCommentsTable
+} from "../db/schema"
 import { eq, ne, and, sql, isNotNull, desc } from "drizzle-orm"
 import { Pinecone, type ScoredPineconeRecord } from "@pinecone-database/pinecone"
 import { openai } from "../lib/openai" // You'll need to create this
@@ -450,34 +464,46 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
     // Create a map for quick lookup
     const userDetailsMap = new Map(userDetails.map((user) => [user.id, user]))
 
-    // Process results, only including users that actually have embeddings
-    const results = (queryResponse.matches
-      ?.map((match: ScoredPineconeRecord<RecordMetadata>): RecommendedUser | null => {
-        const metadata = match.metadata || {}
-        const userDetail = userDetailsMap.get(metadata.userId)
-        
-        // Skip users without embeddings
-        if (!userDetail?.hasEmbeddings) {
-          return null
-        }
+    // Process results and calculate enhanced similarities
+    const results: RecommendedUser[] = []
+    
+    for (const match of queryResponse.matches || []) {
+      const metadata = match.metadata || {}
+      const userDetail = userDetailsMap.get(metadata.userId)
+      
+      // Skip users without embeddings
+      if (!userDetail?.hasEmbeddings) {
+        continue
+      }
 
-        const similarity = match.score ?? 0
-        return {
-          id: metadata.userId,
-          username: userDetail.username,
-          nickname: userDetail.nickname || null,
-          image: userDetail.image || null,
-          profileImage: userDetail.profileImage || null,
-          tags: metadata.tags ? JSON.parse(metadata.tags) : [],
-          similarity: similarity,
-          proximity: metadata.proximity || undefined,
-          score: calculateOverallScore(similarity, metadata.proximity),
-          reason: null,
-        }
+      const similarity = match.score ?? 0
+      
+      // Calculate additional similarity factors
+      const eventSimilarity = await calculateEventAttendanceSimilarity(userId, metadata.userId)
+      const feedSimilarity = await calculateFeedPreferenceSimilarity(userId, metadata.userId)
+      
+      const enhancedScore = calculateOverallScore(
+        similarity, 
+        metadata.proximity, 
+        eventSimilarity, 
+        feedSimilarity
+      )
+
+      results.push({
+        id: metadata.userId,
+        username: userDetail.username,
+        nickname: userDetail.nickname || null,
+        image: userDetail.image || null,
+        profileImage: userDetail.profileImage || null,
+        tags: metadata.tags ? JSON.parse(metadata.tags) : [],
+        similarity: similarity,
+        proximity: metadata.proximity || undefined,
+        score: enhancedScore,
+        reason: null,
       })
-      .filter((user): user is RecommendedUser => user !== null) || []) as RecommendedUser[]
+    }
 
-    // Sort by score and return results
+    // Sort by enhanced score and return results
     return results.sort((a, b) => b.score - a.score).slice(0, maxResults)
   } catch (error) {
     console.error("Error getting embedding-based users:", error)
@@ -1105,15 +1131,122 @@ async function getUserBasicInfo(userId: string) {
   }
 }
 
-function calculateOverallScore(similarity: number, proximity?: number | undefined): number {
-  // If no proximity data, return similarity score
-  if (proximity === undefined) return similarity
+/**
+ * Calculate event attendance similarity between two users
+ */
+async function calculateEventAttendanceSimilarity(userAId: string, userBId: string): Promise<number> {
+  try {
+    // Get events that userA attended
+    const userAEvents = await db
+      .select({ eventId: liveEventParticipantsTable.eventId })
+      .from(liveEventParticipantsTable)
+      .where(eq(liveEventParticipantsTable.userId, userAId))
 
-  // Normalize proximity to a 0-1 scale (0 being closest, 1 being farthest)
-  const proximityNormalized = Math.min(proximity, 100) / 100
+    // Get events that userB attended
+    const userBEvents = await db
+      .select({ eventId: liveEventParticipantsTable.eventId })
+      .from(liveEventParticipantsTable)
+      .where(eq(liveEventParticipantsTable.userId, userBId))
 
-  // Weight similarity more heavily than proximity (70% similarity, 30% proximity)
-  return (similarity * 0.7) + ((1 - proximityNormalized) * 0.3)
+    // Get post invites that userA participated in
+    const userAInvites = await db
+      .select({ inviteId: postInviteParticipantsTable.inviteId })
+      .from(postInviteParticipantsTable)
+      .where(eq(postInviteParticipantsTable.userId, userAId))
+
+    // Get post invites that userB participated in
+    const userBInvites = await db
+      .select({ inviteId: postInviteParticipantsTable.inviteId })
+      .from(postInviteParticipantsTable)
+      .where(eq(postInviteParticipantsTable.userId, userBId))
+
+    // Find shared events
+    const userAEventIds = new Set(userAEvents.map(e => e.eventId))
+    const userBEventIds = new Set(userBEvents.map(e => e.eventId))
+    const sharedEventIds = new Set([...userAEventIds].filter(x => userBEventIds.has(x)))
+
+    // Find shared post invites
+    const userAInviteIds = new Set(userAInvites.map(i => i.inviteId))
+    const userBInviteIds = new Set(userBInvites.map(i => i.inviteId))
+    const sharedInviteIds = new Set([...userAInviteIds].filter(x => userBInviteIds.has(x)))
+
+    // Calculate similarity score based on shared events/activities
+    const sharedEventCount = sharedEventIds.size + sharedInviteIds.size
+    
+    // Return normalized score (0-1, with diminishing returns)
+    return Math.min(sharedEventCount * 0.1, 1.0) // Each shared event adds 0.1, max 1.0
+  } catch (error) {
+    console.error("Error calculating event attendance similarity:", error)
+    return 0
+  }
+}
+
+/**
+ * Calculate feed preference similarity based on post interactions
+ */
+async function calculateFeedPreferenceSimilarity(userAId: string, userBId: string): Promise<number> {
+  try {
+    // Get posts both users have interacted with (liked or commented on)
+    const userALikedPosts = await db
+      .select({ postId: postLikesTable.postId })
+      .from(postLikesTable)
+      .where(eq(postLikesTable.userId, userAId))
+
+    const userBLikedPosts = await db
+      .select({ postId: postLikesTable.postId })
+      .from(postLikesTable)
+      .where(eq(postLikesTable.userId, userBId))
+
+    const userACommentedPosts = await db
+      .select({ postId: postCommentsTable.postId })
+      .from(postCommentsTable)
+      .where(eq(postCommentsTable.userId, userAId))
+
+    const userBCommentedPosts = await db
+      .select({ postId: postCommentsTable.postId })
+      .from(postCommentsTable)
+      .where(eq(postCommentsTable.userId, userBId))
+
+    // Combine liked and commented posts for each user
+    const userAInteractedPosts = new Set([
+      ...userALikedPosts.map(p => p.postId),
+      ...userACommentedPosts.map(p => p.postId)
+    ])
+
+    const userBInteractedPosts = new Set([
+      ...userBLikedPosts.map(p => p.postId),
+      ...userBCommentedPosts.map(p => p.postId)
+    ])
+
+    // Calculate overlap
+    const intersection = new Set([...userAInteractedPosts].filter(x => userBInteractedPosts.has(x)))
+    const union = new Set([...userAInteractedPosts, ...userBInteractedPosts])
+
+    // Calculate Jaccard similarity
+    if (union.size === 0) return 0
+    return intersection.size / union.size
+  } catch (error) {
+    console.error("Error calculating feed preference similarity:", error)
+    return 0
+  }
+}
+
+function calculateOverallScore(similarity: number, proximity?: number | undefined, eventSimilarity = 0, feedSimilarity = 0): number {
+  // Weights for different factors
+  const embeddingWeight = 0.5      // 50% - semantic similarity from thoughts
+  const eventWeight = 0.25         // 25% - shared event attendance
+  const feedWeight = 0.15          // 15% - shared feed preferences
+  const proximityWeight = 0.1      // 10% - geographic proximity
+
+  let score = similarity * embeddingWeight + eventSimilarity * eventWeight + feedSimilarity * feedWeight
+
+  // Add proximity bonus if available
+  if (proximity !== undefined) {
+    const proximityNormalized = Math.min(proximity, 100) / 100
+    score += ((1 - proximityNormalized) * proximityWeight)
+  }
+
+  return Math.min(score, 1.0) // Cap at 1.0
 }
 
 // Export functions that might be used by other scripts

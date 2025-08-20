@@ -9,11 +9,6 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AgeRangeSelector } from "@/components/age-range-selector"
-import { GENDER_PREFERENCES, PROXIMITY_OPTIONS } from "@/lib/constants"
-import { TagSelector, type Tag as TagSelectorTag } from "@/components/tag-selector"
 import { DeleteAccountDialog } from "@/components/delete-account-dialog"
 import { useToast } from "@/hooks/use-toast"
 
@@ -22,39 +17,12 @@ interface UserData {
   username: string
   nickname?: string
   email: string
-  about?: string
   metro_area: string
-  gender?: string
-  genderPreference: string
-  preferredAgeMin: number
-  preferredAgeMax: number
-  proximity: string
   image?: string
   profileImage?: string
 }
 
-interface UserTag {
-  tagId: number
-  tagName: string
-  tagCategory: string
-}
 
-interface Tag {
-  id: string
-  name: string
-  category: string
-  color: string
-}
-
-type TagSelectorCompatibleTag = TagSelectorTag
-
-// Gender options for the user's own gender
-const GENDER_OPTIONS = [
-  { id: "male", label: "Male" },
-  { id: "female", label: "Female" },
-  { id: "non-binary", label: "Non-binary" },
-  { id: "prefer-not-to-say", label: "Prefer not to say" },
-]
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -64,27 +32,16 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userData, setUserData] = useState<UserData | null>(null)
-  const [userTags, setUserTags] = useState<UserTag[]>([])
-  const [availableTags, setAvailableTags] = useState<TagSelectorCompatibleTag[]>([])
   const [notifications, setNotifications] = useState(true)
   const [scrollY, setScrollY] = useState(0)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Form state (removed age)
+  // Form state
   const [formData, setFormData] = useState({
     nickname: "",
     username: "",
-    gender: "",
-    genderPreference: "no-preference",
-    preferredAgeMin: 13,
-    preferredAgeMax: 40,
-    proximity: "local",
   })
 
-  // Tag states by category
-  const [interestTags, setInterestTags] = useState<string[]>([])
-  const [contextTags, setContextTags] = useState<string[]>([])
-  const [intentionTags, setIntentionTags] = useState<string[]>([])
 
   // Handle scroll for transparency effect
   useEffect(() => {
@@ -102,7 +59,6 @@ export default function SettingsPage() {
     }
 
     fetchUserData()
-    fetchTags()
   }, [session, status, router])
 
   const fetchUserData = async () => {
@@ -115,36 +71,12 @@ export default function SettingsPage() {
 
       if (data.success && data.user) {
         setUserData(data.user)
-        setUserTags(data.tags || [])
 
-        // Set form data with proper defaults (removed age)
+        // Set form data with proper defaults
         setFormData({
           nickname: data.user.nickname || "",
           username: data.user.username || "",
-          gender: data.user.gender || "",
-          genderPreference: data.user.genderPreference || "no-preference",
-          preferredAgeMin: data.user.preferredAgeMin || 13,
-          preferredAgeMax: data.user.preferredAgeMax || 40,
-          proximity: data.user.proximity || "local",
         })
-
-        // Organize tags by category
-        const interests =
-          data.tags
-            ?.filter((tag: UserTag) => tag.tagCategory === "interest")
-            .map((tag: UserTag) => tag.tagId.toString()) || []
-        const contexts =
-          data.tags
-            ?.filter((tag: UserTag) => tag.tagCategory === "context")
-            .map((tag: UserTag) => tag.tagId.toString()) || []
-        const intentions =
-          data.tags
-            ?.filter((tag: UserTag) => tag.tagCategory === "intention")
-            .map((tag: UserTag) => tag.tagId.toString()) || []
-
-        setInterestTags(interests)
-        setContextTags(contexts)
-        setIntentionTags(intentions)
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
@@ -158,62 +90,14 @@ export default function SettingsPage() {
     }
   }
 
-  // Helper function to generate a default color based on category
-  const getDefaultColor = (category: string): string => {
-    const colorMap: { [key: string]: string } = {
-      interest: "#3b82f6", // blue
-      context: "#10b981", // emerald
-      intention: "#f59e0b", // amber
-    }
-    return colorMap[category] || "#6b7280" // default gray
-  }
-
-  // Type guard to ensure category is valid
-  const isValidTagCategory = (category: string): category is "interest" | "context" | "intention" => {
-    return ["interest", "context", "intention"].includes(category)
-  }
-
-  const fetchTags = async () => {
-    try {
-      const response = await fetch("/api/tags")
-      if (!response.ok) throw new Error("Failed to fetch tags")
-
-      const data = await response.json()
-      if (data.tags) {
-        // Convert to the format expected by TagSelector, adding color if missing
-        const formattedTags: TagSelectorCompatibleTag[] = data.tags
-          .filter((tag: any) => isValidTagCategory(tag.category)) // Only include valid categories
-          .map((tag: any) => ({
-            id: tag.id.toString(),
-            name: tag.name,
-            category: tag.category as "interest" | "context" | "intention",
-            color: tag.color || getDefaultColor(tag.category), // Add default color if missing
-          }))
-        setAvailableTags(formattedTags)
-      }
-    } catch (error) {
-      console.error("Error fetching tags:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load tags",
-        variant: "destructive",
-      })
-    }
-  }
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleAgeRangeChange = (minAge: number, maxAge: number) => {
-    setFormData((prev) => ({ ...prev, preferredAgeMin: minAge, preferredAgeMax: maxAge }))
-  }
-
   const handleSaveProfile = async () => {
     setSaving(true)
     try {
-      const allTagIds = [...interestTags, ...contextTags, ...intentionTags]
-
       // Use the new settings endpoint
       const response = await fetch("/api/users/settings", {
         method: "PUT",
@@ -222,7 +106,6 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           ...formData,
-          tagIds: allTagIds,
         }),
       })
 
@@ -319,117 +202,9 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-white">Gender</Label>
-              <RadioGroup
-                value={formData.gender}
-                onValueChange={(value) => handleInputChange("gender", value)}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-2"
-              >
-                {GENDER_OPTIONS.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option.id} id={`gender-${option.id}`} />
-                    <Label htmlFor={`gender-${option.id}`} className="text-white">{option.label}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Connection Preferences</CardTitle>
-            <CardDescription className="text-gray-300">Customize who you connect with</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-white">I'd like to connect with</Label>
-              <RadioGroup
-                value={formData.genderPreference}
-                onValueChange={(value) => handleInputChange("genderPreference", value)}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-2"
-              >
-                {GENDER_PREFERENCES.map((pref) => (
-                  <div key={pref.id} className="flex items-center space-x-2">
-                    <RadioGroupItem value={pref.id} id={`pref-${pref.id}`} />
-                    <Label htmlFor={`pref-${pref.id}`} className="text-white">{pref.label}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <AgeRangeSelector
-              minAge={formData.preferredAgeMin}
-              maxAge={formData.preferredAgeMax}
-              onChange={handleAgeRangeChange}
-            />
-
-            <div className="space-y-2">
-              <Label className="text-white">Proximity of recommendations</Label>
-              <Select value={formData.proximity} onValueChange={(value) => handleInputChange("proximity", value)}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue placeholder="Select proximity" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROXIMITY_OPTIONS.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Your Tags</CardTitle>
-            <CardDescription className="text-gray-300">
-              Update your interests, context, and intentions to improve connection recommendations
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="mb-3 text-lg font-medium text-white">Your Interests</h3>
-              <p className="mb-3 text-sm text-gray-400">Choose up to 5 topics that interest you the most</p>
-              <TagSelector
-                tags={availableTags}
-                selectedTags={interestTags}
-                onChange={setInterestTags}
-                maxSelections={5}
-                category="interest"
-              />
-            </div>
-
-            <div>
-              <h3 className="mb-3 text-lg font-medium text-white">Your Context</h3>
-              <p className="mb-3 text-sm text-gray-400">
-                Select up to 3 situations that describe where you are in life right now
-              </p>
-              <TagSelector
-                tags={availableTags}
-                selectedTags={contextTags}
-                onChange={setContextTags}
-                maxSelections={3}
-                category="context"
-              />
-            </div>
-
-            <div>
-              <h3 className="mb-3 text-lg font-medium text-white">Your Intentions</h3>
-              <p className="mb-3 text-sm text-gray-400">Select up to 3 intentions for using Mirro</p>
-              <TagSelector
-                tags={availableTags}
-                selectedTags={intentionTags}
-                onChange={setIntentionTags}
-                maxSelections={3}
-                category="intention"
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="bg-gray-900 border-gray-700">
           <CardHeader>

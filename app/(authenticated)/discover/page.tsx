@@ -582,8 +582,12 @@ export default function DiscoverPage() {
     loadInitialData()
   }, [])
 
-  // Filter users based on search query and prioritize by tier (users with embeddings first)
-  const filteredUsers = users.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Filter users based on search query and ONLY show users with embeddings (tier 1 & 2)
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    const hasEmbeddings = (user as any).tier && (user as any).tier <= 2 // Only tier 1 & 2 have embeddings
+    return matchesSearch && hasEmbeddings
+  })
   
   // Sort users by tier (lower tier number = higher priority) and then by score
   const sortedUsers = [...filteredUsers].sort((a, b) => {
@@ -602,12 +606,14 @@ export default function DiscoverPage() {
   // Add some randomization within tiers to prevent the same user always appearing first
   const shuffledUsers = [...sortedUsers]
   if (shuffledUsers.length > 1) {
-    // Group by tier and shuffle within each tier
+    // Group by tier and shuffle within each tier (only tier 1 & 2)
     const tierGroups: { [key: number]: typeof shuffledUsers } = {}
     shuffledUsers.forEach(user => {
       const tier = (user as any).tier || 3
-      if (!tierGroups[tier]) tierGroups[tier] = []
-      tierGroups[tier].push(user)
+      if (tier <= 2) { // Only process tier 1 & 2
+        if (!tierGroups[tier]) tierGroups[tier] = []
+        tierGroups[tier].push(user)
+      }
     })
     
     // Shuffle within each tier
@@ -620,7 +626,7 @@ export default function DiscoverPage() {
       }
     })
     
-    // Reconstruct the array with shuffled tiers
+    // Reconstruct the array with shuffled tiers (only tier 1 & 2)
     shuffledUsers.length = 0
     Object.keys(tierGroups).sort((a, b) => Number(a) - Number(b)).forEach(tier => {
       shuffledUsers.push(...tierGroups[Number(tier)])
@@ -962,156 +968,168 @@ export default function DiscoverPage() {
         {/* Main Content */}
         {!showSearchResults && !showSavedProfiles && (
           <>
-            {filteredUsers.length > 0 ? (
-              <>
-                {/* Desktop Layout */}
-                <div className="hidden lg:block">
-                  {/* Navigation */}
-                  <div className="flex items-center justify-center gap-8 mb-8">
-                    <Button
-                      onClick={goToPrevious}
-                      disabled={currentIndex === 0 || isGeneratingExplanation}
-                      variant="ghost"
-                      size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-white" />
-                    </Button>
-
-                    <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
-                      {/* Pagination counter removed for 1-by-1 browsing */}
-                    </div>
-
-                    <Button
-                      onClick={goToNext}
-                      disabled={isGeneratingExplanation}
-                      variant="ghost"
-                      size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      {loadingMore ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-white" />
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Main Content Grid */}
-                  <div className="grid grid-cols-3 gap-8">
-                    {/* User Card */}
-                    {currentUser && (
-                      <div className="col-span-2">
-                        <UserCard
-                          key={currentUser.id}
-                          user={{
-                            id: currentUser.id,
-                            username: currentUser.username,
-                            image: currentUser.image || "",
-                            profileImage: currentUser.profileImage,
-                            reason: currentUser.reason || "Calculating why you'd be a good match...",
-                            tags: [],
-                          }}
-                          onMessage={() => handleMessage(currentUser.id.toString())}
-                          onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                          onSaveProfile={handleSaveProfile}
-                          onUnsaveProfile={handleUnsaveProfile}
-                          isMessaging={messagingUser === currentUser.id.toString()}
-                          isSaved={isUserSaved(currentUser.id)}
-                          isLarge={true}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Thoughts Section */}
-                    <div className="col-span-1">
-                      {ThoughtsUploadArea}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile Layout */}
-                <div className="lg:hidden space-y-6">
-                  {/* Navigation */}
-                  <div className="flex items-center justify-center gap-6">
-                    <Button
-                      onClick={goToPrevious}
-                      disabled={currentIndex === 0 || isGeneratingExplanation}
-                      variant="ghost"
-                      size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-white" />
-                    </Button>
-
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500">{isGeneratingExplanation ? "Generating..." : "Swipe to explore"}</p>
-                    </div>
-
-                    <Button
-                      onClick={goToNext}
-                      disabled={isGeneratingExplanation}
-                      variant="ghost"
-                      size="lg"
-                      className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      {loadingMore ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-white" />
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* User Card */}
-                  {currentUser && (
-                    <div 
-                      className=""
-                      onTouchStart={onTouchStart}
-                      onTouchMove={onTouchMove}
-                      onTouchEnd={onTouchEnd}
-                    >
-                      <UserCard
-                        key={currentUser.id}
-                        user={{
-                          id: currentUser.id,
-                          username: currentUser.username,
-                          image: currentUser.image || "",
-                          profileImage: currentUser.profileImage,
-                          reason: currentUser.reason || "Calculating why you'd be a good match...",
-                          tags: [],
-                        }}
-                        onMessage={() => handleMessage(currentUser.id.toString())}
-                        onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                        onSaveProfile={handleSaveProfile}
-                        onUnsaveProfile={handleUnsaveProfile}
-                        isMessaging={messagingUser === currentUser.id.toString()}
-                        isSaved={isUserSaved(currentUser.id)}
-                        isLarge={true}
-                      />
-                    </div>
-                  )}
-
-                  {/* Thoughts Section - Mobile */}
+            {/* Show only "Tell Mirro about you" for new users with no thoughts */}
+            {thoughts.length === 0 ? (
+              <div className="flex justify-center">
+                <div className="w-full max-w-md">
                   {ThoughtsUploadArea}
                 </div>
+              </div>
+            ) : (
+              <>
+                {/* Show recommendations above "Tell Mirro about you" once user has thoughts */}
+                {filteredUsers.length > 0 ? (
+                  <>
+                    {/* Desktop Layout */}
+                    <div className="hidden lg:block">
+                      {/* Navigation */}
+                      <div className="flex items-center justify-center gap-8 mb-8">
+                        <Button
+                          onClick={goToPrevious}
+                          disabled={currentIndex === 0 || isGeneratingExplanation}
+                          variant="ghost"
+                          size="lg"
+                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                        >
+                          <ChevronLeft className="h-5 w-5 text-white" />
+                        </Button>
 
-                {explanationLoading === currentUser?.id && (
-                  <div className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
+                          {/* Pagination counter removed for 1-by-1 browsing */}
+                        </div>
+
+                        <Button
+                          onClick={goToNext}
+                          disabled={isGeneratingExplanation}
+                          variant="ghost"
+                          size="lg"
+                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                        >
+                          {loadingMore ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-white" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Main Content Grid */}
+                      <div className="grid grid-cols-3 gap-8">
+                        {/* User Card */}
+                        {currentUser && (
+                          <div className="col-span-2">
+                            <UserCard
+                              key={currentUser.id}
+                              user={{
+                                id: currentUser.id,
+                                username: currentUser.username,
+                                image: currentUser.image || "",
+                                profileImage: currentUser.profileImage,
+                                reason: currentUser.reason || "Calculating why you'd be a good match...",
+                                tags: [],
+                              }}
+                              onMessage={() => handleMessage(currentUser.id.toString())}
+                              onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                              onSaveProfile={handleSaveProfile}
+                              onUnsaveProfile={handleUnsaveProfile}
+                              isMessaging={messagingUser === currentUser.id.toString()}
+                              isSaved={isUserSaved(currentUser.id)}
+                              isLarge={true}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Thoughts Section */}
+                        <div className="col-span-1">
+                          {ThoughtsUploadArea}
+                        </div>
+                      </div>
                     </div>
-                    Generating connection recommendation...
-                  </div>
+
+                    {/* Mobile Layout */}
+                    <div className="lg:hidden space-y-6">
+                      {/* Navigation */}
+                      <div className="flex items-center justify-center gap-6">
+                        <Button
+                          onClick={goToPrevious}
+                          disabled={currentIndex === 0 || isGeneratingExplanation}
+                          variant="ghost"
+                          size="lg"
+                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                        >
+                          <ChevronLeft className="h-5 w-5 text-white" />
+                        </Button>
+
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500">{isGeneratingExplanation ? "Generating..." : "Swipe to explore"}</p>
+                        </div>
+
+                        <Button
+                          onClick={goToNext}
+                          disabled={isGeneratingExplanation}
+                          variant="ghost"
+                          size="lg"
+                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                        >
+                          {loadingMore ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-white" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* User Card */}
+                      {currentUser && (
+                        <div 
+                          className=""
+                          onTouchStart={onTouchStart}
+                          onTouchMove={onTouchMove}
+                          onTouchEnd={onTouchEnd}
+                        >
+                          <UserCard
+                            key={currentUser.id}
+                            user={{
+                              id: currentUser.id,
+                              username: currentUser.username,
+                              image: currentUser.image || "",
+                              profileImage: currentUser.profileImage,
+                              reason: currentUser.reason || "Calculating why you'd be a good match...",
+                              tags: [],
+                            }}
+                            onMessage={() => handleMessage(currentUser.id.toString())}
+                            onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                            onSaveProfile={handleSaveProfile}
+                            onUnsaveProfile={handleUnsaveProfile}
+                            isMessaging={messagingUser === currentUser.id.toString()}
+                            isSaved={isUserSaved(currentUser.id)}
+                            isLarge={true}
+                          />
+                        </div>
+                      )}
+
+                      {/* Thoughts Section - Mobile */}
+                      {ThoughtsUploadArea}
+                    </div>
+
+                    {explanationLoading === currentUser?.id && (
+                      <div className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                        Generating connection recommendation...
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Show just the thoughts area if no recommendations are available but user has thoughts */}
+                    {ThoughtsUploadArea}
+                  </>
                 )}
               </>
-            ) : (
-              <div className="text-center py-16">
-                <div className="text-gray-400 mb-2">No users found</div>
-                <p className="text-sm text-gray-500">Try adjusting your search or come back later</p>
-              </div>
             )}
           </>
         )}

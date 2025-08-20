@@ -13,9 +13,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Logo } from "@/components/logo"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { TagSelector } from "@/components/tag-selector"
-import { AgeRangeSelector } from "@/components/age-range-selector"
-import { TAGS, GENDERS, GENDER_PREFERENCES, PROXIMITY_OPTIONS } from "@/lib/constants"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Eye, EyeOff } from "lucide-react"
 import { isMobileApp } from "@/src/lib/mobile-auth"
@@ -41,14 +38,6 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     dob: "",
-    gender: "",
-    genderPreference: "no-preference",
-    proximity: "local",
-    preferredAgeMin: 18,
-    preferredAgeMax: 40,
-    interestTags: [] as string[],
-    contextTags: [] as string[],
-    intentionTags: [] as string[],
     // Location data
     metro_area: "",
     latitude: 0,
@@ -134,13 +123,6 @@ export default function SignupPage() {
     setError("")
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleAgeRangeChange = (minAge: number, maxAge: number) => {
-    setFormData((prev) => ({ ...prev, preferredAgeMin: minAge, preferredAgeMax: maxAge }))
-  }
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -204,64 +186,44 @@ export default function SignupPage() {
   }
 
   const handleNextStep = async () => {
-    if (currentStep === 1) {
-      // Validate first step
-      if (!validateEmail(formData.email)) {
-        setEmailError("Please enter a valid email address")
-        return
-      }
-
-      // Check username uniqueness
-      if (formData.username) {
-        const isUsernameAvailable = await checkUsernameUnique(formData.username)
-        if (!isUsernameAvailable) {
-          setUsernameError("This username is already taken")
-          return
-        }
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match")
-        return
-      }
-
-      if (formData.password.length < 6) {
-        setError("Password must be at least 6 characters long")
-        return
-      }
-
-      const dobValidation = validateDOB(formData.dob)
-      if (!dobValidation.valid) {
-        setDobError(dobValidation.message)
-        return
-      }
-
-      setCurrentStep(2)
-    } else if (currentStep === 2) {
-      // Validate second step
-      if (!formData.gender) {
-        setError("Please select your gender")
-        return
-      }
-
-      setCurrentStep(3)
-    } else if (currentStep === 3) {
-      // Validate third step
-      if (formData.interestTags.length === 0) {
-        setError("Please select at least one interest")
-        return
-      }
-
-      setCurrentStep(4)
-    } else if (currentStep === 4) {
-      // Validate fourth step
-      if (formData.contextTags.length === 0) {
-        setError("Please select at least one context")
-        return
-      }
-
-      setCurrentStep(5)
+    // Validate the single step
+    if (!formData.nickname.trim()) {
+      setError("Please enter a nickname")
+      return
     }
+
+    if (!validateEmail(formData.email)) {
+      setEmailError("Please enter a valid email address")
+      return
+    }
+
+    // Check username uniqueness
+    if (formData.username) {
+      const isUsernameAvailable = await checkUsernameUnique(formData.username)
+      if (!isUsernameAvailable) {
+        setUsernameError("This username is already taken")
+        return
+      }
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      return
+    }
+
+    const dobValidation = validateDOB(formData.dob)
+    if (!dobValidation.valid) {
+      setDobError(dobValidation.message)
+      return
+    }
+
+    // Submit the form directly since we only have one step
+    handleSubmit(new Event('submit') as any)
   }
 
   const handlePrevStep = () => {
@@ -273,12 +235,6 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate final step
-    if (formData.intentionTags.length === 0) {
-      setError("Please select at least one intention")
-      return
-    }
-
     setLoading(true)
     setError("")
 
@@ -288,20 +244,12 @@ export default function SignupPage() {
         username: formData.username.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        nickname: formData.nickname || formData.username.trim(),
+        nickname: formData.nickname.trim(),
         dob: formatDOBForAPI(formData.dob),
-        gender: formData.gender,
-        genderPreference: formData.genderPreference,
-        preferredAgeMin: formData.preferredAgeMin,
-        preferredAgeMax: formData.preferredAgeMax,
-        proximity: formData.proximity,
         timezone: formData.timezone,
         metro_area: formData.metro_area,
         latitude: formData.latitude,
         longitude: formData.longitude,
-        interestTags: formData.interestTags,
-        contextTags: formData.contextTags,
-        intentionTags: formData.intentionTags,
       }
 
       console.log('Sending registration data:', registrationData)
@@ -348,8 +296,6 @@ export default function SignupPage() {
     }
   }
 
-  // Convert readonly TAGS array to mutable array to fix TypeScript error
-  const mutableTags = [...TAGS]
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-black via-gray-950 to-black">
@@ -376,18 +322,7 @@ export default function SignupPage() {
             Create your account
           </CardTitle>
           <CardDescription className="text-center text-gray-400 text-lg leading-relaxed font-light">
-            Step {currentStep} of 5:{" "}
-            <span className="text-white font-normal">
-              {currentStep === 1
-                ? "Basic Information"
-                : currentStep === 2
-                  ? "Preferences"
-                  : currentStep === 3
-                    ? "Your Interests"
-                    : currentStep === 4
-                      ? "Your Context"
-                      : "Your Intentions"}
-            </span>
+            Get started with your basic information
           </CardDescription>
           {locationStatus && (
             <p className="text-sm text-center text-gray-500 italic">{locationStatus}</p>
@@ -401,258 +336,125 @@ export default function SignupPage() {
               </div>
             )}
             
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="username" className="text-white font-medium text-sm tracking-wide">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    placeholder="Choose your unique username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${usernameError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
-                  />
-                  {usernameError && <p className="text-sm text-red-400 font-medium">{usernameError}</p>}
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="nickname" className="text-white font-medium text-sm tracking-wide">Nickname <span className="text-gray-500 font-normal">(optional)</span></Label>
-                  <Input
-                    id="nickname"
-                    name="nickname"
-                    placeholder="How you'd like to be called"
-                    value={formData.nickname}
-                    onChange={handleChange}
-                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="email" className="text-white font-medium text-sm tracking-wide">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${emailError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
-                  />
-                  {emailError && <p className="text-sm text-red-400 font-medium">{emailError}</p>}
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="dob" className="text-white font-medium text-sm tracking-wide">Date of Birth</Label>
-                  <Input
-                    id="dob"
-                    name="dob"
-                    placeholder="MM/DD/YYYY"
-                    value={formData.dob}
-                    onChange={handleChange}
-                    required
-                    className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${dobError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
-                    maxLength={10}
-                  />
-                  {dobError && <p className="text-sm text-red-400 font-medium">{dobError}</p>}
-                  <p className="text-sm text-gray-500">You must be at least 16 years old to join</p>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="password" className="text-white font-medium text-sm tracking-wide">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a secure password (min 6 characters)"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="confirmPassword" className="text-white font-medium text-sm tracking-wide">Confirm Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <Label className="text-white font-medium text-sm tracking-wide">Gender</Label>
-                  <RadioGroup
-                    value={formData.gender}
-                    onValueChange={(value) => handleSelectChange("gender", value)}
-                    className="grid grid-cols-2 gap-3 sm:grid-cols-3"
-                  >
-                    {GENDERS.map((gender) => (
-                      <div key={gender.id} className="flex items-center space-x-3 bg-gray-900/40 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600/70 transition-all duration-200">
-                        <RadioGroupItem value={gender.id} id={`gender-${gender.id}`} className="border-gray-600 text-blue-500" />
-                        <Label htmlFor={`gender-${gender.id}`} className="text-white font-medium cursor-pointer flex-1">{gender.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-white">I'd like to connect with</Label>
-                  <RadioGroup
-                    value={formData.genderPreference}
-                    onValueChange={(value) => handleSelectChange("genderPreference", value)}
-                    className="grid grid-cols-3 gap-2"
-                  >
-                    {GENDER_PREFERENCES.map((pref) => (
-                      <div key={pref.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={pref.id} id={`pref-${pref.id}`} />
-                        <Label htmlFor={`pref-${pref.id}`} className="text-white">{pref.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <AgeRangeSelector 
-                  minAge={formData.preferredAgeMin} 
-                  maxAge={formData.preferredAgeMax} 
-                  onChange={handleAgeRangeChange} 
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="username" className="text-white font-medium text-sm tracking-wide">Username</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  placeholder="Choose your unique username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${usernameError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
                 />
-
-                <div className="space-y-2">
-                  <Label className="text-white">Proximity of recommendations</Label>
-                  <Select value={formData.proximity} onValueChange={(value) => handleSelectChange("proximity", value)}>
-                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                      <SelectValue placeholder="Select proximity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROXIMITY_OPTIONS.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {usernameError && <p className="text-sm text-red-400 font-medium">{usernameError}</p>}
               </div>
-            )}
-
-            {currentStep === 3 && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="mb-2 text-lg font-medium text-white">Select your interests</h3>
-                  <p className="mb-4 text-sm text-gray-400">Choose up to 5 topics that interest you the most</p>
-                  <TagSelector
-                    tags={mutableTags}
-                    selectedTags={formData.interestTags}
-                    onChange={(tags) => setFormData((prev) => ({ ...prev, interestTags: tags }))}
-                    maxSelections={5}
-                    category="interest"
+              <div className="space-y-3">
+                <Label htmlFor="nickname" className="text-white font-medium text-sm tracking-wide">Nickname</Label>
+                <Input
+                  id="nickname"
+                  name="nickname"
+                  placeholder="How you'd like to be called"
+                  value={formData.nickname}
+                  onChange={handleChange}
+                  required
+                  className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-white font-medium text-sm tracking-wide">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${emailError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
+                />
+                {emailError && <p className="text-sm text-red-400 font-medium">{emailError}</p>}
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="dob" className="text-white font-medium text-sm tracking-wide">Date of Birth</Label>
+                <Input
+                  id="dob"
+                  name="dob"
+                  placeholder="MM/DD/YYYY"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  required
+                  className={`bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm ${dobError ? "border-red-500/70 focus:ring-red-500/50" : ""}`}
+                  maxLength={10}
+                />
+                {dobError && <p className="text-sm text-red-400 font-medium">{dobError}</p>}
+                <p className="text-sm text-gray-500">You must be at least 16 years old to join</p>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-white font-medium text-sm tracking-wide">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a secure password (min 6 characters)"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
+                    minLength={6}
                   />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
-
-            {currentStep === 4 && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="mb-2 text-lg font-medium text-white">What's your context?</h3>
-                  <p className="mb-4 text-sm text-gray-400">
-                    Select up to 3 situations that describe where you are in life right now
-                  </p>
-                  <TagSelector
-                    tags={mutableTags}
-                    selectedTags={formData.contextTags}
-                    onChange={(tags) => setFormData((prev) => ({ ...prev, contextTags: tags }))}
-                    maxSelections={3}
-                    category="context"
+              <div className="space-y-3">
+                <Label htmlFor="confirmPassword" className="text-white font-medium text-sm tracking-wide">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm pr-12"
                   />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-white transition-colors duration-200"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
 
-            {currentStep === 5 && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="mb-2 text-lg font-medium text-white">
-                    What are your intentions?
-                  </h3>
-                  <p className="mb-4 text-sm text-gray-400">Select up to 3 intentions for using Mirro</p>
-                  <TagSelector
-                    tags={mutableTags}
-                    selectedTags={formData.intentionTags}
-                    onChange={(tags) => setFormData((prev) => ({ ...prev, intentionTags: tags }))}
-                    maxSelections={3}
-                    category="intention"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center pt-8">
-              {currentStep > 1 ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handlePrevStep}
-                  className="rounded-xl bg-gray-900/60 border border-gray-700/50 text-white hover:bg-gray-800/80 hover:border-gray-600/70 px-8 py-3 h-12 font-medium transition-all duration-300 backdrop-blur-sm"
-                >
-                  Back
-                </Button>
-              ) : (
-                <div></div>
-              )}
-
-              {currentStep < 5 ? (
-                <Button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 h-12 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
-                  disabled={loading}
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 h-12 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
-                  disabled={loading}
-                >
-                  {loading ? "Creating Account..." : "Create Account"}
-                </Button>
-              )}
+            <div className="flex justify-center pt-8">
+              <Button
+                type="button"
+                onClick={handleNextStep}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-12 py-3 h-12 font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 w-full"
+                disabled={loading}
+              >
+                {loading ? "Creating Account..." : "Create Account"}
+              </Button>
             </div>
           </form>
         </CardContent>
