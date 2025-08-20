@@ -61,8 +61,9 @@ export default function CreateVideoPage() {
   const [locationName, setLocationName] = useState('')
   
   // Activity timing state (for invites)
-  const [activityDate, setActivityDate] = useState('')
+  const [activityStartDate, setActivityStartDate] = useState('')
   const [activityStartTime, setActivityStartTime] = useState('')
+  const [activityEndDate, setActivityEndDate] = useState('')
   const [activityEndTime, setActivityEndTime] = useState('')
   
   // UI state
@@ -221,9 +222,9 @@ export default function CreateVideoPage() {
     }
 
     // Validate activity timing if invites are enabled
-    if (enableInvites && activityDate && activityStartTime) {
+    if (enableInvites && activityStartDate && activityStartTime) {
       // Check if activity start time is in the future
-      const activityStartDateTime = new Date(`${activityDate}T${activityStartTime}`)
+      const activityStartDateTime = new Date(`${activityStartDate}T${activityStartTime}`)
       if (activityStartDateTime <= new Date()) {
         toast({
           title: "Invalid activity time",
@@ -234,8 +235,8 @@ export default function CreateVideoPage() {
       }
 
       // Validate end time if provided
-      if (activityEndTime) {
-        const activityEndDateTime = new Date(`${activityDate}T${activityEndTime}`)
+      if (activityEndDate && activityEndTime) {
+        const activityEndDateTime = new Date(`${activityEndDate}T${activityEndTime}`)
         if (activityEndDateTime <= activityStartDateTime) {
           toast({
             title: "Invalid activity end time",
@@ -272,10 +273,11 @@ export default function CreateVideoPage() {
       }
 
       // Add activity timing data if available
-      if (enableInvites && activityDate && activityStartTime) {
-        formData.append('activityDate', activityDate)
+      if (enableInvites && activityStartDate && activityStartTime) {
+        formData.append('activityStartDate', activityStartDate)
         formData.append('activityStartTime', activityStartTime)
-        if (activityEndTime) {
+        if (activityEndDate && activityEndTime) {
+          formData.append('activityEndDate', activityEndDate)
           formData.append('activityEndTime', activityEndTime)
         }
       }
@@ -308,11 +310,9 @@ export default function CreateVideoPage() {
       
       toast({
         title: "Video posted successfully!",
-        description: enableInvites && activityDate && activityStartTime
-          ? "Your activity invitation will automatically go live when the activity starts!"
-          : enableInvites 
-            ? "Your video invite is now live. People can request to join!"
-            : "Your video is now live on your feed",
+        description: enableInvites 
+          ? "Your activity invitation has been created"
+          : "Your video is now live on your feed",
       })
 
       // Trigger feed refresh
@@ -525,62 +525,58 @@ export default function CreateVideoPage() {
                       <Clock className="h-4 w-4" />
                       When is your activity?
                     </Label>
-                    <p className="text-xs text-gray-400 mb-3">
-                      Your invite will automatically go live when the activity starts
-                    </p>
                     
-                    {/* Activity Date */}
-                    <div className="space-y-2 mb-3">
-                      <Label className="text-xs font-medium text-gray-300">Activity Date</Label>
-                      <Input
-                        type="date"
-                        value={activityDate}
-                        onChange={(e) => setActivityDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-
-                    {/* Activity Times */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-gray-300">Start Time</Label>
-                        <Input
-                          type="time"
-                          value={activityStartTime}
-                          onChange={(e) => setActivityStartTime(e.target.value)}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="e.g., 20:00"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-gray-300">End Time (Optional)</Label>
-                        <Input
-                          type="time"
-                          value={activityEndTime}
-                          onChange={(e) => setActivityEndTime(e.target.value)}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="e.g., 22:00"
-                        />
-                      </div>
-                    </div>
-
-                    {activityDate && activityStartTime && (
-                      <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 mt-3">
-                        <div className="flex items-start gap-2">
-                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
-                          </div>
-                          <div className="text-sm text-blue-100">
-                            <p className="font-medium mb-1">Auto-Live Activity</p>
-                            <p className="text-blue-200">
-                              Your invite will appear on the feed at {activityStartTime} on {new Date(activityDate).toLocaleDateString()}
-                              {activityEndTime && ` and automatically disappear at ${activityEndTime}`}
-                            </p>
-                          </div>
+                    {/* Activity Start */}
+                    <div className="space-y-3 mt-3">
+                      <Label className="text-xs font-medium text-gray-300">Activity Start</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-400">Date</Label>
+                          <Input
+                            type="date"
+                            value={activityStartDate}
+                            onChange={(e) => setActivityStartDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-400">Time</Label>
+                          <Input
+                            type="time"
+                            value={activityStartTime}
+                            onChange={(e) => setActivityStartTime(e.target.value)}
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Activity End (Optional) */}
+                    <div className="space-y-3">
+                      <Label className="text-xs font-medium text-gray-300">Activity End (Optional)</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-400">Date</Label>
+                          <Input
+                            type="date"
+                            value={activityEndDate}
+                            onChange={(e) => setActivityEndDate(e.target.value)}
+                            min={activityStartDate || new Date().toISOString().split('T')[0]}
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-400">Time</Label>
+                          <Input
+                            type="time"
+                            value={activityEndTime}
+                            onChange={(e) => setActivityEndTime(e.target.value)}
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

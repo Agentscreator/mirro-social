@@ -361,8 +361,9 @@ export async function POST(request: NextRequest) {
     const maxParticipants = formData.get("maxParticipants") ? parseInt(formData.get("maxParticipants") as string) : 50
 
     // Activity timing data (for auto-live invites)
-    const activityDate = formData.get("activityDate") as string
+    const activityStartDate = formData.get("activityStartDate") as string
     const activityStartTime = formData.get("activityStartTime") as string
+    const activityEndDate = formData.get("activityEndDate") as string
     const activityEndTime = formData.get("activityEndTime") as string
     
     // Location data
@@ -394,8 +395,9 @@ export async function POST(request: NextRequest) {
       hasLocation,
       locationName: locationName?.substring(0, 50),
       communityName: communityName?.substring(0, 50),
-      activityDate,
+      activityStartDate,
       activityStartTime,
+      activityEndDate,
       activityEndTime,
     })
 
@@ -437,18 +439,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate activity timing for auto-live invites
-    const hasActivityTiming = activityDate && activityStartTime
+    const hasActivityTiming = activityStartDate && activityStartTime
     if (hasActivityTiming) {
       // Check if activity start time is in the future
-      const activityStartDateTime = new Date(`${activityDate}T${activityStartTime}`)
+      const activityStartDateTime = new Date(`${activityStartDate}T${activityStartTime}`)
       if (activityStartDateTime <= new Date()) {
         console.error("❌ VALIDATION ERROR: Activity must be scheduled for a future time")
         return NextResponse.json({ error: "Activity must be scheduled for a future time" }, { status: 400 })
       }
 
       // Validate end time if provided
-      if (activityEndTime) {
-        const activityEndDateTime = new Date(`${activityDate}T${activityEndTime}`)
+      if (activityEndDate && activityEndTime) {
+        const activityEndDateTime = new Date(`${activityEndDate}T${activityEndTime}`)
         if (activityEndDateTime <= activityStartDateTime) {
           console.error("❌ VALIDATION ERROR: Activity end time must be after start time")
           return NextResponse.json({ error: "Activity end time must be after start time" }, { status: 400 })
@@ -525,10 +527,10 @@ export async function POST(request: NextRequest) {
     if (hasActivityTiming) {
       // If activity has timing, schedule the post to go live when activity starts
       postData.status = "scheduled"
-      postData.publishTime = new Date(`${activityDate}T${activityStartTime}`)
-      if (activityEndTime) {
+      postData.publishTime = new Date(`${activityStartDate}T${activityStartTime}`)
+      if (activityEndDate && activityEndTime) {
         // Auto-expire when activity ends
-        postData.expiryTime = new Date(`${activityDate}T${activityEndTime}`)
+        postData.expiryTime = new Date(`${activityEndDate}T${activityEndTime}`)
       }
     } else {
       // No activity timing, post goes live immediately
@@ -553,8 +555,8 @@ export async function POST(request: NextRequest) {
       publishTime: postData.publishTime,
       expiryTime: postData.expiryTime,
       hasActivityTiming,
-      activityStartTime: hasActivityTiming ? `${activityDate}T${activityStartTime}` : null,
-      activityEndTime: hasActivityTiming && activityEndTime ? `${activityDate}T${activityEndTime}` : null,
+      activityStartTime: hasActivityTiming ? `${activityStartDate}T${activityStartTime}` : null,
+      activityEndTime: hasActivityTiming && activityEndDate && activityEndTime ? `${activityEndDate}T${activityEndTime}` : null,
     })
 
     console.log("About to insert post into database...")
