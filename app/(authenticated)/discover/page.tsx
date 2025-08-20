@@ -489,11 +489,11 @@ export default function DiscoverPage() {
     loadInitialData()
   }, [])
 
-  // Filter users based on search query and ONLY show users with embeddings (tier 1 & 2)
+  // Filter users based on search query and show users from recommendation system
   const filteredUsers = users.filter((user) => {
     const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase())
-    const hasEmbeddings = (user as any).tier && (user as any).tier <= 2 // Only tier 1 & 2 have embeddings
-    return matchesSearch && hasEmbeddings
+    // Show all users returned by the recommendation system (they already have embeddings)
+    return matchesSearch
   })
   
   // Sort users by tier (lower tier number = higher priority) and then by score
@@ -510,17 +510,15 @@ export default function DiscoverPage() {
     return (b.score || 0) - (a.score || 0)
   })
   
-  // Add some randomization within tiers to prevent the same user always appearing first
+  // Add some randomization to prevent the same user always appearing first
   const shuffledUsers = [...sortedUsers]
   if (shuffledUsers.length > 1) {
-    // Group by tier and shuffle within each tier (only tier 1 & 2)
+    // Group by tier and shuffle within each tier
     const tierGroups: { [key: number]: typeof shuffledUsers } = {}
     shuffledUsers.forEach(user => {
-      const tier = (user as any).tier || 3
-      if (tier <= 2) { // Only process tier 1 & 2
-        if (!tierGroups[tier]) tierGroups[tier] = []
-        tierGroups[tier].push(user)
-      }
+      const tier = (user as any).tier || 1 // Default to tier 1 if no tier specified
+      if (!tierGroups[tier]) tierGroups[tier] = []
+      tierGroups[tier].push(user)
     })
     
     // Shuffle within each tier
@@ -533,7 +531,7 @@ export default function DiscoverPage() {
       }
     })
     
-    // Reconstruct the array with shuffled tiers (only tier 1 & 2)
+    // Reconstruct the array with shuffled tiers
     shuffledUsers.length = 0
     Object.keys(tierGroups).sort((a, b) => Number(a) - Number(b)).forEach(tier => {
       shuffledUsers.push(...tierGroups[Number(tier)])
@@ -727,7 +725,11 @@ export default function DiscoverPage() {
             <Button
               onClick={() => setShowThoughtsUpload(!showThoughtsUpload)}
               variant="outline"
-              className="border-gray-600 hover:bg-gray-700 transition-colors"
+              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl"
+              style={{
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1)',
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)'
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
               {showThoughtsUpload ? 'Hide' : 'Add Thoughts'}
