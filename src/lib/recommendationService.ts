@@ -394,14 +394,27 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       const indexName = process.env.PINECONE_INDEX || 'mirro-public'
       console.log(`Using Pinecone index: ${indexName}`)
       const index = pineconeClient.index(indexName)
-      const queryResponse = await index.namespace('user-embeddings').query({
-        vector: userEmbedding,
-        topK: maxResults * 5, // Get 5x more results to ensure we have enough valid matches
-        includeMetadata: true,
-        filter: {
-          id: { $ne: userId }
-        }
-      })
+      // Try with filter first, fallback without filter if it fails
+      let queryResponse;
+      try {
+        queryResponse = await index.namespace('user-embeddings').query({
+          vector: userEmbedding,
+          topK: maxResults * 5,
+          includeMetadata: true,
+          filter: {
+            id: { $ne: userId }
+          }
+        });
+        console.log(`Pinecone query with filter returned ${queryResponse.matches?.length || 0} matches`);
+      } catch (filterError) {
+        console.log('Pinecone filter failed, trying without filter:', filterError.message);
+        queryResponse = await index.namespace('user-embeddings').query({
+          vector: userEmbedding,
+          topK: maxResults * 5,
+          includeMetadata: true,
+        });
+        console.log(`Pinecone query without filter returned ${queryResponse.matches?.length || 0} matches`);
+      }
       
       console.log(`Pinecone query returned ${queryResponse.matches?.length || 0} matches`)
 
@@ -414,7 +427,44 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       console.log(`Found ${userIds.length} potential user matches (excluding current user)`)
 
       if (userIds.length === 0) {
-        return []
+        console.log('No matches from Pinecone, falling back to database users with embeddings')
+        // Fallback: get users with embeddings from database
+        const fallbackUsers = await db
+          .select({
+            id: usersTable.id,
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+            image: usersTable.image,
+            profileImage: usersTable.profileImage,
+          })
+          .from(usersTable)
+          .where(
+            and(
+              ne(usersTable.id, userId),
+              sql`EXISTS (
+                SELECT 1 FROM ${thoughtsTable}
+                WHERE ${thoughtsTable.userId} = ${usersTable.id}
+                AND ${thoughtsTable.embedding} IS NOT NULL
+                LIMIT 1
+              )`
+            )
+          )
+          .limit(maxResults)
+
+        console.log(`Fallback found ${fallbackUsers.length} users with embeddings`)
+
+        return fallbackUsers.map(user => ({
+          id: user.id,
+          username: user.username,
+          nickname: user.nickname || null,
+          image: user.image || null,
+          profileImage: user.profileImage || null,
+          tags: [],
+          similarity: 0.5,
+          proximity: undefined,
+          score: 0.5,
+          reason: null,
+        }))
       }
 
       console.log(`Looking up users with IDs:`, userIds)
