@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
-import { groupsTable, groupMembersTable, usersTable, postsTable } from "@/src/db/schema"
-import { eq, and, desc, sql } from "drizzle-orm"
+import { groupsTable, groupMembersTable, usersTable, postsTable, groupStoriesTable } from "@/src/db/schema"
+import { eq, and, desc, sql, gt, isNotNull, or } from "drizzle-orm"
 
 // GET - Fetch user's groups
 export async function GET(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(groupsTable.createdAt))
 
-    // Add member count to each group
+    // Add member count and latest story author info to each group
     const groupsWithMemberCount = await Promise.all(
       userGroups.map(async (group) => {
         const memberCount = await db
@@ -51,9 +51,37 @@ export async function GET(request: NextRequest) {
           .from(groupMembersTable)
           .where(eq(groupMembersTable.groupId, group.id))
         
+        // Get the latest story with media (image or video) from this group
+        const latestStoryWithMedia = await db
+          .select({
+            userId: groupStoriesTable.userId,
+            createdAt: groupStoriesTable.createdAt,
+            user: {
+              id: usersTable.id,
+              username: usersTable.username,
+              nickname: usersTable.nickname,
+              profileImage: usersTable.profileImage,
+            }
+          })
+          .from(groupStoriesTable)
+          .innerJoin(usersTable, eq(groupStoriesTable.userId, usersTable.id))
+          .where(
+            and(
+              eq(groupStoriesTable.groupId, group.id),
+              gt(groupStoriesTable.expiresAt, new Date()), // Only active stories
+              or(
+                isNotNull(groupStoriesTable.image),
+                isNotNull(groupStoriesTable.video)
+              ) // Only stories with media
+            )
+          )
+          .orderBy(desc(groupStoriesTable.createdAt))
+          .limit(1)
+        
         return {
           ...group,
           memberCount: memberCount[0]?.count || 0,
+          latestStoryAuthor: latestStoryWithMedia[0]?.user || null,
         }
       })
     )

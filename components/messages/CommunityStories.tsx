@@ -32,6 +32,12 @@ interface Community {
   name: string
   image?: string
   memberCount: number
+  latestStoryAuthor?: {
+    id: string
+    username: string
+    nickname?: string
+    profileImage?: string
+  } | null
   stories?: CommunityStory[]
 }
 
@@ -240,12 +246,24 @@ export function CommunityStories({
                   handleInteraction()
                 }}
               >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={group.image} alt={group.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
-                    <Users className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage 
+                      src={group.latestStoryAuthor?.profileImage || group.image} 
+                      alt={group.latestStoryAuthor?.nickname || group.latestStoryAuthor?.username || group.name} 
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-gray-200">
+                      {group.latestStoryAuthor ? 
+                        (group.latestStoryAuthor.nickname || group.latestStoryAuthor.username)[0]?.toUpperCase() :
+                        <Users className="h-4 w-4" />
+                      }
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Small indicator if showing latest story author instead of group image */}
+                  {group.latestStoryAuthor && (
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-blue-500 border border-gray-900 rounded-full" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white truncate font-medium">{group.name}</p>
                   <div className="flex items-center gap-2">

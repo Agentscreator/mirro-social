@@ -37,6 +37,12 @@ interface Group {
     nickname?: string
     profileImage?: string
   }
+  latestStoryAuthor?: {
+    id: string
+    username: string
+    nickname?: string
+    profileImage?: string
+  } | null
   stories?: GroupStory[]
 }
 
