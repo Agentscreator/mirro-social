@@ -132,20 +132,20 @@ export default function DiscoverPage() {
     return thoughts.map(t => t.content).join("").length
   }
 
-  const processEmbeddings = async () => {
+  const syncEmbeddings = async () => {
     setIsProcessingEmbeddings(true)
     try {
-      const response = await fetch('/api/thoughts/process-embeddings', {
+      const response = await fetch('/api/embeddings/sync-to-pinecone', {
         method: 'POST',
         credentials: 'include',
       })
       
       if (response.ok) {
         const result = await response.json()
-        console.log('Embeddings processed:', result)
+        console.log('Embeddings synced:', result)
         toast({
           title: "Success!",
-          description: `Processed ${result.processed} thoughts. Recommendations will appear shortly.`,
+          description: `Synced ${result.synced} user embeddings. Recommendations will appear shortly.`,
         })
         
         // Reload the page after a short delay to show new recommendations
@@ -156,15 +156,15 @@ export default function DiscoverPage() {
         const error = await response.json()
         toast({
           title: "Error",
-          description: error.error || "Failed to process thoughts",
+          description: error.error || "Failed to sync embeddings",
           variant: "destructive",
         })
       }
     } catch (error) {
-      console.error('Error processing embeddings:', error)
+      console.error('Error syncing embeddings:', error)
       toast({
         title: "Error",
-        description: "Failed to process thoughts. Please try again.",
+        description: "Failed to sync embeddings. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -1054,22 +1054,22 @@ export default function DiscoverPage() {
                         </>
                       ) : (
                         <>
-                          <div className="text-gray-400 mb-2">Processing your thoughts...</div>
-                          <p className="text-sm text-gray-500 mb-4">We're analyzing your thoughts to find meaningful connections. This may take a few minutes.</p>
-                          <p className="text-xs text-gray-600 mb-4">Your recommendations will appear here once processing is complete!</p>
+                          <div className="text-gray-400 mb-2">Ready to find connections...</div>
+                          <p className="text-sm text-gray-500 mb-4">Your thoughts are ready! Sync them to our recommendation engine to discover meaningful connections.</p>
+                          <p className="text-xs text-gray-600 mb-4">This will sync all user embeddings and show you compatible matches!</p>
                           <div className="flex gap-3 justify-center">
                             <Button
-                              onClick={processEmbeddings}
+                              onClick={syncEmbeddings}
                               disabled={isProcessingEmbeddings}
                               className="bg-blue-600 hover:bg-blue-700 text-white"
                             >
                               {isProcessingEmbeddings ? (
                                 <>
                                   <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
-                                  Processing...
+                                  Syncing...
                                 </>
                               ) : (
-                                "Process Thoughts"
+                                "Sync Recommendations"
                               )}
                             </Button>
                             <Button
