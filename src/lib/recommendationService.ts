@@ -15,7 +15,7 @@ import {
   postLikesTable,
   postCommentsTable
 } from "../db/schema"
-import { eq, ne, and, sql, isNotNull, desc } from "drizzle-orm"
+import { eq, ne, and, sql, isNotNull, desc, inArray } from "drizzle-orm"
 import { Pinecone, type ScoredPineconeRecord } from "@pinecone-database/pinecone"
 import { openai } from "../lib/openai" // You'll need to create this
 
@@ -417,6 +417,8 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         return []
       }
 
+      console.log(`Looking up users with IDs:`, userIds)
+      
       // Get user details and also check which users have embeddings
       const userDetails = await db
         .select({
@@ -433,7 +435,9 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
           )`,
         })
         .from(usersTable)
-        .where(sql`${usersTable.id} = ANY(${userIds})`)
+        .where(inArray(usersTable.id, userIds))
+      
+      console.log(`Found ${userDetails.length} users in database from ${userIds.length} IDs`)
 
       // Create a map for quick lookup
       const userDetailsMap = new Map(userDetails.map((user) => [user.id, user]))
