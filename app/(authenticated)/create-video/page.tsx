@@ -24,7 +24,9 @@ import {
   X,
   Camera,
   Loader2,
-  Check
+  Check,
+  Clock,
+  Calendar
 } from 'lucide-react'
 
 interface VideoUploadData {
@@ -57,6 +59,11 @@ export default function CreateVideoPage() {
   const [maxParticipants, setMaxParticipants] = useState(999999) // Unlimited participants
   const [hasLocation, setHasLocation] = useState(false)
   const [locationName, setLocationName] = useState('')
+  
+  // Activity timing state (for invites)
+  const [activityDate, setActivityDate] = useState('')
+  const [activityStartTime, setActivityStartTime] = useState('')
+  const [activityEndTime, setActivityEndTime] = useState('')
   
   // UI state
   const [isUploading, setIsUploading] = useState(false)
@@ -213,6 +220,33 @@ export default function CreateVideoPage() {
       return
     }
 
+    // Validate activity timing if invites are enabled
+    if (enableInvites && activityDate && activityStartTime) {
+      // Check if activity start time is in the future
+      const activityStartDateTime = new Date(`${activityDate}T${activityStartTime}`)
+      if (activityStartDateTime <= new Date()) {
+        toast({
+          title: "Invalid activity time",
+          description: "Activity must be scheduled for a future time",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Validate end time if provided
+      if (activityEndTime) {
+        const activityEndDateTime = new Date(`${activityDate}T${activityEndTime}`)
+        if (activityEndDateTime <= activityStartDateTime) {
+          toast({
+            title: "Invalid activity end time",
+            description: "End time must be after start time",
+            variant: "destructive",
+          })
+          return
+        }
+      }
+    }
+
     setIsUploading(true)
     setUploadProgress(0)
 
@@ -235,6 +269,15 @@ export default function CreateVideoPage() {
       if (hasLocation && locationName.trim()) {
         formData.append('hasPrivateLocation', 'true')
         formData.append('locationName', locationName.trim())
+      }
+
+      // Add activity timing data if available
+      if (enableInvites && activityDate && activityStartTime) {
+        formData.append('activityDate', activityDate)
+        formData.append('activityStartTime', activityStartTime)
+        if (activityEndTime) {
+          formData.append('activityEndTime', activityEndTime)
+        }
       }
 
       // Simulate upload progress
@@ -265,9 +308,11 @@ export default function CreateVideoPage() {
       
       toast({
         title: "Video posted successfully!",
-        description: enableInvites 
-          ? "Your video invite is now live. People can request to join!"
-          : "Your video is now live on your feed",
+        description: enableInvites && activityDate && activityStartTime
+          ? "Your activity invitation will automatically go live when the activity starts!"
+          : enableInvites 
+            ? "Your video invite is now live. People can request to join!"
+            : "Your video is now live on your feed",
       })
 
       // Trigger feed refresh
@@ -473,6 +518,72 @@ export default function CreateVideoPage() {
 
                 {/* Max Participants removed - unlimited participants allowed */}
 
+                {/* Activity Timing */}
+                <div className="space-y-4 pt-4 border-t border-gray-700">
+                  <div>
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      When is your activity?
+                    </Label>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Your invite will automatically go live when the activity starts
+                    </p>
+                    
+                    {/* Activity Date */}
+                    <div className="space-y-2 mb-3">
+                      <Label className="text-xs font-medium text-gray-300">Activity Date</Label>
+                      <Input
+                        type="date"
+                        value={activityDate}
+                        onChange={(e) => setActivityDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    </div>
+
+                    {/* Activity Times */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-gray-300">Start Time</Label>
+                        <Input
+                          type="time"
+                          value={activityStartTime}
+                          onChange={(e) => setActivityStartTime(e.target.value)}
+                          className="bg-gray-800 border-gray-600 text-white"
+                          placeholder="e.g., 20:00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-gray-300">End Time (Optional)</Label>
+                        <Input
+                          type="time"
+                          value={activityEndTime}
+                          onChange={(e) => setActivityEndTime(e.target.value)}
+                          className="bg-gray-800 border-gray-600 text-white"
+                          placeholder="e.g., 22:00"
+                        />
+                      </div>
+                    </div>
+
+                    {activityDate && activityStartTime && (
+                      <div className="bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 mt-3">
+                        <div className="flex items-start gap-2">
+                          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                          </div>
+                          <div className="text-sm text-blue-100">
+                            <p className="font-medium mb-1">Auto-Live Activity</p>
+                            <p className="text-blue-200">
+                              Your invite will appear on the feed at {activityStartTime} on {new Date(activityDate).toLocaleDateString()}
+                              {activityEndTime && ` and automatically disappear at ${activityEndTime}`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Community Creation */}
                 <div className="space-y-4 pt-4 border-t border-gray-700">
                   <div>
@@ -535,6 +646,7 @@ export default function CreateVideoPage() {
             )}
           </CardContent>
         </Card>
+
 
         {/* Submit Button */}
         <div className="pb-8">
