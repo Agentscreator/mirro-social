@@ -25,7 +25,6 @@ export default function SignupPage() {
   const [emailError, setEmailError] = useState("")
   const [usernameError, setUsernameError] = useState("")
   const [dobError, setDobError] = useState("")
-  const [locationStatus, setLocationStatus] = useState("")
   
   // Password visibility states
   const [showPassword, setShowPassword] = useState(false)
@@ -38,65 +37,14 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     dob: "",
-    // Location data
-    metro_area: "",
-    latitude: 0,
-    longitude: 0,
     timezone: "",
   })
 
-  // Get user's location and timezone on component mount
+  // Get user's timezone on component mount
   useEffect(() => {
     // Set timezone
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     setFormData(prev => ({ ...prev, timezone: userTimezone }))
-
-    // Get user's location
-    if (navigator.geolocation) {
-      setLocationStatus("Getting your location...")
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords
-          
-          try {
-            // Use reverse geocoding to get metro area
-            const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
-            const data = await response.json()
-            
-            const metro_area = data.city || data.locality || data.countryName || "Unknown"
-            
-            setFormData(prev => ({
-              ...prev,
-              latitude,
-              longitude,
-              metro_area
-            }))
-            setLocationStatus(`Location detected: ${metro_area}`)
-          } catch (error) {
-            console.error("Error getting location details:", error)
-            setFormData(prev => ({
-              ...prev,
-              latitude,
-              longitude,
-              metro_area: "Unknown"
-            }))
-            setLocationStatus("Location detected")
-          }
-        },
-        (error) => {
-          console.error("Error getting location:", error)
-          setLocationStatus("Location access denied - using defaults")
-          setFormData(prev => ({
-            ...prev,
-            latitude: 0,
-            longitude: 0,
-            metro_area: "Unknown"
-          }))
-        }
-      )
-    } else {
-      setLocationStatus("Geolocation not supported - using defaults")
-    }
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,9 +195,6 @@ export default function SignupPage() {
         nickname: formData.nickname.trim(),
         dob: formatDOBForAPI(formData.dob),
         timezone: formData.timezone,
-        metro_area: formData.metro_area,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
       }
 
       console.log('Sending registration data:', registrationData)
@@ -324,9 +269,6 @@ export default function SignupPage() {
           <CardDescription className="text-center text-gray-400 text-lg leading-relaxed font-light">
             Get started with your basic information
           </CardDescription>
-          {locationStatus && (
-            <p className="text-sm text-center text-gray-500 italic">{locationStatus}</p>
-          )}
         </CardHeader>
         <CardContent className="px-8 pb-8">
           <form onSubmit={handleSubmit} className="space-y-7">

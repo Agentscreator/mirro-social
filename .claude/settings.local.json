@@ -24,7 +24,9 @@
       "Bash(git commit:*)",
       "Bash(xcode-select:*)",
       "Bash(npx drizzle-kit:*)",
-      "Bash(timeout 60 npm run build)"
+      "Bash(timeout 60 npm run build)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -212,26 +212,6 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
     const userTagIds = userTags.map((tag) => tag.tagId)
     const userCommunityIds = userCommunities.map((community) => community.communityId)
     
-    // Build gender preference filter
-    let genderFilter = sql`1=1` // Default to no filter
-    
-    if (user.genderPreference === "men") {
-      genderFilter = eq(usersTable.gender, "male")
-    } else if (user.genderPreference === "women") {
-      genderFilter = eq(usersTable.gender, "female")
-    }
-    
-    // Calculate age range from preferences
-    const currentDate = new Date()
-    const minBirthYear = currentDate.getFullYear() - (user.preferredAgeMax || 50)
-    const maxBirthYear = currentDate.getFullYear() - (user.preferredAgeMin || 18)
-    
-    // Build proximity filter
-    let proximityFilter = sql`1=1`
-    if (user.proximity === "local" && user.metro_area) {
-      proximityFilter = eq(usersTable.metro_area, user.metro_area)
-    }
-    
     // Get potential matches
     const potentialMatches = await db
       .select({
@@ -241,18 +221,10 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
         image: usersTable.image,
         profileImage: usersTable.profileImage,
         dob: usersTable.dob,
-        gender: usersTable.gender,
         metro_area: usersTable.metro_area,
       })
       .from(usersTable)
-      .where(
-        and(
-          ne(usersTable.id, userId),
-          genderFilter,
-          proximityFilter,
-          sql`EXTRACT(YEAR FROM ${usersTable.dob}) BETWEEN ${minBirthYear} AND ${maxBirthYear}`,
-        ),
-      )
+      .where(ne(usersTable.id, userId))
       .limit(maxResults)
     
     // Score matches based on shared communities (prioritized) and common tags
@@ -521,7 +493,7 @@ async function getDatabaseRecommendations(
 ): Promise<PaginatedRecommendations> {
   const offset = (page - 1) * pageSize
 
-  // Get current user's data for matching preferences
+  // Get current user's data  
   const currentUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)
 
   if (currentUser.length === 0) {
@@ -551,26 +523,6 @@ async function getDatabaseRecommendations(
   const userTagIds = userTags.map((tag) => tag.tagId)
   const userCommunityIds = userCommunities.map((community) => community.communityId)
 
-  // Build gender preference filter
-  let genderFilter = sql`1=1` // Default to no filter
-
-  if (user.genderPreference === "men") {
-    genderFilter = eq(usersTable.gender, "male")
-  } else if (user.genderPreference === "women") {
-    genderFilter = eq(usersTable.gender, "female")
-  }
-
-  // Calculate age range from preferences
-  const currentDate = new Date()
-  const minBirthYear = currentDate.getFullYear() - (user.preferredAgeMax || 50)
-  const maxBirthYear = currentDate.getFullYear() - (user.preferredAgeMin || 18)
-
-  // Build proximity filter
-  let proximityFilter = sql`1=1`
-  if (user.proximity === "local" && user.metro_area) {
-    proximityFilter = eq(usersTable.metro_area, user.metro_area)
-  }
-
   // Get potential matches with image fields
   const potentialMatches = await db
     .select({
@@ -580,18 +532,10 @@ async function getDatabaseRecommendations(
       image: usersTable.image,
       profileImage: usersTable.profileImage,
       dob: usersTable.dob,
-      gender: usersTable.gender,
       metro_area: usersTable.metro_area,
     })
     .from(usersTable)
-    .where(
-      and(
-        ne(usersTable.id, userId),
-        genderFilter,
-        proximityFilter,
-        sql`EXTRACT(YEAR FROM ${usersTable.dob}) BETWEEN ${minBirthYear} AND ${maxBirthYear}`,
-      ),
-    )
+    .where(ne(usersTable.id, userId))
     .limit(pageSize * 3)
     .offset(offset)
 
@@ -654,14 +598,7 @@ async function getDatabaseRecommendations(
   const totalCountResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(usersTable)
-    .where(
-      and(
-        ne(usersTable.id, userId),
-        genderFilter,
-        proximityFilter,
-        sql`EXTRACT(YEAR FROM ${usersTable.dob}) BETWEEN ${minBirthYear} AND ${maxBirthYear}`,
-      ),
-    )
+    .where(ne(usersTable.id, userId))
 
   const totalCount = Number(totalCountResult[0]?.count || 0)
   const hasMore = offset + pageSize < totalCount
