@@ -70,9 +70,11 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
   try {
     // Check if current user has embeddings
     const currentUserHasEmbeddings = await userHasEmbeddings(userId)
+    console.log(`User ${userId} has embeddings: ${currentUserHasEmbeddings}`)
     
-    // Only get users with embeddings
+    // Get users with embeddings
     const usersWithEmbeddings = await getEmbeddingBasedUsers(userId, pageSize * 10)
+    console.log(`Found ${usersWithEmbeddings.length} users with embeddings`)
     
     // If current user has embeddings, these are all Tier 1 (AI explanation possible)
     // If current user has no embeddings, these are Tier 2 (narrative only)
@@ -372,11 +374,13 @@ async function getPineconeRecommendations(
 async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<RecommendedUser[]> {
   try {
     if (!process.env.PINECONE_API_KEY || !process.env.PINECONE_INDEX_NAME) {
+      console.log("Pinecone not configured, cannot get embedding-based users")
       return []
     }
 
     // Check if current user has embeddings
     const currentUserHasEmbeddings = await userHasEmbeddings(userId)
+    console.log(`getEmbeddingBasedUsers: User ${userId} has embeddings: ${currentUserHasEmbeddings}`)
 
     if (currentUserHasEmbeddings) {
       // Current user has embeddings - use similarity-based matching
@@ -467,6 +471,7 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       return results.sort((a, b) => b.score - a.score).slice(0, maxResults)
     } else {
       // Current user has no embeddings - return a diverse set of users with embeddings
+      console.log(`User ${userId} has no embeddings, getting diverse users with embeddings`)
       const usersWithEmbeddings = await db
         .select({
           id: usersTable.id,
@@ -489,6 +494,8 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         )
         .limit(maxResults)
 
+      console.log(`Found ${usersWithEmbeddings.length} diverse users with embeddings for user ${userId}`)
+      
       return usersWithEmbeddings.map(user => ({
         id: user.id,
         username: user.username,

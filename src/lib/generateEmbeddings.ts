@@ -2,11 +2,31 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { thoughtsTable } from "../db/schema";
 import { querySimilarUsers } from "./vectorStore";
+import { openai } from "./openai";
 
-// Dummy embedding generator placeholder
+// Generate real embeddings using OpenAI
 export async function getEmbedding(content: string): Promise<number[]> {
-  // Replace this stub with a real API call to generate embeddings
-  return new Array(1536).fill(Math.random());
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not configured, using dummy embeddings");
+      return new Array(1536).fill(Math.random());
+    }
+
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: content,
+    });
+
+    if (response.data && response.data.length > 0) {
+      return response.data[0].embedding;
+    } else {
+      throw new Error("No embedding data returned from OpenAI");
+    }
+  } catch (error) {
+    console.error("Error generating embedding:", error);
+    // Fallback to dummy embedding on error
+    return new Array(1536).fill(Math.random());
+  }
 }
 
 interface UserSimilarityMatch {

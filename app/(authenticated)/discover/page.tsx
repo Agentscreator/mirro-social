@@ -48,6 +48,7 @@ export default function DiscoverPage() {
   const [isTypingThought, setIsTypingThought] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [showThoughtsUpload, setShowThoughtsUpload] = useState(false)
+  const [isProcessingEmbeddings, setIsProcessingEmbeddings] = useState(false)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
   const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
@@ -129,6 +130,46 @@ export default function DiscoverPage() {
 
   const getTotalCharacters = () => {
     return thoughts.map(t => t.content).join("").length
+  }
+
+  const processEmbeddings = async () => {
+    setIsProcessingEmbeddings(true)
+    try {
+      const response = await fetch('/api/thoughts/process-embeddings', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Embeddings processed:', result)
+        toast({
+          title: "Success!",
+          description: `Processed ${result.processed} thoughts. Recommendations will appear shortly.`,
+        })
+        
+        // Reload the page after a short delay to show new recommendations
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.error || "Failed to process thoughts",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error processing embeddings:', error)
+      toast({
+        title: "Error",
+        description: "Failed to process thoughts. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessingEmbeddings(false)
+    }
   }
 
   // Handle typing state for pausing recommendations
@@ -844,7 +885,7 @@ export default function DiscoverPage() {
         {/* Main Content */}
         {!showSearchResults && (
           <>
-            {/* Show only "Tell Mirro about you" for new users with no thoughts */}
+            {/* Show recommendations or thoughts input based on user state */}
             {thoughts.length === 0 ? (
               <div className="flex justify-center items-center min-h-[50vh]">
                 <div className="w-full max-w-2xl">
@@ -1013,9 +1054,32 @@ export default function DiscoverPage() {
                         </>
                       ) : (
                         <>
-                          <div className="text-gray-400 mb-2">Building your connections...</div>
-                          <p className="text-sm text-gray-500 mb-4">We're working on finding people who share your interests and thoughts.</p>
-                          <p className="text-xs text-gray-600">Try adding more thoughts or check back later as more people join!</p>
+                          <div className="text-gray-400 mb-2">Processing your thoughts...</div>
+                          <p className="text-sm text-gray-500 mb-4">We're analyzing your thoughts to find meaningful connections. This may take a few minutes.</p>
+                          <p className="text-xs text-gray-600 mb-4">Your recommendations will appear here once processing is complete!</p>
+                          <div className="flex gap-3 justify-center">
+                            <Button
+                              onClick={processEmbeddings}
+                              disabled={isProcessingEmbeddings}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              {isProcessingEmbeddings ? (
+                                <>
+                                  <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                "Process Thoughts"
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => window.location.reload()}
+                              variant="outline"
+                              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200"
+                            >
+                              Refresh
+                            </Button>
+                          </div>
                         </>
                       )}
                     </div>
