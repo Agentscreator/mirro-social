@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X, Bookmark } from "lucide-react"
+import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserCard } from "@/components/user-card"
@@ -47,9 +47,7 @@ export default function DiscoverPage() {
   const [newThought, setNewThought] = useState("")
   const [isTypingThought, setIsTypingThought] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [savedProfiles, setSavedProfiles] = useState<ExtendedRecommendedUser[]>([])
-  const [showSavedProfiles, setShowSavedProfiles] = useState(false)
-  const [savedProfilesLoading, setSavedProfilesLoading] = useState(false)
+  const [showThoughtsUpload, setShowThoughtsUpload] = useState(false)
   const router = useRouter()
   const { client: streamClient, isReady } = useStreamContext()
   const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
@@ -395,110 +393,19 @@ export default function DiscoverPage() {
     }
   }
 
-  // Load saved profiles function
-  const loadSavedProfiles = async () => {
-    try {
-      setSavedProfilesLoading(true)
-      const response = await fetch('/api/users/saved', {
-        method: 'GET',
-        credentials: 'include',
-      })
-      
-      if (response.ok) {
-        const { savedProfiles: savedProfilesData } = await response.json()
-        const convertedSavedProfiles = savedProfilesData.map((user: any) => ({
-          ...user,
-          image: getBestImageUrl(user) || "",
-          tags: [],
-          reason: "Saved profile",
-        }))
-        setSavedProfiles(convertedSavedProfiles)
-      }
-    } catch (error) {
-      console.error('Error loading saved profiles:', error)
-    } finally {
-      setSavedProfilesLoading(false)
-    }
-  }
 
-  // Save profile function
-  const handleSaveProfile = async (userId: string | number) => {
-    console.log('handleSaveProfile called in discover page:', userId)
-    try {
-      const response = await fetch('/api/users/saved', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ savedUserId: userId.toString() })
-      })
-      
-      console.log('Save response status:', response.status)
-      const responseData = await response.json()
-      console.log('Save response data:', responseData)
-      
-      if (response.ok) {
-        // Reload saved profiles to get the updated list
-        await loadSavedProfiles()
-        toast({
-          title: "Success",
-          description: "Profile saved successfully!",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: responseData.error || "Failed to save profile",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error('Error saving profile:', error)
-      toast({
-        title: "Error",
-        description: "Failed to save profile. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
-  // Unsave profile function
-  const handleUnsaveProfile = async (userId: string | number) => {
-    try {
-      const response = await fetch(`/api/users/saved?savedUserId=${userId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      
-      if (response.ok) {
-        // Remove from local state
-        setSavedProfiles(prev => prev.filter(p => p.id !== userId.toString()))
-        toast({
-          title: "Success",
-          description: "Profile removed from saved list.",
-        })
-      }
-    } catch (error) {
-      console.error('Error unsaving profile:', error)
-      toast({
-        title: "Error",
-        description: "Failed to unsave profile. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Check if a user is saved
-  const isUserSaved = (userId: string | number) => {
-    return savedProfiles.some(p => p.id === userId.toString())
-  }
 
   // Clear local storage position when component mounts to ensure fresh order
   useEffect(() => {
     localStorage.removeItem('discover-current-index')
     setCurrentIndex(0)
-    loadSavedProfiles() // Load saved profiles on mount
   }, [])
+
+  // Update showThoughtsUpload based on thoughts length
+  useEffect(() => {
+    setShowThoughtsUpload(thoughts.length === 0)
+  }, [thoughts.length])
 
   // Initial load of recommendations and thoughts
   useEffect(() => {
@@ -816,14 +723,16 @@ export default function DiscoverPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-light text-white">Discover</h1>
-          <Button
-            onClick={() => setShowSavedProfiles(!showSavedProfiles)}
-            variant="outline"
-            className="border-gray-600 hover:bg-gray-700 transition-colors"
-          >
-            <Bookmark className={`h-4 w-4 mr-2 ${showSavedProfiles ? 'text-blue-500' : ''}`} />
-            Saved ({savedProfiles.length})
-          </Button>
+          {thoughts.length > 0 && (
+            <Button
+              onClick={() => setShowThoughtsUpload(!showThoughtsUpload)}
+              variant="outline"
+              className="border-gray-600 hover:bg-gray-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {showThoughtsUpload ? 'Hide' : 'Add Thoughts'}
+            </Button>
+          )}
         </div>
 
         <div className="relative mb-8">
@@ -926,47 +835,9 @@ export default function DiscoverPage() {
           )}
         </div>
 
-        {/* Saved Profiles Section */}
-        {showSavedProfiles && (
-          <div className="mb-8">
-            <h2 className="text-xl font-light text-white mb-4">Your Saved Profiles</h2>
-            {savedProfilesLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <TypingAnimation />
-              </div>
-            ) : savedProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {savedProfiles.map((user) => (
-                  <UserCard
-                    key={user.id}
-                    user={{
-                      id: user.id,
-                      username: user.username,
-                      image: user.image || "",
-                      profileImage: user.profileImage,
-                      reason: user.reason || "Saved profile",
-                      tags: user.tags || [],
-                    }}
-                    onMessage={() => handleMessage(user.id.toString())}
-                    onViewProfile={() => handleViewProfile(user.id.toString())}
-                    onUnsaveProfile={handleUnsaveProfile}
-                    isMessaging={messagingUser === user.id.toString()}
-                    isSaved={true}
-                    isLarge={false}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="text-gray-400 mb-2">No saved profiles yet</div>
-                <p className="text-sm text-gray-500">Save profiles you're interested in to find them easily later</p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Main Content */}
-        {!showSearchResults && !showSavedProfiles && (
+        {!showSearchResults && (
           <>
             {/* Show only "Tell Mirro about you" for new users with no thoughts */}
             {thoughts.length === 0 ? (
@@ -977,9 +848,9 @@ export default function DiscoverPage() {
               </div>
             ) : (
               <>
-                {/* Show recommendations above "Tell Mirro about you" once user has thoughts */}
+                {/* Show recommendations once user has thoughts */}
                 {filteredUsers.length > 0 ? (
-                  <>
+                  <div className="relative">
                     {/* Desktop Layout */}
                     <div className="hidden lg:block">
                       {/* Navigation */}
@@ -1013,11 +884,10 @@ export default function DiscoverPage() {
                         </Button>
                       </div>
 
-                      {/* Main Content Grid */}
-                      <div className="grid grid-cols-3 gap-8">
-                        {/* User Card */}
+                      {/* Main Content - User Card Only */}
+                      <div className="flex justify-center">
                         {currentUser && (
-                          <div className="col-span-2">
+                          <div className="w-full max-w-4xl">
                             <UserCard
                               key={currentUser.id}
                               user={{
@@ -1030,19 +900,11 @@ export default function DiscoverPage() {
                               }}
                               onMessage={() => handleMessage(currentUser.id.toString())}
                               onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                              onSaveProfile={handleSaveProfile}
-                              onUnsaveProfile={handleUnsaveProfile}
                               isMessaging={messagingUser === currentUser.id.toString()}
-                              isSaved={isUserSaved(currentUser.id)}
                               isLarge={true}
                             />
                           </div>
                         )}
-                        
-                        {/* Thoughts Section */}
-                        <div className="col-span-1">
-                          {ThoughtsUploadArea}
-                        </div>
                       </div>
                     </div>
 
@@ -1099,18 +961,29 @@ export default function DiscoverPage() {
                             }}
                             onMessage={() => handleMessage(currentUser.id.toString())}
                             onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                            onSaveProfile={handleSaveProfile}
-                            onUnsaveProfile={handleUnsaveProfile}
                             isMessaging={messagingUser === currentUser.id.toString()}
-                            isSaved={isUserSaved(currentUser.id)}
                             isLarge={true}
                           />
                         </div>
                       )}
-
-                      {/* Thoughts Section - Mobile */}
-                      {ThoughtsUploadArea}
                     </div>
+
+                    {/* Thoughts Upload Overlay */}
+                    {showThoughtsUpload && (
+                      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="w-full max-w-2xl relative">
+                          <Button
+                            onClick={() => setShowThoughtsUpload(false)}
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-12 right-0 text-white hover:bg-white/10"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          {ThoughtsUploadArea}
+                        </div>
+                      </div>
+                    )}
 
                     {explanationLoading === currentUser?.id && (
                       <div className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
@@ -1122,11 +995,30 @@ export default function DiscoverPage() {
                         Generating connection recommendation...
                       </div>
                     )}
-                  </>
+                  </div>
                 ) : (
                   <>
-                    {/* Show just the thoughts area if no recommendations are available but user has thoughts */}
-                    {ThoughtsUploadArea}
+                    {/* No recommendations available - show thoughts overlay if open */}
+                    <div className="text-center py-16">
+                      <div className="text-gray-400 mb-2">Looking for connections...</div>
+                      <p className="text-sm text-gray-500">Tell us more about yourself to find better matches</p>
+                    </div>
+                    
+                    {showThoughtsUpload && (
+                      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="w-full max-w-2xl relative">
+                          <Button
+                            onClick={() => setShowThoughtsUpload(false)}
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-12 right-0 text-white hover:bg-white/10"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          {ThoughtsUploadArea}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </>
