@@ -68,40 +68,68 @@ type TierResults = {
  */
 export async function getRecommendations(userId: string, page = 1, pageSize = 5): Promise<PaginatedRecommendations> {
   try {
-    // Check if current user has embeddings
-    const currentUserHasEmbeddings = await userHasEmbeddings(userId)
-    console.log(`User ${userId} has embeddings: ${currentUserHasEmbeddings}`)
+    console.log(`=== STARTING getRecommendations for user ${userId}, page ${page}, pageSize ${pageSize} ===`)
     
-    // Get users with embeddings
-    const usersWithEmbeddings = await getEmbeddingBasedUsers(userId, pageSize * 10)
-    console.log(`Found ${usersWithEmbeddings.length} users with embeddings`)
+    // SIMPLE FALLBACK: Just return database users directly for now
+    console.log('Using simple database fallback to bypass Pinecone issues')
+    const simpleUsers = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        image: usersTable.image,
+        profileImage: usersTable.profileImage,
+      })
+      .from(usersTable)
+      .where(
+        and(
+          ne(usersTable.id, userId),
+          sql`EXISTS (
+            SELECT 1 FROM ${thoughtsTable}
+            WHERE ${thoughtsTable.userId} = ${usersTable.id}
+            AND ${thoughtsTable.embedding} IS NOT NULL
+            LIMIT 1
+          )`
+        )
+      )
+      .limit(pageSize * 2) // Get more than needed
     
-    // If current user has embeddings, these are all Tier 1 (AI explanation possible)
-    // If current user has no embeddings, these are Tier 2 (narrative only)
-    const tierNumber = currentUserHasEmbeddings ? 1 : 2
-    const allUsers = usersWithEmbeddings.map(u => ({ ...u, tier: tierNumber }))
+    console.log(`Simple database query found ${simpleUsers.length} users`)
     
-    // Calculate pagination
-    const startIdx = (page - 1) * pageSize
-    const endIdx = startIdx + pageSize
+    const convertedUsers = simpleUsers.map(user => ({
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname || null,
+      image: user.image || null,
+      profileImage: user.profileImage || null,
+      tags: [],
+      similarity: 0.5,
+      proximity: undefined,
+      score: 0.5,
+      reason: null,
+      tier: 2
+    }))
     
     // Apply pagination
-    const paginatedUsers = allUsers.slice(startIdx, endIdx)
+    const startIdx = (page - 1) * pageSize
+    const endIdx = startIdx + pageSize
+    const paginatedUsers = convertedUsers.slice(startIdx, endIdx)
+    const hasMore = endIdx < convertedUsers.length
     
-    const hasMore = endIdx < allUsers.length
-    
-    console.log(`Page ${page}: Showing ${paginatedUsers.length} users with embeddings (Tier ${tierNumber})`)
+    console.log(`Returning ${paginatedUsers.length} paginated users from ${convertedUsers.length} total`)
     
     return {
       users: paginatedUsers,
       hasMore,
       nextPage: hasMore ? page + 1 : null,
-      totalCount: allUsers.length,
+      totalCount: convertedUsers.length,
       currentPage: page,
     }
   } catch (error) {
-    console.error("Error getting recommendations:", error)
-    // Return empty results instead of falling back to database users without embeddings
+    console.error("ERROR in getRecommendations:", error)
+    console.error("Error stack:", error.stack)
+    
+    // Return empty results on error
     return {
       users: [],
       hasMore: false,
