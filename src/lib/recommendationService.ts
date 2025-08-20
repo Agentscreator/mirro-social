@@ -426,8 +426,10 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       
       console.log(`Found ${userIds.length} potential user matches (excluding current user)`)
 
-      if (userIds.length === 0) {
-        console.log('No matches from Pinecone, falling back to database users with embeddings')
+      // TEMPORARY: Force fallback for testing
+      console.log('FORCING FALLBACK - Pinecone returned:', userIds.length, 'user IDs')
+      if (userIds.length === 0 || true) { // Force fallback
+        console.log('Using database fallback for users with embeddings')
         // Fallback: get users with embeddings from database
         const fallbackUsers = await db
           .select({
