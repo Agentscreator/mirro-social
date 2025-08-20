@@ -474,6 +474,7 @@ export default function DiscoverPage() {
         const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = recommendationsData
         
         console.log('Recommended Users:', recommendedUsers, 'Length:', recommendedUsers?.length)
+        console.log('Raw recommended users data:', JSON.stringify(recommendedUsers, null, 2))
         
         // Convert users first, set basic data immediately
         const usersWithBasicData = recommendedUsers.map(user => {
@@ -481,6 +482,9 @@ export default function DiscoverPage() {
           convertedUser.reason = "Generating match explanation..."
           return convertedUser
         })
+        
+        console.log('Setting users with basic data:', usersWithBasicData.length, 'users')
+        console.log('Users with basic data:', JSON.stringify(usersWithBasicData, null, 2))
         
         setUsers(usersWithBasicData)
         setHasMore(moreAvailable)
@@ -539,6 +543,13 @@ export default function DiscoverPage() {
     // Show all users returned by the recommendation system (they already have embeddings)
     return matchesSearch
   })
+  
+  // Debug logging
+  console.log('Current users state:', users.length, 'users')
+  console.log('Search query:', searchQuery)
+  console.log('Filtered users:', filteredUsers.length, 'users')
+  console.log('Thoughts length:', thoughts.length)
+  console.log('Loading state:', loading)
   
   // Sort users by tier (lower tier number = higher priority) and then by score
   const sortedUsers = [...filteredUsers].sort((a, b) => {
