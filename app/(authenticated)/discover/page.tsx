@@ -423,13 +423,16 @@ export default function DiscoverPage() {
         
         // Load recommendations and thoughts in parallel
         const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 3, randomSeed), // Pass random seed for different results
+          fetchRecommendations(1, 10, randomSeed), // Increased from 3 to 10 for more results
           loadThoughts()
         ])
         
         clearTimeout(maxLoadingTime)
         
+        console.log('Recommendations API Response:', recommendationsData)
         const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = recommendationsData
+        
+        console.log('Recommended Users:', recommendedUsers, 'Length:', recommendedUsers?.length)
         
         // Convert users first, set basic data immediately
         const usersWithBasicData = recommendedUsers.map(user => {
@@ -843,8 +846,8 @@ export default function DiscoverPage() {
           <>
             {/* Show only "Tell Mirro about you" for new users with no thoughts */}
             {thoughts.length === 0 ? (
-              <div className="flex justify-center">
-                <div className="w-full max-w-md">
+              <div className="flex justify-center items-center min-h-[50vh]">
+                <div className="w-full max-w-2xl">
                   {ThoughtsUploadArea}
                 </div>
               </div>
@@ -1000,10 +1003,21 @@ export default function DiscoverPage() {
                   </div>
                 ) : (
                   <>
-                    {/* No recommendations available - show thoughts overlay if open */}
+                    {/* No recommendations available - show helpful message */}
                     <div className="text-center py-16">
-                      <div className="text-gray-400 mb-2">Looking for connections...</div>
-                      <p className="text-sm text-gray-500">Tell us more about yourself to find better matches</p>
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                          <div className="text-gray-400 mb-2">Finding your perfect matches...</div>
+                          <p className="text-sm text-gray-500">This may take a moment</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-gray-400 mb-2">Building your connections...</div>
+                          <p className="text-sm text-gray-500 mb-4">We're working on finding people who share your interests and thoughts.</p>
+                          <p className="text-xs text-gray-600">Try adding more thoughts or check back later as more people join!</p>
+                        </>
+                      )}
                     </div>
                     
                     {showThoughtsUpload && (
