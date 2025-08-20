@@ -1079,6 +1079,18 @@ export default function DiscoverPage() {
                             >
                               Refresh
                             </Button>
+                            <Button
+                              onClick={async () => {
+                                const response = await fetch('/api/debug/embedding-status');
+                                const status = await response.json();
+                                console.log('Embedding Status:', status);
+                                alert(JSON.stringify(status, null, 2));
+                              }}
+                              variant="outline"
+                              className="border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20 text-gray-300 hover:text-gray-200 text-xs"
+                            >
+                              Debug
+                            </Button>
                           </div>
                         </>
                       )}

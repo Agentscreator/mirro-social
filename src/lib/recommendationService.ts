@@ -391,17 +391,25 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       }
 
       // Query Pinecone for similar users - get significantly more results
-      const index = pineconeClient.index(process.env.PINECONE_INDEX_NAME!)
-      const queryResponse = await index.query({
+      const indexName = process.env.PINECONE_INDEX || 'mirro-public'
+      console.log(`Using Pinecone index: ${indexName}`)
+      const index = pineconeClient.index(indexName)
+      const queryResponse = await index.namespace('user-embeddings').query({
         vector: userEmbedding,
         topK: maxResults * 5, // Get 5x more results to ensure we have enough valid matches
         includeMetadata: true,
-        filter: {
-          userId: { $ne: userId },
-        },
+        // Don't filter here - we'll filter results after getting them to avoid Pinecone filter issues
       })
+      
+      console.log(`Pinecone query returned ${queryResponse.matches?.length || 0} matches`)
 
-      const userIds = queryResponse.matches?.map((match) => match.metadata?.userId).filter(Boolean) || []
+      // Filter out current user and get user IDs
+      const userIds = queryResponse.matches
+        ?.map((match) => match.metadata?.userId)
+        .filter(Boolean)
+        .filter(id => id !== userId) || []
+      
+      console.log(`Found ${userIds.length} potential user matches (excluding current user)`)
 
       if (userIds.length === 0) {
         return []
