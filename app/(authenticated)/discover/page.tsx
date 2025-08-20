@@ -619,8 +619,8 @@ export default function DiscoverPage() {
     return (
       <div ref={thoughtsContainerRef} className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
         <div className="text-center mb-4">
-          <h3 className="text-lg font-medium text-white mb-1">Tell us about yourself</h3>
-          <p className="text-sm text-gray-400">Help us find better matches</p>
+          <h3 className="text-lg font-medium text-white mb-1">Add your first thought to see connection recommendations</h3>
+          <p className="text-sm text-gray-400">Share what's on your mind to connect with like-minded people</p>
           {isTypingThought && (
             <p className="text-xs text-blue-400 mt-2 font-medium">
               ✓ Recommendations paused while typing
@@ -658,7 +658,7 @@ export default function DiscoverPage() {
             ref={thoughtInputRef}
             value={newThought}
             onChange={(e) => handleThoughtTyping(e.target.value)}
-            placeholder="What kind of person would you like to meet?"
+            placeholder="Share a thought, interest, or what you're looking for in connections..."
             className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             maxLength={1000}
             autoComplete="off"

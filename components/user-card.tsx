@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MessageSquare, User, Bookmark, BookmarkCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -254,21 +253,6 @@ export function UserCard({
           </div>
         )}
 
-        {/* Tags */}
-        {user.tags.length > 0 && (
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-2">
-              {user.tags.map((tag, index) => (
-                <Badge
-                  key={index}
-                  className="bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 transition-colors text-xs px-3 py-1 rounded-full"
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Action buttons */}
         <div className="flex gap-3">

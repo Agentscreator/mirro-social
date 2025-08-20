@@ -63,36 +63,32 @@ type TierResults = {
 }
 
 /**
- * Gets recommendations for a user with pagination, prioritizing tiers
- * Tier 1: Users with embeddings + current user has embeddings (AI explanation possible)
- * Tier 2: Users with embeddings only (narrative explanation possible)  
- * Tier 3: Users without embeddings (database explanation only)
+ * Gets recommendations for a user with pagination, only showing users with embeddings
+ * Returns users with embeddings, prioritized by whether current user has embeddings for explanation generation
  */
 export async function getRecommendations(userId: string, page = 1, pageSize = 5): Promise<PaginatedRecommendations> {
   try {
     // Check if current user has embeddings
     const currentUserHasEmbeddings = await userHasEmbeddings(userId)
     
-    // Get all tiers of users
-    const tierResults = await getAllTierUsers(userId, currentUserHasEmbeddings)
+    // Only get users with embeddings
+    const usersWithEmbeddings = await getEmbeddingBasedUsers(userId, pageSize * 10)
+    
+    // If current user has embeddings, these are all Tier 1 (AI explanation possible)
+    // If current user has no embeddings, these are Tier 2 (narrative only)
+    const tierNumber = currentUserHasEmbeddings ? 1 : 2
+    const allUsers = usersWithEmbeddings.map(u => ({ ...u, tier: tierNumber }))
     
     // Calculate pagination
     const startIdx = (page - 1) * pageSize
     const endIdx = startIdx + pageSize
     
-    // Concatenate all users in tier order
-    const allUsers = [
-      ...tierResults.tier1Users.map(u => ({ ...u, tier: 1 })),
-      ...tierResults.tier2Users.map(u => ({ ...u, tier: 2 })),
-      ...tierResults.tier3Users.map(u => ({ ...u, tier: 3 }))
-    ]
-    
-    // Apply pagination to the combined, prioritized list
+    // Apply pagination
     const paginatedUsers = allUsers.slice(startIdx, endIdx)
     
     const hasMore = endIdx < allUsers.length
     
-    console.log(`Page ${page}: Showing ${paginatedUsers.length} users from tiers: ${[...new Set(paginatedUsers.map(u => u.tier))].join(', ')}`)
+    console.log(`Page ${page}: Showing ${paginatedUsers.length} users with embeddings (Tier ${tierNumber})`)
     
     return {
       users: paginatedUsers,
@@ -103,8 +99,14 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
     }
   } catch (error) {
     console.error("Error getting recommendations:", error)
-    // Fallback to database-only recommendations
-    return await getDatabaseRecommendations(userId, page, pageSize)
+    // Return empty results instead of falling back to database users without embeddings
+    return {
+      users: [],
+      hasMore: false,
+      nextPage: null,
+      totalCount: 0,
+      currentPage: page,
+    }
   }
 }
 
@@ -373,110 +375,133 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
       return []
     }
 
-    // Get all thoughts with embeddings for this user to check if they have any
-    const userThoughts = await db
-      .select()
-      .from(thoughtsTable)
-      .where(
-        and(
-          eq(thoughtsTable.userId, userId),
-          isNotNull(thoughtsTable.embedding),
-          isNotNull(thoughtsTable.content)
-        )
-      )
-      .limit(1)
+    // Check if current user has embeddings
+    const currentUserHasEmbeddings = await userHasEmbeddings(userId)
 
-    // If user has no embeddings, return empty array
-    if (userThoughts.length === 0) {
-      return []
-    }
+    if (currentUserHasEmbeddings) {
+      // Current user has embeddings - use similarity-based matching
+      const userEmbedding = await getMostRecentUserEmbedding(userId)
 
-    // Get the latest user embedding
-    const userEmbedding = await getMostRecentUserEmbedding(userId)
-
-    if (!userEmbedding || userEmbedding.length === 0) {
-      return []
-    }
-
-    // Query Pinecone for similar users - get significantly more results
-    const index = pineconeClient.index(process.env.PINECONE_INDEX_NAME!)
-    const queryResponse = await index.query({
-      vector: userEmbedding,
-      topK: maxResults * 5, // Get 5x more results to ensure we have enough valid matches
-      includeMetadata: true,
-      filter: {
-        userId: { $ne: userId },
-      },
-    })
-
-    const userIds = queryResponse.matches?.map((match) => match.metadata?.userId).filter(Boolean) || []
-
-    if (userIds.length === 0) {
-      return []
-    }
-
-    // Get user details and also check which users have embeddings
-    const userDetails = await db
-      .select({
-        id: usersTable.id,
-        username: usersTable.username,
-        nickname: usersTable.nickname,
-        image: usersTable.image,
-        profileImage: usersTable.profileImage,
-        hasEmbeddings: sql<boolean>`EXISTS (
-          SELECT 1 FROM ${thoughtsTable}
-          WHERE ${thoughtsTable.userId} = ${usersTable.id}
-          AND ${thoughtsTable.embedding} IS NOT NULL
-          LIMIT 1
-        )`,
-      })
-      .from(usersTable)
-      .where(sql`${usersTable.id} = ANY(${userIds})`)
-
-    // Create a map for quick lookup
-    const userDetailsMap = new Map(userDetails.map((user) => [user.id, user]))
-
-    // Process results and calculate enhanced similarities
-    const results: RecommendedUser[] = []
-    
-    for (const match of queryResponse.matches || []) {
-      const metadata = match.metadata || {}
-      const userDetail = userDetailsMap.get(metadata.userId)
-      
-      // Skip users without embeddings
-      if (!userDetail?.hasEmbeddings) {
-        continue
+      if (!userEmbedding || userEmbedding.length === 0) {
+        return []
       }
 
-      const similarity = match.score ?? 0
-      
-      // Calculate additional similarity factors
-      const eventSimilarity = await calculateEventAttendanceSimilarity(userId, metadata.userId)
-      const feedSimilarity = await calculateFeedPreferenceSimilarity(userId, metadata.userId)
-      
-      const enhancedScore = calculateOverallScore(
-        similarity, 
-        metadata.proximity, 
-        eventSimilarity, 
-        feedSimilarity
-      )
-
-      results.push({
-        id: metadata.userId,
-        username: userDetail.username,
-        nickname: userDetail.nickname || null,
-        image: userDetail.image || null,
-        profileImage: userDetail.profileImage || null,
-        tags: metadata.tags ? JSON.parse(metadata.tags) : [],
-        similarity: similarity,
-        proximity: metadata.proximity || undefined,
-        score: enhancedScore,
-        reason: null,
+      // Query Pinecone for similar users - get significantly more results
+      const index = pineconeClient.index(process.env.PINECONE_INDEX_NAME!)
+      const queryResponse = await index.query({
+        vector: userEmbedding,
+        topK: maxResults * 5, // Get 5x more results to ensure we have enough valid matches
+        includeMetadata: true,
+        filter: {
+          userId: { $ne: userId },
+        },
       })
-    }
 
-    // Sort by enhanced score and return results
-    return results.sort((a, b) => b.score - a.score).slice(0, maxResults)
+      const userIds = queryResponse.matches?.map((match) => match.metadata?.userId).filter(Boolean) || []
+
+      if (userIds.length === 0) {
+        return []
+      }
+
+      // Get user details and also check which users have embeddings
+      const userDetails = await db
+        .select({
+          id: usersTable.id,
+          username: usersTable.username,
+          nickname: usersTable.nickname,
+          image: usersTable.image,
+          profileImage: usersTable.profileImage,
+          hasEmbeddings: sql<boolean>`EXISTS (
+            SELECT 1 FROM ${thoughtsTable}
+            WHERE ${thoughtsTable.userId} = ${usersTable.id}
+            AND ${thoughtsTable.embedding} IS NOT NULL
+            LIMIT 1
+          )`,
+        })
+        .from(usersTable)
+        .where(sql`${usersTable.id} = ANY(${userIds})`)
+
+      // Create a map for quick lookup
+      const userDetailsMap = new Map(userDetails.map((user) => [user.id, user]))
+
+      // Process results and calculate enhanced similarities
+      const results: RecommendedUser[] = []
+      
+      for (const match of queryResponse.matches || []) {
+        const metadata = match.metadata || {}
+        const userDetail = userDetailsMap.get(metadata.userId)
+        
+        // Skip users without embeddings
+        if (!userDetail?.hasEmbeddings) {
+          continue
+        }
+
+        const similarity = match.score ?? 0
+        
+        // Calculate additional similarity factors
+        const eventSimilarity = await calculateEventAttendanceSimilarity(userId, metadata.userId)
+        const feedSimilarity = await calculateFeedPreferenceSimilarity(userId, metadata.userId)
+        
+        const enhancedScore = calculateOverallScore(
+          similarity, 
+          metadata.proximity, 
+          eventSimilarity, 
+          feedSimilarity
+        )
+
+        results.push({
+          id: metadata.userId,
+          username: userDetail.username,
+          nickname: userDetail.nickname || null,
+          image: userDetail.image || null,
+          profileImage: userDetail.profileImage || null,
+          tags: metadata.tags ? JSON.parse(metadata.tags) : [],
+          similarity: similarity,
+          proximity: metadata.proximity || undefined,
+          score: enhancedScore,
+          reason: null,
+        })
+      }
+
+      // Sort by enhanced score and return results
+      return results.sort((a, b) => b.score - a.score).slice(0, maxResults)
+    } else {
+      // Current user has no embeddings - return a diverse set of users with embeddings
+      const usersWithEmbeddings = await db
+        .select({
+          id: usersTable.id,
+          username: usersTable.username,
+          nickname: usersTable.nickname,
+          image: usersTable.image,
+          profileImage: usersTable.profileImage,
+        })
+        .from(usersTable)
+        .where(
+          and(
+            ne(usersTable.id, userId),
+            sql`EXISTS (
+              SELECT 1 FROM ${thoughtsTable}
+              WHERE ${thoughtsTable.userId} = ${usersTable.id}
+              AND ${thoughtsTable.embedding} IS NOT NULL
+              LIMIT 1
+            )`
+          )
+        )
+        .limit(maxResults)
+
+      return usersWithEmbeddings.map(user => ({
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname || null,
+        image: user.image || null,
+        profileImage: user.profileImage || null,
+        tags: [],
+        similarity: 0.5, // Default similarity for diverse recommendations
+        proximity: undefined,
+        score: 0.5,
+        reason: null,
+      }))
+    }
   } catch (error) {
     console.error("Error getting embedding-based users:", error)
     return []
