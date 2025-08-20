@@ -1092,15 +1092,15 @@ export default function DiscoverPage() {
                             </Button>
                             <Button
                               onClick={async () => {
-                                const response = await fetch('/api/debug/recommendations-simple');
+                                const response = await fetch('/api/debug/database-users');
                                 const result = await response.json();
-                                console.log('Simple Recommendations Test:', result);
-                                alert(`Users returned: ${result.totalUsers}\n\n${JSON.stringify(result, null, 2)}`);
+                                console.log('Database Test:', result);
+                                alert(`DB Test:\nAll users: ${result.allUsers}\nThoughts w/ embeddings: ${result.thoughtsWithEmbeddings}\nUsers w/ embeddings: ${result.usersWithEmbeddings}\nExcluding current: ${result.usersExcludingCurrent}\n\n${JSON.stringify(result.sampleUsers, null, 2)}`);
                               }}
                               variant="outline"
-                              className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 text-xs"
+                              className="border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-purple-200 text-xs"
                             >
-                              Test API
+                              Test DB
                             </Button>
                           </div>
                         </>
