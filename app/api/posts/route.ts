@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         })
         .from(postsTable)
         .leftJoin(usersTable, eq(postsTable.userId, usersTable.id))
+        .where(eq(postsTable.status, "live")) // Only show live posts
         .orderBy(desc(postsTable.createdAt))
         .limit(50) // Limit for feed
 
@@ -174,7 +175,7 @@ export async function GET(request: NextRequest) {
         })
         .from(postsTable)
         .leftJoin(usersTable, eq(postsTable.userId, usersTable.id))
-        .where(eq(postsTable.userId, cleanUserId))
+        .where(and(eq(postsTable.userId, cleanUserId), eq(postsTable.status, "live"))) // Only show live posts
         .orderBy(desc(postsTable.createdAt))
 
       console.log("Raw posts fetched:", postsWithLikes.length)
@@ -250,6 +251,7 @@ export async function GET(request: NextRequest) {
         })
         .from(postsTable)
         .leftJoin(usersTable, eq(postsTable.userId, usersTable.id))
+        .where(eq(postsTable.status, "live")) // Only show live posts
         .orderBy(desc(postsTable.createdAt))
 
       console.log("Raw posts fetched for legacy:", postsWithLikes.length)
@@ -357,6 +359,13 @@ export async function POST(request: NextRequest) {
     const eventEndTime = formData.get("eventEndTime") as string
     const eventLocation = formData.get("eventLocation") as string
     const maxParticipants = formData.get("maxParticipants") ? parseInt(formData.get("maxParticipants") as string) : 50
+
+    // Scheduled post data
+    const isScheduled = formData.get("isScheduled") === "true"
+    const publishDate = formData.get("publishDate") as string
+    const publishTime = formData.get("publishTime") as string
+    const expiryDate = formData.get("expiryDate") as string
+    const expiryTime = formData.get("expiryTime") as string
     
     // Location data
     const hasLocation = formData.get("hasPrivateLocation") === "true" // Keep the form field name for backwards compatibility
@@ -387,6 +396,11 @@ export async function POST(request: NextRequest) {
       hasLocation,
       locationName: locationName?.substring(0, 50),
       communityName: communityName?.substring(0, 50),
+      isScheduled,
+      publishDate,
+      publishTime,
+      expiryDate,
+      expiryTime,
     })
 
     if (!content?.trim() && !media) {
@@ -423,6 +437,30 @@ export async function POST(request: NextRequest) {
       if (maxParticipants < 1 || maxParticipants > 1000) {
         console.error("❌ VALIDATION ERROR: Invalid max participants")
         return NextResponse.json({ error: "Max participants must be between 1 and 1000" }, { status: 400 })
+      }
+    }
+
+    // Validate scheduled post data if creating a scheduled post
+    if (isScheduled) {
+      if (!publishDate || !publishTime) {
+        console.error("❌ VALIDATION ERROR: Publish date and time are required for scheduled posts")
+        return NextResponse.json({ error: "Publish date and time are required" }, { status: 400 })
+      }
+
+      // Check if publish time is in the future
+      const publishDateTime = new Date(`${publishDate}T${publishTime}`)
+      if (publishDateTime <= new Date()) {
+        console.error("❌ VALIDATION ERROR: Scheduled post must be in the future")
+        return NextResponse.json({ error: "Post must be scheduled for a future time" }, { status: 400 })
+      }
+
+      // Validate expiry time if provided
+      if (expiryDate && expiryTime) {
+        const expiryDateTime = new Date(`${expiryDate}T${expiryTime}`)
+        if (expiryDateTime <= publishDateTime) {
+          console.error("❌ VALIDATION ERROR: Expiry time must be after publish time")
+          return NextResponse.json({ error: "Expiry time must be after publish time" }, { status: 400 })
+        }
       }
     }
 
@@ -491,6 +529,19 @@ export async function POST(request: NextRequest) {
       communityName: communityName?.trim() || null,
     }
 
+    // Set status and timing based on whether it's scheduled
+    if (isScheduled) {
+      postData.status = "scheduled"
+      postData.publishTime = new Date(`${publishDate}T${publishTime}`)
+      if (expiryDate && expiryTime) {
+        postData.expiryTime = new Date(`${expiryDate}T${expiryTime}`)
+      }
+    } else {
+      postData.status = "live"
+      postData.publishTime = null
+      postData.expiryTime = null
+    }
+
     if (mediaType === "image") {
       postData.image = mediaUrl
     } else if (mediaType === "video") {
@@ -503,6 +554,9 @@ export async function POST(request: NextRequest) {
       image: postData.image,
       video: postData.video,
       communityName: postData.communityName,
+      status: postData.status,
+      publishTime: postData.publishTime,
+      expiryTime: postData.expiryTime,
     })
 
     console.log("About to insert post into database...")

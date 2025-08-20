@@ -112,6 +112,9 @@ export const thoughtsTable = pgTable("thoughts", {
   createdAt: timestamp().defaultNow().notNull(),
 })
 
+// Post Status Enum
+export const postStatusEnum = pgEnum("post_status", ["draft", "scheduled", "live", "expired"])
+
 // Posts (transitioning to video-only short form content)
 export const postsTable = pgTable("posts", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -125,6 +128,9 @@ export const postsTable = pgTable("posts", {
   editedVideoData: text("edited_video_data"), // JSON data for video editor projects
   hasPrivateLocation: integer("has_private_location").notNull().default(0), // 0 = no, 1 = yes
   communityName: varchar("community_name", { length: 100 }), // Name for auto-created community
+  status: postStatusEnum("status").notNull().default("live"), // Post status for scheduling
+  publishTime: timestamp("publish_time"), // When to publish (null = immediate)
+  expiryTime: timestamp("expiry_time"), // When to expire/remove from feed (null = never)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })

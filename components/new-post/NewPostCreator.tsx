@@ -35,6 +35,14 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const [eventLocation, setEventLocation] = useState("")
   const [maxParticipants, setMaxParticipants] = useState(50)
 
+  // Scheduled post state
+  const [isScheduled, setIsScheduled] = useState(false)
+  const [publishDate, setPublishDate] = useState("")
+  const [publishTime, setPublishTime] = useState("")
+  const [hasExpiry, setHasExpiry] = useState(false)
+  const [expiryDate, setExpiryDate] = useState("")
+  const [expiryTime, setExpiryTime] = useState("")
+
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -128,6 +136,42 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
       }
     }
 
+    // Validate scheduled post fields
+    if (isScheduled) {
+      if (!publishDate || !publishTime) {
+        toast({
+          title: "Publish time required",
+          description: "Please select when to publish your post",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check if publish time is in the future
+      const publishDateTime = new Date(`${publishDate}T${publishTime}`)
+      if (publishDateTime <= new Date()) {
+        toast({
+          title: "Invalid publish time",
+          description: "Post must be scheduled for a future time",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Validate expiry time if set
+      if (hasExpiry && expiryDate && expiryTime) {
+        const expiryDateTime = new Date(`${expiryDate}T${expiryTime}`)
+        if (expiryDateTime <= publishDateTime) {
+          toast({
+            title: "Invalid expiry time",
+            description: "Expiry time must be after publish time",
+            variant: "destructive",
+          })
+          return
+        }
+      }
+    }
+
     setIsUploading(true)
     
     try {
@@ -150,6 +194,17 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         formData.append('maxParticipants', maxParticipants.toString())
       }
 
+      // Add scheduling data if post is scheduled
+      if (isScheduled) {
+        formData.append('isScheduled', 'true')
+        formData.append('publishDate', publishDate)
+        formData.append('publishTime', publishTime)
+        if (hasExpiry && expiryDate && expiryTime) {
+          formData.append('expiryDate', expiryDate)
+          formData.append('expiryTime', expiryTime)
+        }
+      }
+
       const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
@@ -160,7 +215,7 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         
         toast({
           title: "Success!",
-          description: "Your post has been created",
+          description: isScheduled ? "Your post has been scheduled" : "Your post has been created",
         })
         
         // Clear form
@@ -207,6 +262,14 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
     setEventEndTime("")
     setEventLocation("")
     setMaxParticipants(50)
+    
+    // Reset scheduling fields
+    setIsScheduled(false)
+    setPublishDate("")
+    setPublishTime("")
+    setHasExpiry(false)
+    setExpiryDate("")
+    setExpiryTime("")
     
     onClose()
   }
@@ -297,6 +360,21 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
               Create Live Event
             </Label>
           </div>
+
+          {/* Schedule Post Toggle */}
+          {!isEvent && (
+            <div className="flex items-center space-x-2 p-4 bg-gray-800 rounded-lg">
+              <Switch
+                id="schedule-mode"
+                checked={isScheduled}
+                onCheckedChange={setIsScheduled}
+              />
+              <Label htmlFor="schedule-mode" className="text-white font-medium">
+                <Clock className="w-4 h-4 inline mr-2" />
+                Schedule Post
+              </Label>
+            </div>
+          )}
 
           {/* Event Details (shown when isEvent is true) */}
           {isEvent && (
@@ -426,6 +504,103 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
                   className="bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Schedule Details (shown when isScheduled is true) */}
+          {isScheduled && !isEvent && (
+            <div className="space-y-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  Schedule Post
+                </h3>
+              </div>
+              
+              {/* Auto-activation info */}
+              <div className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <div className="text-sm text-purple-100">
+                    <p className="font-medium mb-1">Automatic Publishing</p>
+                    <p className="text-purple-200">Your post will automatically go live at the scheduled time. You can optionally set an expiry time to remove it from feeds.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Publish Date and Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="publish-date" className="text-sm font-medium text-white">
+                    Publish Date *
+                  </Label>
+                  <Input
+                    id="publish-date"
+                    type="date"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="bg-gray-800 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="publish-time" className="text-sm font-medium text-white">
+                    Publish Time *
+                  </Label>
+                  <Input
+                    id="publish-time"
+                    type="time"
+                    value={publishTime}
+                    onChange={(e) => setPublishTime(e.target.value)}
+                    className="bg-gray-800 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Auto-Expiry Toggle */}
+              <div className="flex items-center space-x-2 p-3 bg-gray-800 rounded-lg">
+                <Switch
+                  id="expiry-mode"
+                  checked={hasExpiry}
+                  onCheckedChange={setHasExpiry}
+                />
+                <Label htmlFor="expiry-mode" className="text-white font-medium">
+                  Set Auto-Expiry Time
+                </Label>
+              </div>
+
+              {/* Expiry Date and Time */}
+              {hasExpiry && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="expiry-date" className="text-sm font-medium text-white">
+                      Expiry Date
+                    </Label>
+                    <Input
+                      id="expiry-date"
+                      type="date"
+                      value={expiryDate}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      min={publishDate || new Date().toISOString().split('T')[0]}
+                      className="bg-gray-800 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="expiry-time" className="text-sm font-medium text-white">
+                      Expiry Time
+                    </Label>
+                    <Input
+                      id="expiry-time"
+                      type="time"
+                      value={expiryTime}
+                      onChange={(e) => setExpiryTime(e.target.value)}
+                      className="bg-gray-800 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
