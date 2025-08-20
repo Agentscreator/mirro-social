@@ -441,11 +441,20 @@ export async function POST(request: NextRequest) {
     // Validate activity timing for auto-live invites
     const hasActivityTiming = activityStartDate && activityStartTime
     if (hasActivityTiming) {
-      // Check if activity start time is in the future
       const activityStartDateTime = new Date(`${activityStartDate}T${activityStartTime}`)
-      if (activityStartDateTime <= new Date()) {
-        console.error("❌ VALIDATION ERROR: Activity must be scheduled for a future time")
-        return NextResponse.json({ error: "Activity must be scheduled for a future time" }, { status: 400 })
+      const now = new Date()
+      
+      // Allow today's date but ensure time is in the future if it's today
+      if (activityStartDate === now.toISOString().split('T')[0]) {
+        // If it's today, check that time is in the future
+        if (activityStartDateTime <= now) {
+          console.error("❌ VALIDATION ERROR: Activity time must be in the future")
+          return NextResponse.json({ error: "Activity time must be in the future" }, { status: 400 })
+        }
+      } else if (activityStartDateTime < new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+        // If it's not today, ensure date is not in the past
+        console.error("❌ VALIDATION ERROR: Activity cannot be scheduled for past dates")
+        return NextResponse.json({ error: "Activity cannot be scheduled for past dates" }, { status: 400 })
       }
 
       // Validate end time if provided

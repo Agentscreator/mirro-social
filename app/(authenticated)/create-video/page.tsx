@@ -223,12 +223,25 @@ export default function CreateVideoPage() {
 
     // Validate activity timing if invites are enabled
     if (enableInvites && activityStartDate && activityStartTime) {
-      // Check if activity start time is in the future
       const activityStartDateTime = new Date(`${activityStartDate}T${activityStartTime}`)
-      if (activityStartDateTime <= new Date()) {
+      const now = new Date()
+      
+      // Allow today's date but ensure time is in the future if it's today
+      if (activityStartDate === now.toISOString().split('T')[0]) {
+        // If it's today, check that time is in the future
+        if (activityStartDateTime <= now) {
+          toast({
+            title: "Invalid activity time",
+            description: "Activity time must be in the future",
+            variant: "destructive",
+          })
+          return
+        }
+      } else if (activityStartDateTime < now.setHours(0, 0, 0, 0)) {
+        // If it's not today, ensure date is not in the past
         toast({
-          title: "Invalid activity time",
-          description: "Activity must be scheduled for a future time",
+          title: "Invalid activity date",
+          description: "Activity cannot be scheduled for past dates",
           variant: "destructive",
         })
         return
@@ -536,7 +549,6 @@ export default function CreateVideoPage() {
                             type="date"
                             value={activityStartDate}
                             onChange={(e) => setActivityStartDate(e.target.value)}
-                            min={new Date().toISOString().split('T')[0]}
                             className="bg-gray-800 border-gray-600 text-white"
                           />
                         </div>
@@ -562,7 +574,7 @@ export default function CreateVideoPage() {
                             type="date"
                             value={activityEndDate}
                             onChange={(e) => setActivityEndDate(e.target.value)}
-                            min={activityStartDate || new Date().toISOString().split('T')[0]}
+                            min={activityStartDate}
                             className="bg-gray-800 border-gray-600 text-white"
                           />
                         </div>

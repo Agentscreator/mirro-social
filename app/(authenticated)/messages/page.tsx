@@ -14,6 +14,7 @@ import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
 import { CommunityStories } from "@/components/messages/CommunityStories"
 import { StoriesFeed } from "@/components/stories/StoriesFeed"
+import { EventCalendar } from "@/components/messages/EventCalendar"
 import { toast } from "@/hooks/use-toast"
 
 export default function MessagesPage() {
@@ -172,6 +173,11 @@ export default function MessagesPage() {
           onToggleAddStory={() => setShowAddStory(!showAddStory)}
         />
       )}
+
+      {/* Event Calendar - Subtle placement */}
+      <div className="px-4 py-2">
+        <EventCalendar />
+      </div>
 
       {/* Conversations List */}
       <div className="flex-1">
