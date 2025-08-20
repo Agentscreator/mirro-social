@@ -10,7 +10,7 @@ import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Logo } from "@/components/logo"
+import { Logo, MirroIcon } from "@/components/logo"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -310,7 +310,7 @@ export default function SignupPage() {
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-xl rounded-full scale-150"></div>
           <div className="relative">
-            <Logo size="lg" />
+            <MirroIcon size="lg" />
           </div>
         </div>
       </div>
