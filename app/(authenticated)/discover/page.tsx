@@ -1081,15 +1081,15 @@ export default function DiscoverPage() {
                             </Button>
                             <Button
                               onClick={async () => {
-                                const response = await fetch('/api/debug/embedding-status');
-                                const status = await response.json();
-                                console.log('Embedding Status:', status);
-                                alert(JSON.stringify(status, null, 2));
+                                const response = await fetch('/api/debug/recommendations');
+                                const debug = await response.json();
+                                console.log('Recommendation Debug:', debug);
+                                alert(JSON.stringify(debug, null, 2));
                               }}
                               variant="outline"
-                              className="border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20 text-gray-300 hover:text-gray-200 text-xs"
+                              className="border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 hover:text-yellow-200 text-xs"
                             >
-                              Debug
+                              Debug Recs
                             </Button>
                           </div>
                         </>
