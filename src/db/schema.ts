@@ -103,7 +103,7 @@ export const thoughtsTable = pgTable("thoughts", {
     .references(() => usersTable.id),
   title: varchar("title", { length: 200 }), // Added from original - nullable
   content: text().notNull(),
-  embedding: text().notNull(),
+  embedding: text(),
   createdAt: timestamp().defaultNow().notNull(),
 })
 

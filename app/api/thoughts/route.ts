@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/src/db"
 import { thoughtsTable } from "@/src/db/schema"
 import { desc, eq } from "drizzle-orm"
-import { getEmbedding } from "@/src/lib/generateEmbeddings"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/src/lib/auth"
 
@@ -59,18 +58,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 })
     }
 
-    // Generate embedding for the content
-    const embedding = await getEmbedding(content)
-    const embeddingStr = JSON.stringify(embedding)
-
-    // Insert the new thought with title
+    // Insert the new thought with title (no embedding initially)
     const [newThought] = await db
       .insert(thoughtsTable)
       .values({
         userId: session.user.id,
         title, // Save the title to database
         content,
-        embedding: embeddingStr,
+        embedding: null, // Will be processed later
       })
       .returning({
         id: thoughtsTable.id,
