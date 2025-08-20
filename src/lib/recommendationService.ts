@@ -398,7 +398,9 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         vector: userEmbedding,
         topK: maxResults * 5, // Get 5x more results to ensure we have enough valid matches
         includeMetadata: true,
-        // Don't filter here - we'll filter results after getting them to avoid Pinecone filter issues
+        filter: {
+          id: { $ne: userId }
+        }
       })
       
       console.log(`Pinecone query returned ${queryResponse.matches?.length || 0} matches`)

@@ -92,6 +92,9 @@ export async function GET(request: NextRequest) {
         vector: userEmbedding,
         topK: 50,
         includeMetadata: true,
+        filter: {
+          id: { $ne: userId }
+        }
       });
 
       debugInfo.steps.push({
