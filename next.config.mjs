@@ -8,6 +8,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    formats: ['image/webp', 'image/avif']
   },
   // This is important for Capacitor to work with Next.js
   trailingSlash: true,
@@ -16,23 +17,46 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   // Disable server-side features when running in Capacitor
   experimental: {
-    // runtime: 'edge', // Removed edge runtime
+    optimizeCss: true,
+    optimizeServerReact: false
   },
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false,
   webpack: (config, { dev, isServer }) => {
-    // Optimize webpack for development
-    if (dev && !isServer) {
+    // Optimize webpack for all builds
+    if (!isServer) {
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
           cacheGroups: {
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
               chunks: 'all',
+              priority: 20
             },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true
+            },
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              chunks: 'all',
+              priority: 30
+            }
           },
         },
+        usedExports: true,
+        sideEffects: false
       }
     }
     
@@ -45,6 +69,15 @@ const nextConfig = {
     // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 2,
   },
+  // Mobile performance optimizations
+  output: 'export',
+  distDir: 'out',
+  assetPrefix: './',
+  compiler: {
+    removeConsole: {
+      exclude: ['error']
+    }
+  }
 }
 
 export default nextConfig

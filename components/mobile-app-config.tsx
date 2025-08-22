@@ -7,25 +7,29 @@ export function MobileAppConfig() {
   useEffect(() => {
     // Configure mobile app specific settings
     const configureMobileApp = () => {
+      // Hardware acceleration for the entire app
+      document.documentElement.style.transform = 'translateZ(0)'
+      document.documentElement.style.willChange = 'transform'
+      
       // Disable context menu on long press (iOS/Android)
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault()
-      })
+      }, { passive: false })
 
       // Disable text selection for app-like feel
       document.addEventListener('selectstart', (e) => {
         e.preventDefault()
-      })
+      }, { passive: false })
 
-      // Prevent zoom on double tap
+      // Prevent zoom on double tap with better performance
       let lastTouchEnd = 0
       document.addEventListener('touchend', (e) => {
-        const now = (new Date()).getTime()
+        const now = performance.now()
         if (now - lastTouchEnd <= 300) {
           e.preventDefault()
         }
         lastTouchEnd = now
-      }, false)
+      }, { passive: false })
 
       // Handle back button for mobile apps
       if (typeof window !== 'undefined' && 'history' in window) {
@@ -57,15 +61,19 @@ export function MobileAppConfig() {
         }
       }
 
-      // Auto-hide address bar on scroll (mobile browsers)
+      // Optimized address bar hiding with throttling
       let ticking = false
+      let hideTimeout: NodeJS.Timeout
       const hideAddressBar = () => {
         if (!ticking) {
-          requestAnimationFrame(() => {
-            window.scrollTo(0, 1)
-            ticking = false
-          })
           ticking = true
+          clearTimeout(hideTimeout)
+          hideTimeout = setTimeout(() => {
+            requestAnimationFrame(() => {
+              window.scrollTo(0, 1)
+              ticking = false
+            })
+          }, 100) // Throttle to reduce CPU usage
         }
       }
 

@@ -4,13 +4,39 @@ import { usePathname, useRouter } from "next/navigation"
 import { Home, Search, User, MessageSquare, Bell, Plus } from "lucide-react"
 import { MirroIcon } from "@/components/logo"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { NewPostCreator } from "@/components/new-post/NewPostCreator"
+import { useState, useCallback, memo } from "react"
 import { toast } from "@/hooks/use-toast"
 import { MessageBadge } from "@/components/messages/MessageBadge"
 import { WatchNavigation } from "@/components/watch-navigation"
 
-export function Navigation() {
+// Lazy load heavy components
+import dynamic from "next/dynamic"
+const NewPostCreator = dynamic(() => import("@/components/new-post/NewPostCreator").then(mod => ({ default: mod.NewPostCreator })), {
+  ssr: false,
+  loading: () => null
+})
+
+// Memoized navigation item component
+const NavigationItem = memo(({ route, className }: { route: any, className?: string }) => (
+  <Link
+    key={route.href}
+    href={route.href}
+    className={cn(
+      "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10",
+      route.active && "bg-white/20",
+      className
+    )}
+    aria-label={route.label}
+  >
+    <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
+    <span className="sr-only">{route.label}</span>
+    {route.href === "/messages" && <MessageBadge />}
+  </Link>
+))
+
+NavigationItem.displayName = "NavigationItem"
+
+function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
@@ -49,7 +75,7 @@ export function Navigation() {
     }
   ]
 
-  const handlePostCreated = (newPost: any) => {
+  const handlePostCreated = useCallback((newPost: any) => {
     console.log("New post created:", newPost);
     toast({
       title: "Success",
@@ -63,7 +89,7 @@ export function Navigation() {
     if (pathname !== '/feed') {
       router.push('/feed');
     }
-  }
+  }, [pathname, router, toast])
 
   return (
     <>
@@ -74,18 +100,7 @@ export function Navigation() {
         </Link>
         <div className="flex flex-col items-center space-y-6">
           {routes.slice(0, 2).map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10",
-                route.active && "bg-white/20",
-              )}
-              aria-label={route.label}
-            >
-              <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
-              <span className="sr-only">{route.label}</span>
-            </Link>
+            <NavigationItem key={route.href} route={route} />
           ))}
           
           {/* Create Video Button */}
@@ -99,19 +114,7 @@ export function Navigation() {
           </Link>
           
           {routes.slice(2).map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10 relative",
-                route.active && "bg-white/20",
-              )}
-              aria-label={route.label}
-            >
-              <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
-              <span className="sr-only">{route.label}</span>
-              {route.href === "/messages" && <MessageBadge />}
-            </Link>
+            <NavigationItem key={route.href} route={route} className="relative" />
           ))}
         </div>
         <div className="h-10"></div> {/* Spacer */}

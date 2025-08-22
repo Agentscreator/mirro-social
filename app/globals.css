@@ -2,6 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile Performance Optimizations */
+@layer utilities {
+  /* Hardware acceleration for smooth transitions */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* Mobile-optimized touch targets */
+  .touch-optimized {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text selection on navigation */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Smooth scrolling with momentum */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Optimized transforms for mobile */
+  .mobile-transform {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Hide scrollbars but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Mobile navigation optimization */
+  .mobile-nav {
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout style paint;
+  }
+  
+  /* Prevent layout shifts */
+  .contain-layout {
+    contain: layout;
+  }
+  
+  /* CPU-friendly animations */
+  .cpu-friendly {
+    animation-fill-mode: both;
+    animation-duration: 0.2s;
+    animation-timing-function: ease-out;
+  }
+}
+
+/* Critical CSS for navigation */
+.navigation-item {
+  transform: translateZ(0);
+  will-change: transform;
+  contain: layout style;
+}
+
+/* Lazy loading optimization */
+.lazy-load {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Optimize images for mobile */
+img {
+  content-visibility: auto;
+  contain-intrinsic-size: 300px 200px;
+}
+
 /* Mobile fixes for full-screen experience */
 @media (max-width: 1023px) {
   html, body {
@@ -216,6 +301,33 @@
     /* Hide address bar more aggressively */
     min-height: 100vh;
     min-height: -webkit-fill-available;
+  }
+  
+  /* Reduce shadow complexity on mobile */
+  .shadow-lg {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Simplify gradients on mobile */
+  .bg-gradient-to-r {
+    background: linear-gradient(90deg, var(--tw-gradient-from), var(--tw-gradient-to));
+  }
+  
+  /* Optimize transforms */
+  .transform {
+    will-change: transform;
+  }
+  
+  /* Optimize button interactions */
+  button, 
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve scroll performance */
+  * {
+    -webkit-overflow-scrolling: touch;
   }
   
   /* FORCE HIDE desktop navigation on mobile and tablets */
@@ -761,6 +873,19 @@
 
 /* Mobile App Specific Styles */
 .mobile-app {
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior: none;
+  
+  /* Prevent zoom on input focus */
+  touch-action: manipulation;
+  
+  /* Better rendering performance */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  
   /* Disable text selection */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -1015,4 +1140,43 @@
   background-image: 
     radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(147, 197, 253, 0.03) 0%, transparent 50%);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Performance-critical animations */
+@keyframes slideInFast {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInFast {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.slide-in-fast {
+  animation: slideInFast 0.15s ease-out;
+}
+
+.fade-in-fast {
+  animation: fadeInFast 0.15s ease-out;
 }
