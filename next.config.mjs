@@ -17,58 +17,23 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   // Disable server-side features when running in Capacitor
   experimental: {
-    optimizeCss: true,
+    // optimizeCss: true, // Disabled due to critters module issue
     optimizeServerReact: false
   },
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
   webpack: (config, { dev, isServer }) => {
-    // Optimize webpack for all builds
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              priority: 20
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true
-            },
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
-              chunks: 'all',
-              priority: 30
-            }
-          },
-        },
-        usedExports: true,
-        sideEffects: false
-      }
-    }
-    
+    // Simplified webpack config to avoid build issues
     return config
   },
-  // Add better error handling
-  onDemandEntries: {
-    // Period (in ms) where the server will keep pages in the buffer
-    maxInactiveAge: 25 * 1000,
-    // Number of pages that should be kept simultaneously without being disposed
-    pagesBufferLength: 2,
-  },
+  // Add better error handling - simplified config
+  // onDemandEntries: {
+  //   // Period (in ms) where the server will keep pages in the buffer
+  //   maxInactiveAge: 25 * 1000,
+  //   // Number of pages that should be kept simultaneously without being disposed
+  //   pagesBufferLength: 2,
+  // },
   // Mobile performance optimizations - disable static export for dynamic app
   // output: 'export',
   // distDir: 'out', 
