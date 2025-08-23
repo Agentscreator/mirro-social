@@ -28,7 +28,10 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run:*)",
       "Read(/c:\\Users\\joshn\\Downloads\\mirro-social/**)",
-      "Read(/c:\\Users\\joshn\\Downloads\\mirro-social/**)"
+      "Read(/c:\\Users\\joshn\\Downloads\\mirro-social/**)",
+      "Read(/c:\\Users\\joshn\\Downloads\\mirro-social/**)",
+      "Read(/c:\\Users\\joshn\\Downloads\\mirro-social/**)",
+      "Bash(timeout 30 npm run build)"
     ],
     "deny": [],
     "additionalDirectories": [

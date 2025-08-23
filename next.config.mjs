@@ -69,10 +69,10 @@ const nextConfig = {
     // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 2,
   },
-  // Mobile performance optimizations
-  output: 'export',
-  distDir: 'out',
-  assetPrefix: './',
+  // Mobile performance optimizations - disable static export for dynamic app
+  // output: 'export',
+  // distDir: 'out', 
+  // assetPrefix: './',
   compiler: {
     removeConsole: {
       exclude: ['error']
