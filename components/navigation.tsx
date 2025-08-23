@@ -36,7 +36,7 @@ const NavigationItem = memo(({ route, className }: { route: any, className?: str
 
 NavigationItem.displayName = "NavigationItem"
 
-function Navigation() {
+export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
