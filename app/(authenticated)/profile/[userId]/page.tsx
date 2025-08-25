@@ -131,15 +131,22 @@ export default function ProfilePage() {
     
     if (videoPosts.length === 0) return
 
-    // Process thumbnails in small batches with delays to prevent blocking
-    const batchSize = 3
+    // Process thumbnails in smaller batches with longer delays to prevent blocking
+    const batchSize = 2 // Reduced batch size
     for (let i = 0; i < videoPosts.length; i += batchSize) {
       const batch = videoPosts.slice(i, i + batchSize)
       
-      // Generate thumbnails for this batch in parallel
+      // Generate thumbnails for this batch in parallel with timeout
       const thumbnailPromises = batch.map(async (post) => {
         try {
-          const thumbnail = await generateVideoThumbnail(post.video!, 1)
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Thumbnail generation timeout')), 5000)
+          )
+          
+          const thumbnailPromise = generateVideoThumbnail(post.video!, 1)
+          const thumbnail = await Promise.race([thumbnailPromise, timeoutPromise]) as string
+          
           setVideoThumbnails(prev => ({ ...prev, [post.id]: thumbnail }))
         } catch (error) {
           console.error(`Failed to generate thumbnail for post ${post.id}:`, error)
@@ -148,9 +155,9 @@ export default function ProfilePage() {
       
       await Promise.allSettled(thumbnailPromises)
       
-      // Small delay between batches to prevent overwhelming the browser
+      // Longer delay between batches to prevent overwhelming the browser
       if (i + batchSize < videoPosts.length) {
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise(resolve => setTimeout(resolve, 300))
       }
     }
   }, [videoThumbnails])
@@ -159,26 +166,35 @@ export default function ProfilePage() {
     async (targetUserId: string, forceRefresh = false) => {
       try {
         setPostsLoading(true)
-        console.log("=== FRONTEND FETCH POSTS DEBUG START ===")
-        console.log("Target user ID:", targetUserId)
-        console.log("Force refresh:", forceRefresh)
 
         if (!forceRefresh) {
           const cachedPosts = sessionStorage.getItem(cacheKey)
           if (cachedPosts) {
             const parsed = JSON.parse(cachedPosts)
             const cacheAge = Date.now() - parsed.timestamp
-            if (cacheAge < 30 * 1000) { // Reduced cache time to 30 seconds for better post visibility
+            if (cacheAge < 60 * 1000) { // Increased cache time to 1 minute
               setPosts(parsed.data)
-              console.log("✅ Posts loaded from cache:", parsed.data.length)
               setPostsLoading(false)
               return
             }
           }
         }
 
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
         const apiUrl = `/api/posts?userId=${targetUserId}&t=${Date.now()}`
-        const postsResponse = await fetch(apiUrl)
+        const postsResponse = await fetch(apiUrl, { 
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+        
+        clearTimeout(timeoutId)
+
         if (postsResponse.ok) {
           const postsData = await postsResponse.json()
           const newPosts = postsData.posts || []
@@ -189,18 +205,26 @@ export default function ProfilePage() {
             timestamp: Date.now(),
           }
           sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
-          console.log("✅ Successfully fetched posts:", newPosts.length)
           
         } else {
-          throw new Error("Failed to fetch posts")
+          throw new Error(`Failed to fetch posts: ${postsResponse.status}`)
         }
       } catch (error: any) {
-        console.error("❌ Error fetching posts:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load posts. Please try again.",
-          variant: "destructive",
-        })
+        if (error.name === 'AbortError') {
+          console.error("Request timeout")
+          toast({
+            title: "Timeout",
+            description: "Request took too long. Please try again.",
+            variant: "destructive",
+          })
+        } else {
+          console.error("❌ Error fetching posts:", error)
+          toast({
+            title: "Error",
+            description: "Failed to load posts. Please try again.",
+            variant: "destructive",
+          })
+        }
       } finally {
         setPostsLoading(false)
       }
@@ -286,16 +310,27 @@ export default function ProfilePage() {
         const targetUserId = userId || session?.user?.id
         if (!targetUserId) return
 
+        // Create abort controller for all requests
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
         // Fetch all data in parallel for better performance
         const fetchTasks = []
 
         // Always fetch profile data
         fetchTasks.push(
-          fetch(`/api/users/profile/${targetUserId}`).then(async (response) => {
+          fetch(`/api/users/profile/${targetUserId}`, { 
+            signal: controller.signal,
+            headers: { 'Cache-Control': 'max-age=120' } // 2 minute cache
+          }).then(async (response) => {
             if (response.ok) {
               const data = await response.json()
               setUser(data.user)
               setEditedAbout(data.user.about || "")
+            }
+          }).catch(error => {
+            if (error.name !== 'AbortError') {
+              console.error("Profile fetch error:", error)
             }
           })
         )
@@ -306,28 +341,46 @@ export default function ProfilePage() {
         // Only fetch follow status and record visit if not own profile
         if (!isOwnProfile) {
           fetchTasks.push(
-            fetch(`/api/users/${targetUserId}/follow-status`).then(async (response) => {
+            fetch(`/api/users/${targetUserId}/follow-status`, { 
+              signal: controller.signal 
+            }).then(async (response) => {
               if (response.ok) {
                 const followData = await response.json()
                 setIsFollowing(followData.isFollowing)
               }
+            }).catch(error => {
+              if (error.name !== 'AbortError') {
+                console.error("Follow status fetch error:", error)
+              }
             })
           )
 
-          fetchTasks.push(
-            fetch(`/api/users/${targetUserId}/visit`, { method: "POST" })
-          )
+          // Visit tracking - fire and forget, don't block UI
+          fetch(`/api/users/${targetUserId}/visit`, { 
+            method: "POST",
+            signal: controller.signal 
+          }).catch(() => {}) // Ignore errors for visit tracking
         }
 
-        // Wait for all requests to complete
-        await Promise.allSettled(fetchTasks)
+        // Wait for critical requests (profile and posts)
+        await Promise.allSettled(fetchTasks.slice(0, 2))
+        clearTimeout(timeoutId)
+        
       } catch (error: any) {
-        console.error("❌ Error fetching profile:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load profile. Please try again.",
-          variant: "destructive",
-        })
+        if (error.name === 'AbortError') {
+          toast({
+            title: "Timeout",
+            description: "Profile loading took too long. Please try again.",
+            variant: "destructive",
+          })
+        } else {
+          console.error("❌ Error fetching profile:", error)
+          toast({
+            title: "Error",
+            description: "Failed to load profile. Please try again.",
+            variant: "destructive",
+          })
+        }
       } finally {
         setLoading(false)
       }
@@ -338,10 +391,14 @@ export default function ProfilePage() {
     }
   }, [userId, session, isOwnProfile, fetchPosts])
 
-  // Generate thumbnails when posts change
+  // Generate thumbnails when posts change - debounced to prevent excessive calls
   useEffect(() => {
     if (posts.length > 0) {
-      generateThumbnailsForPosts(posts)
+      const timeoutId = setTimeout(() => {
+        generateThumbnailsForPosts(posts)
+      }, 500) // Debounce thumbnail generation
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [posts, generateThumbnailsForPosts])
 

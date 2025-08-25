@@ -7,42 +7,119 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
-    formats: ['image/webp', 'image/avif']
+    unoptimized: false, // Enable optimization for better performance
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // This is important for Capacitor to work with Next.js
   trailingSlash: true,
   // Skip API routes in static export
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
-  // Disable server-side features when running in Capacitor
-  experimental: {
-    // optimizeCss: true, // Disabled due to critters module issue
-    optimizeServerReact: false
-  },
   // Performance optimizations
+  experimental: {
+    optimizeCss: true,
+    optimizeServerReact: true,
+    serverComponentsExternalPackages: ['@neondatabase/serverless'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
   compress: true,
   poweredByHeader: false,
+  swcMinify: true,
+  
   webpack: (config, { dev, isServer }) => {
-    // Simplified webpack config to avoid build issues
+    // Performance optimizations
+    if (!dev) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      }
+    }
+    
+    // Reduce bundle size
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname),
+    }
+    
     return config
   },
-  // Add better error handling - simplified config
-  // onDemandEntries: {
-  //   // Period (in ms) where the server will keep pages in the buffer
-  //   maxInactiveAge: 25 * 1000,
-  //   // Number of pages that should be kept simultaneously without being disposed
-  //   pagesBufferLength: 2,
-  // },
-  // Mobile performance optimizations - disable static export for dynamic app
-  // output: 'export',
-  // distDir: 'out', 
-  // assetPrefix: './',
+  
+  // Better caching and performance
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000, // 1 minute
+    pagesBufferLength: 5,
+  },
+  
   compiler: {
-    removeConsole: {
-      exclude: ['error']
-    }
-  }
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false
+  },
+  
+  // Headers for better caching
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=60, stale-while-revalidate=300',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig
