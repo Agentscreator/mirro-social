@@ -42,6 +42,12 @@ function MessagesPageContent() {
     }
   )
 
+  // Debug groups data
+  useEffect(() => {
+    console.log('Groups data:', groups)
+    console.log('Groups loading:', groupsLoading)
+  }, [groups, groupsLoading])
+
   // Add message-page class to body for special styling
   useEffect(() => {
     document.body.classList.add('message-page')
@@ -57,7 +63,31 @@ function MessagesPageContent() {
   }, [])
 
   const handleGroupClick = (groupId: number) => {
-    router.push(`/groups/${groupId}`)
+    console.log('Group clicked:', groupId, typeof groupId)
+    console.log('Navigating to:', `/groups/${groupId}`)
+    
+    // Show a toast to confirm the click is working
+    toast({
+      title: "Opening Group",
+      description: `Opening ${groups.find(g => g.id === groupId)?.name || 'group'}...`,
+    })
+    
+    try {
+      // Try router.push first
+      router.push(`/groups/${groupId}`)
+      
+      // Fallback: use window.location if router fails
+      setTimeout(() => {
+        if (window.location.pathname === '/messages') {
+          console.log('Router navigation may have failed, trying window.location')
+          window.location.href = `/groups/${groupId}`
+        }
+      }, 1000)
+    } catch (error) {
+      console.error('Navigation error:', error)
+      // Fallback navigation
+      window.location.href = `/groups/${groupId}`
+    }
   }
 
   // Use backup conversations if main hook fails
@@ -232,10 +262,16 @@ function MessagesPageContent() {
           <div className="bg-gray-950">
             {/* Group Chats */}
             {groups.map((group) => (
-              <div
+              <button
                 key={`group-${group.id}`}
-                onClick={() => handleGroupClick(group.id)}
-                className="mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  console.log('Group button clicked:', group.id, group.name)
+                  handleGroupClick(group.id)
+                }}
+                className="w-full mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group relative z-10 text-left"
+                type="button"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
@@ -274,7 +310,7 @@ function MessagesPageContent() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
 
             {/* Individual Conversations */}
@@ -356,6 +392,19 @@ function MessagesPageContent() {
                 >
                   Create Group
                 </Button>
+                {/* Debug button for testing navigation */}
+                {groups.length > 0 && (
+                  <Button
+                    onClick={() => {
+                      console.log('Test navigation to first group:', groups[0].id)
+                      router.push(`/groups/${groups[0].id}`)
+                    }}
+                    variant="outline"
+                    className="px-6 py-2.5 rounded-full font-medium"
+                  >
+                    Test Group Nav
+                  </Button>
+                )}
               </div>
             )}
           </div>
