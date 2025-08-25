@@ -68,18 +68,9 @@
   }
 }
 
-/* Message page specific styles */
+/* Message page specific styles - REMOVED PROBLEMATIC STYLES */
 .message-page {
-  /* Hide browser UI on mobile without affecting navigation */
-  height: 100vh;
-  height: 100dvh; /* Dynamic viewport height */
-  overflow: hidden;
-}
-
-/* Prevent double navigation bar flash */
-.message-page .main-nav {
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
+  /* Only apply minimal styling that doesn't block navigation */
 }
 
 /* Mobile viewport fixes */

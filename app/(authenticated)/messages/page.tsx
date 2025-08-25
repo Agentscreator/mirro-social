@@ -48,15 +48,12 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Add message-page class to body for special styling
+  // Minimal setup without navigation-blocking styles
   useEffect(() => {
-    document.body.classList.add('message-page')
-    
-    // Set proper CSS to hide browser UI without blocking navigation
+    // Only set viewport height without blocking navigation
     document.documentElement.style.setProperty('--viewport-height', '100vh')
     
     return () => {
-      document.body.classList.remove('message-page')
       document.documentElement.style.removeProperty('--viewport-height')
     }
   }, [])
@@ -199,7 +196,7 @@ function MessagesPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
+    <div className="min-h-screen bg-gray-950">
 
       {/* Stories Feed */}
       <StoriesFeed />

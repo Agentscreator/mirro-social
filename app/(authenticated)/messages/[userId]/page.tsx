@@ -56,11 +56,12 @@ function MessageBubble({ message, isMe, showAvatar, senderInfo }: {
 }
 
 // Simple Message Composer Component
-function SimpleMessageComposer({ onSendMessage, placeholder, onStartTyping, onStopTyping }: {
+function SimpleMessageComposer({ onSendMessage, placeholder, onStartTyping, onStopTyping, onScrollToBottom }: {
   onSendMessage: (content: string) => Promise<boolean>
   placeholder: string
   onStartTyping?: () => void
   onStopTyping?: () => void
+  onScrollToBottom?: () => void
 }) {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
@@ -105,9 +106,7 @@ function SimpleMessageComposer({ onSendMessage, placeholder, onStartTyping, onSt
   const handleInputFocus = () => {
     // Scroll to bottom when input is focused (keyboard appears)
     setTimeout(() => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
-      }
+      onScrollToBottom?.()
     }, 300) // Delay to account for keyboard animation
   }
 
@@ -512,6 +511,7 @@ function ChatPageContent() {
           placeholder={`Message ${chatUser?.nickname || chatUser?.username || ''}...`}
           onStartTyping={startTyping}
           onStopTyping={stopTyping}
+          onScrollToBottom={scrollToBottom}
         />
       </div>
 
