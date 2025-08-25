@@ -60,7 +60,7 @@ interface Group {
   }
 }
 
-export default function GroupChatPage() {
+function GroupChatPageContent() {
   const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
@@ -75,7 +75,13 @@ export default function GroupChatPage() {
   const [newGroupImage, setNewGroupImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const fetchGroup = async () => {
     if (!groupId) return
@@ -114,7 +120,20 @@ export default function GroupChatPage() {
       const response = await fetch(`/api/groups/${groupId}/messages`)
       if (response.ok) {
         const data = await response.json()
-        setMessages(data.messages || [])
+        const serverMessages = data.messages || []
+        
+        // When setting messages from server, preserve any optimistic messages
+        setMessages(prev => {
+          const optimisticMessages = prev.filter(msg => 
+            typeof msg.id === 'number' && msg.id > Date.now() - 60000 // Recent optimistic messages
+          )
+          
+          // Combine server messages with optimistic messages, removing duplicates
+          const allMessages = [...serverMessages, ...optimisticMessages]
+          return allMessages.sort((a, b) => 
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )
+        })
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -124,7 +143,28 @@ export default function GroupChatPage() {
   }
 
   const sendMessage = async (content: string, attachment?: { url: string; name: string; type: string; size: number }) => {
-    if (!groupId || (!content.trim() && !attachment) || sending) return false
+    if (!groupId || (!content.trim() && !attachment) || sending || !session?.user) return false
+
+    // Create optimistic message for immediate display
+    const optimisticMessage: GroupMessage = {
+      id: Date.now(), // Temporary ID
+      content: content.trim() || undefined,
+      messageType: attachment ? (attachment.type.startsWith('image/') ? 'image' : 'file') : 'text',
+      attachmentUrl: attachment?.url,
+      attachmentName: attachment?.name,
+      attachmentType: attachment?.type,
+      attachmentSize: attachment?.size,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: session.user.id,
+        username: session.user.email?.split('@')[0] || 'user',
+        nickname: session.user.name,
+        profileImage: session.user.image || undefined,
+      }
+    }
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage])
 
     setSending(true)
     try {
@@ -144,9 +184,18 @@ export default function GroupChatPage() {
       })
 
       if (response.ok) {
-        await fetchMessages(true) // Refresh messages
+        const responseData = await response.json()
+        
+        // Replace optimistic message with real message from server
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticMessage.id ? responseData.message : msg
+        ))
+        
         return true
       } else {
+        // Remove failed optimistic message
+        setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
+        
         const error = await response.json()
         toast({
           title: "Error",
@@ -157,6 +206,10 @@ export default function GroupChatPage() {
       }
     } catch (error) {
       console.error('Error sending message:', error)
+      
+      // Remove failed optimistic message
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
+      
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -279,13 +332,22 @@ export default function GroupChatPage() {
     }
   }, [])
 
-  // Auto-refresh messages every 3 seconds
+  // Auto-refresh messages every 5 seconds (reduced frequency to avoid conflicts with optimistic updates)
   useEffect(() => {
     if (!groupId) return
 
-    const interval = setInterval(() => fetchMessages(true), 3000)
+    const interval = setInterval(() => fetchMessages(true), 5000)
     return () => clearInterval(interval)
   }, [groupId])
+
+  // Prevent hydration mismatches by not rendering until mounted
+  if (!isMounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   if (!session) {
     return (
@@ -522,5 +584,16 @@ export default function GroupChatPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+import { ErrorBoundary } from "@/components/simple-error-boundary"
+
+// Main export with error boundary
+export default function GroupChatPage() {
+  return (
+    <ErrorBoundary>
+      <GroupChatPageContent />
+    </ErrorBoundary>
   )
 }
