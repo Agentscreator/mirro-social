@@ -41,38 +41,66 @@ export function useMessages(userId?: string) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
 
-  // Fetch conversations
+  // Fetch conversations with timeout and error handling
   const fetchConversations = useCallback(async () => {
     if (!session?.user?.id) return
 
     try {
-      const response = await fetch('/api/messages')
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      const response = await fetch('/api/messages', {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         const data = await response.json()
         setConversations(data.conversations || [])
       } else {
         console.error('Failed to fetch conversations:', response.status)
+        // Don't throw error, just log it
       }
-    } catch (error) {
-      console.error('Error fetching conversations:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Conversations request timeout')
+      } else {
+        console.error('Error fetching conversations:', error)
+      }
+      // Set empty conversations on error to prevent infinite loading
+      setConversations([])
     } finally {
       setLoading(false)
     }
   }, [session?.user?.id])
 
-  // Fetch messages for specific user
+  // Fetch messages for specific user with timeout and error handling
   const fetchMessages = useCallback(async (targetUserId: string, silent = false) => {
     if (!targetUserId || !session?.user?.id) return
 
     try {
       if (!silent) setLoading(true)
       
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+      
       const response = await fetch(`/api/messages/${targetUserId}`, {
+        signal: controller.signal,
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       })
+      
+      clearTimeout(timeoutId)
       
       if (response.ok) {
         const data = await response.json()
@@ -94,8 +122,12 @@ export function useMessages(userId?: string) {
         console.error('Failed to fetch messages:', response.status)
         if (!silent) setChatUser(null)
       }
-    } catch (error) {
-      console.error('Error fetching messages:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Messages request timeout')
+      } else {
+        console.error('Error fetching messages:', error)
+      }
       if (!silent) setChatUser(null)
     } finally {
       if (!silent) setLoading(false)
@@ -164,20 +196,20 @@ export function useMessages(userId?: string) {
     }
   }, [session?.user?.id])
 
-  // Auto-refresh conversations every 30 seconds
+  // Auto-refresh conversations every 60 seconds (reduced frequency)
   useEffect(() => {
     if (!userId) {
       fetchConversations()
-      const interval = setInterval(fetchConversations, 30000)
+      const interval = setInterval(fetchConversations, 60000) // Increased to 60 seconds
       return () => clearInterval(interval)
     }
   }, [userId, fetchConversations])
 
-  // Auto-refresh messages every 2 seconds when in a chat
+  // Auto-refresh messages every 5 seconds when in a chat (reduced frequency)
   useEffect(() => {
     if (userId && session?.user?.id) {
       fetchMessages(userId, false) // Initial load with loading state
-      const interval = setInterval(() => fetchMessages(userId, true), 2000) // Silent updates
+      const interval = setInterval(() => fetchMessages(userId, true), 5000) // Increased to 5 seconds
       return () => clearInterval(interval)
     }
   }, [userId, session?.user?.id, fetchMessages])

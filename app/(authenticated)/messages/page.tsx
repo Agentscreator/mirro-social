@@ -12,12 +12,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Search, MessageCircle, Plus, Users, FileImage } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
+import { useOptimizedFetch } from "@/hooks/use-optimized-fetch"
 import { CommunityStories } from "@/components/messages/CommunityStories"
 import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { EventCalendar } from "@/components/messages/EventCalendar"
+import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
 
-export default function MessagesPage() {
+function MessagesPageContent() {
   const { data: session } = useSession()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -29,6 +31,16 @@ export default function MessagesPage() {
 
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
+  
+  // Add optimized fetch for conversations as backup
+  const { data: conversationsBackup, loading: conversationsBackupLoading } = useOptimizedFetch<{conversations: any[]}>(
+    session?.user?.id ? '/api/messages' : null,
+    {
+      cache: true,
+      cacheTTL: 30 * 1000, // 30 seconds cache
+      retries: 2
+    }
+  )
 
   // Add message-page class to body for special styling
   useEffect(() => {
@@ -48,7 +60,10 @@ export default function MessagesPage() {
     router.push(`/groups/${groupId}`)
   }
 
-  const filteredConversations = conversations.filter(conv =>
+  // Use backup conversations if main hook fails
+  const activeConversations = conversations.length > 0 ? conversations : (conversationsBackup?.conversations || [])
+  
+  const filteredConversations = activeConversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.nickname?.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -126,6 +141,34 @@ export default function MessagesPage() {
     )
   }
 
+  // Error boundary for failed API calls
+  if (!loading && !conversationsBackupLoading && activeConversations.length === 0 && groups.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+            <MessageCircle className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Something went wrong
+          </h3>
+          <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
+            Unable to load messages. Please check your connection and try again.
+          </p>
+          <Button
+            onClick={() => {
+              setLoading(true)
+              window.location.reload()
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
 
@@ -181,7 +224,7 @@ export default function MessagesPage() {
 
       {/* Conversations List */}
       <div className="flex-1">
-        {loading || groupsLoading ? (
+        {(loading && conversationsBackupLoading) || groupsLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
@@ -374,5 +417,13 @@ export default function MessagesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <ErrorBoundary>
+      <MessagesPageContent />
+    </ErrorBoundary>
   )
 }

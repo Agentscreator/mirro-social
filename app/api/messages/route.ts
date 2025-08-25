@@ -5,6 +5,10 @@ import { db } from "@/src/db"
 import { messagesTable, usersTable } from "@/src/db/schema"
 import { eq, sql } from "drizzle-orm"
 
+// Configure the API route
+export const runtime = 'nodejs'
+export const maxDuration = 30
+
 // GET - Fetch conversations for the current user
 export async function GET(request: NextRequest) {
   try {
@@ -13,9 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("Fetching conversations for user:", session.user.id)
-
-    // First, let's try a simpler approach to debug
+    // Fetch messages more efficiently with a limit
     const allMessages = await db
       .select({
         id: messagesTable.id,
@@ -30,8 +32,7 @@ export async function GET(request: NextRequest) {
         sql`${messagesTable.senderId} = ${session.user.id} OR ${messagesTable.receiverId} = ${session.user.id}`
       )
       .orderBy(sql`${messagesTable.createdAt} DESC`)
-
-    console.log("Found messages:", allMessages.length)
+      .limit(1000) // Limit to prevent excessive data loading
 
     if (allMessages.length === 0) {
       return NextResponse.json({ conversations: [] })
@@ -58,31 +59,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get user details for each conversation
+    // Get user details for each conversation in a single query
     const conversationUserIds = Array.from(conversationMap.keys())
 
     if (conversationUserIds.length === 0) {
       return NextResponse.json({ conversations: [] })
     }
 
-    const users = []
-    for (const userId of conversationUserIds) {
-      const user = await db
-        .select({
-          id: usersTable.id,
-          username: usersTable.username,
-          nickname: usersTable.nickname,
-          profileImage: usersTable.profileImage,
-          image: usersTable.image,
-        })
-        .from(usersTable)
-        .where(eq(usersTable.id, userId))
-        .limit(1)
-
-      if (user.length > 0) {
-        users.push(user[0])
-      }
-    }
+    // Fetch all users in a single query instead of individual queries
+    const users = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        profileImage: usersTable.profileImage,
+        image: usersTable.image,
+      })
+      .from(usersTable)
+      .where(sql`${usersTable.id} IN (${conversationUserIds.map(id => `'${id}'`).join(',')})`)
 
     console.log("Found users:", users.length)
 

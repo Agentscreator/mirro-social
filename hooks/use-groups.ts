@@ -55,15 +55,36 @@ export function useGroups() {
     if (!session?.user?.id) return
 
     try {
-      const response = await fetch('/api/groups')
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
+      const response = await fetch('/api/groups', {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         const data = await response.json()
         setGroups(data.groups || [])
       } else {
         console.error('Failed to fetch groups:', response.status)
+        // Set empty groups on error to prevent infinite loading
+        setGroups([])
       }
-    } catch (error) {
-      console.error('Error fetching groups:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Groups request timeout')
+      } else {
+        console.error('Error fetching groups:', error)
+      }
+      // Set empty groups on error to prevent infinite loading
+      setGroups([])
     } finally {
       setLoading(false)
     }
