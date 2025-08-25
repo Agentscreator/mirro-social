@@ -48,13 +48,24 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Minimal setup without navigation-blocking styles
+  // Hide browser address bar on mobile without blocking navigation
   useEffect(() => {
-    // Only set viewport height without blocking navigation
-    document.documentElement.style.setProperty('--viewport-height', '100vh')
+    // Add class for mobile styling
+    document.body.classList.add('mobile-hide-nav')
+    
+    // Simple scroll to hide address bar on mobile
+    const hideAddressBar = () => {
+      if (window.innerHeight < window.outerHeight) {
+        window.scrollTo(0, 1)
+      }
+    }
+    
+    // Hide address bar after a short delay
+    const timer = setTimeout(hideAddressBar, 100)
     
     return () => {
-      document.documentElement.style.removeProperty('--viewport-height')
+      document.body.classList.remove('mobile-hide-nav')
+      clearTimeout(timer)
     }
   }, [])
 
@@ -62,28 +73,8 @@ function MessagesPageContent() {
     console.log('Group clicked:', groupId, typeof groupId)
     console.log('Navigating to:', `/groups/${groupId}`)
     
-    // Show a toast to confirm the click is working
-    toast({
-      title: "Opening Group",
-      description: `Opening ${groups.find(g => g.id === groupId)?.name || 'group'}...`,
-    })
-    
-    try {
-      // Try router.push first
-      router.push(`/groups/${groupId}`)
-      
-      // Fallback: use window.location if router fails
-      setTimeout(() => {
-        if (window.location.pathname === '/messages') {
-          console.log('Router navigation may have failed, trying window.location')
-          window.location.href = `/groups/${groupId}`
-        }
-      }, 1000)
-    } catch (error) {
-      console.error('Navigation error:', error)
-      // Fallback navigation
-      window.location.href = `/groups/${groupId}`
-    }
+    // Use router.push without any blocking mechanisms
+    router.push(`/groups/${groupId}`)
   }
 
   // Use backup conversations if main hook fails
@@ -376,7 +367,10 @@ function MessagesPageContent() {
             {!searchQuery && (
               <div className="flex gap-3">
                 <Button
-                  onClick={() => router.push('/discover')}
+                  onClick={() => {
+                    console.log('Navigating to discover...')
+                    router.push('/discover')
+                  }}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
                 >
                   Start Chatting
@@ -388,19 +382,27 @@ function MessagesPageContent() {
                 >
                   Create Group
                 </Button>
-                {/* Debug button for testing navigation */}
-                {groups.length > 0 && (
-                  <Button
-                    onClick={() => {
-                      console.log('Test navigation to first group:', groups[0].id)
-                      router.push(`/groups/${groups[0].id}`)
-                    }}
-                    variant="outline"
-                    className="px-6 py-2.5 rounded-full font-medium"
-                  >
-                    Test Group Nav
-                  </Button>
-                )}
+                {/* Debug buttons for testing navigation */}
+                <Button
+                  onClick={() => {
+                    console.log('Testing navigation to feed...')
+                    router.push('/feed')
+                  }}
+                  variant="outline"
+                  className="px-6 py-2.5 rounded-full font-medium"
+                >
+                  Test Feed Nav
+                </Button>
+                <Button
+                  onClick={() => {
+                    console.log('Testing navigation to profile...')
+                    router.push('/profile')
+                  }}
+                  variant="outline"
+                  className="px-6 py-2.5 rounded-full font-medium"
+                >
+                  Test Profile Nav
+                </Button>
               </div>
             )}
           </div>

@@ -68,30 +68,21 @@
   }
 }
 
-/* Message page specific styles - REMOVED PROBLEMATIC STYLES */
-.message-page {
-  /* Only apply minimal styling that doesn't block navigation */
-}
-
-/* Mobile viewport fixes */
-@supports (height: 100dvh) {
-  .message-page {
-    height: 100dvh;
-  }
-}
-
-/* Keyboard handling for mobile */
+/* Hide browser address bar on mobile without blocking navigation */
 @media (max-width: 768px) {
-  .message-page {
-    /* Use CSS environment variables for safe areas */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+  html {
+    /* Hide address bar by scrolling */
+    scroll-behavior: smooth;
   }
-}
-
-/* Fix for iOS Safari address bar */
-@supports (-webkit-touch-callout: none) {
-  .message-page {
-    height: -webkit-fill-available;
+  
+  body {
+    /* Ensure proper mobile viewport */
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  /* Hide extra navigation bars on mobile */
+  .mobile-hide-nav {
+    padding-top: 1px;
   }
 }

@@ -259,31 +259,17 @@ function ChatPageContent() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  // Fix viewport and keyboard issues
+  // Handle viewport changes for mobile keyboard only
   useEffect(() => {
-    // Prevent navigation blocking
-    const handleBeforeUnload = () => {
-      // Allow navigation
-      return undefined
-    }
-    
     // Handle viewport changes for mobile keyboard
     const handleViewportChange = () => {
       // Scroll to bottom when keyboard appears/disappears
       setTimeout(scrollToBottom, 100)
     }
     
-    window.addEventListener('beforeunload', handleBeforeUnload)
     window.addEventListener('resize', handleViewportChange)
     
-    // Set proper viewport meta for mobile
-    const viewport = document.querySelector('meta[name="viewport"]')
-    if (viewport) {
-      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover')
-    }
-    
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('resize', handleViewportChange)
     }
   }, [scrollToBottom])
