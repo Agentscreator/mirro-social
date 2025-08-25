@@ -1,4 +1,5 @@
 // Service Worker for caching and performance optimization
+/* global self, caches, clients */
 
 const CACHE_NAME = 'mirro-social-v1'
 const STATIC_CACHE = 'mirro-static-v1'

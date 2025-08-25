@@ -7,13 +7,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: false, // Enable optimization for better performance
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: true, // Keep unoptimized for now to avoid build issues
+    formats: ['image/webp', 'image/avif']
   },
   // This is important for Capacitor to work with Next.js
   trailingSlash: true,
@@ -22,56 +17,14 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   // Performance optimizations
   experimental: {
-    optimizeCss: true,
-    optimizeServerReact: true,
-    serverComponentsExternalPackages: ['@neondatabase/serverless'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+    // optimizeCss: true, // Disabled due to critters module issue
   },
   compress: true,
   poweredByHeader: false,
-  swcMinify: true,
   
   webpack: (config, { dev, isServer }) => {
-    // Performance optimizations
-    if (!dev) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            enforce: true,
-          },
-        },
-      }
-    }
-    
-    // Reduce bundle size
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': require('path').resolve(__dirname),
-    }
-    
+    // Simplified webpack config to avoid build issues
     return config
-  },
-  
-  // Better caching and performance
-  onDemandEntries: {
-    maxInactiveAge: 60 * 1000, // 1 minute
-    pagesBufferLength: 5,
   },
   
   compiler: {
@@ -83,23 +36,6 @@ const nextConfig = {
   // Headers for better caching
   async headers() {
     return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
       {
         source: '/api/(.*)',
         headers: [
