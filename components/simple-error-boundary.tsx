@@ -23,6 +23,15 @@ export class SimpleErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo)
+    
+    // Check for hydration errors (React error #310 is often hydration related)
+    const isHydrationError = error.message.includes('Minified React error #310') || 
+                            error.message.includes('hydration') ||
+                            errorInfo.componentStack?.includes('hydration')
+                            
+    if (isHydrationError) {
+      console.warn('Hydration error detected, may recover automatically on next render')
+    }
   }
 
   render() {

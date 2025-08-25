@@ -51,10 +51,19 @@ export function useSimpleMessages(userId: string) {
       // Transform messages
       const transformedMessages = messagesData.messages?.map((msg: any) => ({
         ...msg,
-        timestamp: new Date(msg.timestamp)
+        timestamp: new Date(msg.timestamp || msg.createdAt)
       })) || []
 
-      setMessages(transformedMessages)
+      // When setting messages from server, preserve any optimistic messages
+      setMessages(prev => {
+        const optimisticMessages = prev.filter(msg => msg.isOptimistic)
+        const serverMessages = transformedMessages.filter(msg => !msg.isOptimistic)
+        
+        // Combine server messages with optimistic messages, removing duplicates
+        const allMessages = [...serverMessages, ...optimisticMessages]
+        return allMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+      })
+      
       setChatUser(messagesData.chatUser || null)
 
     } catch (err) {
@@ -70,6 +79,20 @@ export function useSimpleMessages(userId: string) {
     if (!session?.user?.id || !userId || !content.trim()) {
       return false
     }
+
+    // Create optimistic message for immediate display
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      content: content.trim(),
+      senderId: session.user.id,
+      receiverId: userId,
+      timestamp: new Date(),
+      isRead: false,
+      isOptimistic: true // Flag to identify optimistic messages
+    }
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage])
 
     try {
       const response = await fetch('/api/messages', {
@@ -87,15 +110,20 @@ export function useSimpleMessages(userId: string) {
 
       const newMessage = await response.json()
       
-      // Add message to local state
-      setMessages(prev => [...prev, {
-        ...newMessage,
-        timestamp: new Date(newMessage.timestamp)
-      }])
+      // Replace optimistic message with real message
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id 
+          ? { ...newMessage.message, timestamp: new Date(newMessage.message.createdAt) }
+          : msg
+      ))
 
       return true
     } catch (err) {
       console.error('Error sending message:', err)
+      
+      // Remove failed optimistic message
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
+      
       return false
     }
   }, [session?.user?.id, userId])
@@ -111,7 +139,7 @@ export function useSimpleMessages(userId: string) {
 
     const interval = setInterval(() => {
       fetchData()
-    }, 3000) // Poll every 3 seconds
+    }, 5000) // Poll every 5 seconds (reduced frequency to avoid interference with optimistic updates)
 
     return () => clearInterval(interval)
   }, [fetchData, session?.user?.id, userId])

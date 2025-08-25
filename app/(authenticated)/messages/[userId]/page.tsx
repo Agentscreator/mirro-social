@@ -197,7 +197,13 @@ function ChatPageContent() {
   const userId = params?.userId as string
   
   const [showUserProfile, setShowUserProfile] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const { messages, chatUser, loading, sendMessage } = useSimpleMessages(userId)
   const { isOtherUserTyping, startTyping, stopTyping } = useSimpleTyping(userId)
@@ -221,17 +227,24 @@ function ChatPageContent() {
     e?.stopPropagation()
     
     try {
-      // Use window.history for safer navigation
-      if (window.history.length > 1) {
-        window.history.back()
-      } else {
-        window.location.href = '/messages'
+      // Use Next.js router for safer navigation with fallback
+      if (typeof window !== 'undefined') {
+        // Check if we can go back in history
+        if (document.referrer && document.referrer.includes('/messages')) {
+          router.back()
+        } else {
+          // Fallback to messages page
+          router.push('/messages')
+        }
       }
     } catch (error) {
       console.error('Navigation error:', error)
-      window.location.href = '/messages'
+      // Final fallback to direct navigation
+      if (typeof window !== 'undefined') {
+        window.location.href = '/messages'
+      }
     }
-  }, [])
+  }, [router])
 
   useEffect(() => {
     scrollToBottom()
@@ -265,6 +278,15 @@ function ChatPageContent() {
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
     return `${days}d ago`
+  }
+
+  // Prevent hydration mismatches by not rendering until mounted
+  if (!isMounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   if (!session) {
