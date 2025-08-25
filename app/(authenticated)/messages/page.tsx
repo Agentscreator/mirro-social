@@ -52,13 +52,12 @@ function MessagesPageContent() {
   useEffect(() => {
     document.body.classList.add('message-page')
     
-    // Scroll down initially to hide browser UI (double navigation fix)
-    setTimeout(() => {
-      window.scrollTo(0, 140)
-    }, 100)
+    // Set proper CSS to hide browser UI without blocking navigation
+    document.documentElement.style.setProperty('--viewport-height', '100vh')
     
     return () => {
       document.body.classList.remove('message-page')
+      document.documentElement.style.removeProperty('--viewport-height')
     }
   }, [])
 
@@ -174,7 +173,7 @@ function MessagesPageContent() {
   // Error boundary for failed API calls
   if (!loading && !conversationsBackupLoading && activeConversations.length === 0 && groups.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-950 -mx-4 -my-4 md:-mx-6 md:-my-8">
+      <div className="min-h-screen bg-gray-950">
         <div className="flex flex-col items-center justify-center py-16 px-4">
           <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
             <MessageCircle className="h-12 w-12 text-gray-400" />

@@ -9,12 +9,59 @@ import { eq, sql } from "drizzle-orm"
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-// GET - Fetch conversations for the current user
+// GET - Fetch conversations for the current user OR specific chat messages
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+
+    // If userId is provided, fetch messages for that specific chat
+    if (userId) {
+      const messages = await db
+        .select({
+          id: messagesTable.id,
+          senderId: messagesTable.senderId,
+          receiverId: messagesTable.receiverId,
+          content: messagesTable.content,
+          timestamp: messagesTable.createdAt,
+          isRead: messagesTable.isRead,
+        })
+        .from(messagesTable)
+        .where(
+          sql`(${messagesTable.senderId} = ${session.user.id} AND ${messagesTable.receiverId} = ${userId}) OR (${messagesTable.senderId} = ${userId} AND ${messagesTable.receiverId} = ${session.user.id})`
+        )
+        .orderBy(sql`${messagesTable.createdAt} ASC`)
+        .limit(100)
+
+      // Get chat user info
+      const chatUser = await db
+        .select({
+          id: usersTable.id,
+          username: usersTable.username,
+          nickname: usersTable.nickname,
+          profileImage: usersTable.profileImage,
+          image: usersTable.image,
+        })
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1)
+
+      return NextResponse.json({
+        messages: messages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })),
+        chatUser: chatUser[0] ? {
+          ...chatUser[0],
+          profileImage: chatUser[0].profileImage || chatUser[0].image,
+          isOnline: false
+        } : null
+      })
     }
 
     // Fetch messages more efficiently with a limit
@@ -67,21 +114,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all users in a single query instead of individual queries
-    const users = await db
-      .select({
-        id: usersTable.id,
-        username: usersTable.username,
-        nickname: usersTable.nickname,
-        profileImage: usersTable.profileImage,
-        image: usersTable.image,
+    const users = await Promise.all(
+      conversationUserIds.map(async (userId) => {
+        const user = await db
+          .select({
+            id: usersTable.id,
+            username: usersTable.username,
+            nickname: usersTable.nickname,
+            profileImage: usersTable.profileImage,
+            image: usersTable.image,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId))
+          .limit(1)
+        
+        return user[0]
       })
-      .from(usersTable)
-      .where(sql`${usersTable.id} IN (${conversationUserIds.map(id => `'${id}'`).join(',')})`)
+    )
 
-    console.log("Found users:", users.length)
+    const validUsers = users.filter(Boolean)
+    console.log("Found users:", validUsers.length)
 
     // Format the response
-    const formattedConversations = users.map(user => {
+    const formattedConversations = validUsers.map(user => {
       const conv = conversationMap.get(user.id)
       const lastMessage = conv.lastMessage
 
@@ -159,8 +214,12 @@ export async function POST(request: NextRequest) {
       .returning()
 
     return NextResponse.json({
-      message: newMessage[0],
-      success: "Message sent successfully",
+      id: newMessage[0].id,
+      content: newMessage[0].content,
+      senderId: newMessage[0].senderId,
+      receiverId: newMessage[0].receiverId,
+      timestamp: newMessage[0].createdAt,
+      isRead: newMessage[0].isRead,
     })
   } catch (error) {
     console.error("Error sending message:", error)

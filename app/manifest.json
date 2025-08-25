@@ -7,7 +7,10 @@
   "background_color": "#000000",
   "theme_color": "#3B82F6",
   "orientation": "portrait-primary",
-  "categories": ["social", "lifestyle"],
+  "categories": [
+    "social",
+    "lifestyle"
+  ],
   "lang": "en",
   "dir": "ltr",
   "icons": [

@@ -102,6 +102,15 @@ function SimpleMessageComposer({ onSendMessage, placeholder, onStartTyping, onSt
     }, 1000)
   }
 
+  const handleInputFocus = () => {
+    // Scroll to bottom when input is focused (keyboard appears)
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+      }
+    }, 300) // Delay to account for keyboard animation
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -131,6 +140,7 @@ function SimpleMessageComposer({ onSendMessage, placeholder, onStartTyping, onSt
           value={message}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
+          onFocus={handleInputFocus}
           className="border-0 bg-transparent focus:ring-0 rounded-full px-4 py-2 flex-1"
           disabled={sending}
         />
@@ -250,6 +260,35 @@ function ChatPageContent() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
+  // Fix viewport and keyboard issues
+  useEffect(() => {
+    // Prevent navigation blocking
+    const handleBeforeUnload = () => {
+      // Allow navigation
+      return undefined
+    }
+    
+    // Handle viewport changes for mobile keyboard
+    const handleViewportChange = () => {
+      // Scroll to bottom when keyboard appears/disappears
+      setTimeout(scrollToBottom, 100)
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('resize', handleViewportChange)
+    
+    // Set proper viewport meta for mobile
+    const viewport = document.querySelector('meta[name="viewport"]')
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover')
+    }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('resize', handleViewportChange)
+    }
+  }, [scrollToBottom])
+
   const formatMessageTime = (date: Date) => {
     const now = new Date()
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
@@ -338,7 +377,7 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden" style={{ height: '100vh', maxHeight: '100vh' }}>
       {/* WhatsApp-style Header */}
       <div className="flex items-center bg-green-600 text-white px-4 py-3 shadow-md">
         <Button
@@ -392,7 +431,7 @@ function ChatPageContent() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 pb-4 relative min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 py-2 pb-4 relative min-h-0" style={{ paddingBottom: 'env(keyboard-inset-height, 1rem)' }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
