@@ -321,8 +321,43 @@ export default function FeedPage() {
   };
 
 
+  // Show loading if no session, but timeout after reasonable time
+  const [showAuthError, setShowAuthError] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!session) {
+        setShowAuthError(true);
+      }
+    }, 5000); // Show error after 5 seconds of no session
+
+    return () => clearTimeout(timer);
+  }, [session]);
+
   // Show loading if no session
   if (!session) {
+    if (showAuthError) {
+      return (
+        <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+          <div className="flex flex-col items-center gap-6 px-8 max-w-md text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
+              <div className="text-red-400 text-2xl">⚠️</div>
+            </div>
+            <div>
+              <h2 className="text-white text-xl font-semibold mb-2">Authentication Required</h2>
+              <p className="text-white/70 text-sm mb-6">You need to be signed in to access the feed.</p>
+              <Button 
+                onClick={() => router.push("/login")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+              >
+                Go to Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

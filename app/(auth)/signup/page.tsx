@@ -229,12 +229,20 @@ export default function SignupPage() {
       })
 
       if (result?.error) {
-        throw new Error("Failed to login after registration")
+        console.error("Auto-login failed:", result.error)
+        // Instead of throwing error, redirect to login page with success message
+        router.push("/login?message=Account created successfully! Please log in.")
+        return
       }
 
-      // Redirect to feed page
-      router.push("/feed")
-      router.refresh()
+      if (result?.ok) {
+        // Redirect to feed page only if login was successful
+        router.push("/feed")
+        router.refresh()
+      } else {
+        // If login failed for unknown reason, redirect to login
+        router.push("/login?message=Account created successfully! Please log in.")
+      }
     } catch (error) {
       console.error("Registration error:", error)
       setError(error instanceof Error ? error.message : "An error occurred during registration")
