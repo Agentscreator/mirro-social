@@ -18,7 +18,7 @@ import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { EventCalendar } from "@/components/messages/EventCalendar"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
-import { isMobileDevice, isNativeApp, hideAddressBar, forceNavigation, removeNavigationBlocks } from "@/lib/mobile-utils"
+import { isMobileDevice, isNativeApp, hideAddressBar } from "@/lib/mobile-utils"
 
 function MessagesPageContent() {
   const { data: session } = useSession()
@@ -29,6 +29,7 @@ function MessagesPageContent() {
   const [groupDescription, setGroupDescription] = useState("")
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [showAddStory, setShowAddStory] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
@@ -49,39 +50,54 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Simplified navigation fix
+  // Simple page mount logging and navigation setup
   useEffect(() => {
     console.log('Messages page mounted')
     
-    // Only apply fixes for mobile web (not native apps)
-    if (isMobileDevice() && !isNativeApp()) {
-      hideAddressBar()
-      removeNavigationBlocks()
-    }
-    
-    // Ensure navigation works
-    const enableNavigation = () => {
-      document.body.style.pointerEvents = 'auto'
-      document.body.style.userSelect = 'auto'
-    }
-    
-    enableNavigation()
+    // Ensure navigation works by removing any blocking styles
+    const style = document.createElement('style')
+    style.id = 'messages-page-fix'
+    style.textContent = `
+      .messages-page * {
+        pointer-events: auto !important;
+        user-select: auto !important;
+      }
+      .messages-page button {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+      }
+    `
+    document.head.appendChild(style)
     
     return () => {
-      // Cleanup
+      const existingStyle = document.getElementById('messages-page-fix')
+      if (existingStyle) {
+        existingStyle.remove()
+      }
     }
   }, [])
 
   const handleGroupClick = (groupId: number) => {
-    console.log('Group clicked:', groupId)
-    const path = `/groups/${groupId}`
+    if (isNavigating) return
     
-    // Use router for navigation, fallback to force navigation if needed
+    console.log('Group clicked:', groupId)
+    setIsNavigating(true)
+    
     try {
-      router.push(path)
+      router.push(`/groups/${groupId}`)
+      
+      // Fallback navigation if router fails
+      setTimeout(() => {
+        if (window.location.pathname.includes('/messages') && !window.location.pathname.includes(`/groups/${groupId}`)) {
+          console.log('Router failed, using fallback navigation')
+          window.location.href = `/groups/${groupId}`
+        }
+        setIsNavigating(false)
+      }, 1000)
     } catch (error) {
-      console.log('Router failed, using force navigation')
-      forceNavigation(path)
+      console.error('Navigation error:', error)
+      window.location.href = `/groups/${groupId}`
+      setIsNavigating(false)
     }
   }
 
@@ -94,15 +110,26 @@ function MessagesPageContent() {
   )
 
   const handleConversationClick = (userId: string) => {
-    console.log('Conversation clicked:', userId)
-    const path = `/messages/${userId}`
+    if (isNavigating) return
     
-    // Use router for navigation, fallback to force navigation if needed
+    console.log('Conversation clicked:', userId)
+    setIsNavigating(true)
+    
     try {
-      router.push(path)
+      router.push(`/messages/${userId}`)
+      
+      // Fallback navigation if router fails
+      setTimeout(() => {
+        if (window.location.pathname === '/messages') {
+          console.log('Router failed, using fallback navigation')
+          window.location.href = `/messages/${userId}`
+        }
+        setIsNavigating(false)
+      }, 1000)
     } catch (error) {
-      console.log('Router failed, using force navigation')
-      forceNavigation(path)
+      console.error('Navigation error:', error)
+      window.location.href = `/messages/${userId}`
+      setIsNavigating(false)
     }
   }
 
@@ -191,7 +218,6 @@ function MessagesPageContent() {
           </p>
           <Button
             onClick={() => {
-              setLoading(true)
               window.location.reload()
             }}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
@@ -204,7 +230,7 @@ function MessagesPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-950 messages-page">
       {/* Stories Feed */}
       <StoriesFeed />
 
@@ -270,11 +296,17 @@ function MessagesPageContent() {
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
-                  console.log('Group button clicked:', group.id, group.name)
+                  console.log('Group clicked:', group.id, group.name)
                   handleGroupClick(group.id)
                 }}
-                className="w-full mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group relative z-10 text-left"
+                className="w-full mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group relative text-left"
                 type="button"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleGroupClick(group.id)
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
@@ -318,10 +350,15 @@ function MessagesPageContent() {
 
             {/* Individual Conversations */}
             {filteredConversations.map((conversation, index) => (
-              <div
+              <button
                 key={conversation.id}
-                onClick={() => handleConversationClick(conversation.userId)}
-                className="px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleConversationClick(conversation.userId)
+                }}
+                className="w-full px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700 text-left"
+                type="button"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
@@ -364,7 +401,7 @@ function MessagesPageContent() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         ) : (
