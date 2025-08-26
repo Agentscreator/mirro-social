@@ -1,0 +1,102 @@
+/* Native App Specific Styles */
+
+/* Hide duplicate navigation elements on native apps */
+.native-app .fixed.top-0.right-0 {
+  display: none !important;
+}
+
+/* Native app layout improvements */
+.native-app-layout {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Native app navigation styling */
+.native-app .fixed.bottom-0 {
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+/* Improve touch targets for native apps */
+.native-app button,
+.native-app a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Native app specific scrolling */
+.native-app {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Hide web-specific elements on native */
+.native-app .web-only {
+  display: none !important;
+}
+
+/* Mobile web specific styles */
+.mobile-web {
+  /* Keep original mobile web styles */
+}
+
+/* Desktop web specific styles */
+.desktop-web {
+  /* Keep original desktop styles */
+}
+
+/* Force navigation to work */
+.force-navigation * {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
+/* Native app messages page improvements */
+.native-app .min-h-screen {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* Native app safe areas */
+.native-app .pb-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+}
+
+.native-app .pt-safe-top {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+.native-app .px-safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.native-app .px-safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Improve native app performance */
+.native-app {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Native app specific button styles */
+.native-app button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Hide hamburger menu on native apps */
+.native-app .hamburger-menu {
+  display: none !important;
+}
+
+/* Native app status bar handling */
+.native-app .status-bar-safe {
+  padding-top: env(safe-area-inset-top);
+}

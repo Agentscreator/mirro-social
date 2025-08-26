@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { Menu, Settings, HelpCircle, LogOut, Bell, AlertTriangle } from "lucide-react"
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { isNativeApp } from "@/lib/mobile-utils"
 
 interface HamburgerMenuProps {
   className?: string
@@ -21,6 +22,16 @@ interface HamburgerMenuProps {
 export function HamburgerMenu({ className }: HamburgerMenuProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [isNative, setIsNative] = useState(false)
+
+  useEffect(() => {
+    setIsNative(isNativeApp())
+  }, [])
+
+  // Hide hamburger menu on native apps
+  if (isNative) {
+    return null
+  }
 
   const handleAccountSettings = () => {
     router.push("/settings")

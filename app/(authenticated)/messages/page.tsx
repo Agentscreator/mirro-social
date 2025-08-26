@@ -18,7 +18,7 @@ import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { EventCalendar } from "@/components/messages/EventCalendar"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
-import { isMobileDevice, isNativeApp, hideAddressBar, forceNavigation } from "@/lib/mobile-utils"
+import { isMobileDevice, isNativeApp, hideAddressBar, forceNavigation, removeNavigationBlocks } from "@/lib/mobile-utils"
 
 function MessagesPageContent() {
   const { data: session } = useSession()
@@ -49,51 +49,38 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Mobile-specific setup
+  // Simplified navigation fix
   useEffect(() => {
-    // Hide address bar on mobile web (not native apps)
+    console.log('Messages page mounted')
+    
+    // Only apply fixes for mobile web (not native apps)
     if (isMobileDevice() && !isNativeApp()) {
       hideAddressBar()
+      removeNavigationBlocks()
     }
     
-    // Remove any navigation blocking
-    const removeNavigationBlocks = () => {
-      // Remove any event listeners that might block navigation
-      document.removeEventListener('beforeunload', () => {})
-      
-      // Ensure body can scroll normally
-      document.body.style.overflow = 'auto'
-      document.documentElement.style.overflow = 'auto'
+    // Ensure navigation works
+    const enableNavigation = () => {
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.userSelect = 'auto'
     }
     
-    removeNavigationBlocks()
+    enableNavigation()
     
     return () => {
       // Cleanup
-      document.body.style.overflow = ''
-      document.documentElement.style.overflow = ''
     }
   }, [])
 
   const handleGroupClick = (groupId: number) => {
-    console.log('Group clicked:', groupId, typeof groupId)
-    console.log('Navigating to:', `/groups/${groupId}`)
-    
-    // Force navigation to ensure it works
+    console.log('Group clicked:', groupId)
     const path = `/groups/${groupId}`
     
+    // Use router for navigation, fallback to force navigation if needed
     try {
       router.push(path)
-      
-      // Fallback for stubborn cases
-      setTimeout(() => {
-        if (window.location.pathname === '/messages') {
-          console.log('Router failed, using force navigation')
-          forceNavigation(path)
-        }
-      }, 500)
     } catch (error) {
-      console.error('Navigation error:', error)
+      console.log('Router failed, using force navigation')
       forceNavigation(path)
     }
   }
@@ -107,20 +94,14 @@ function MessagesPageContent() {
   )
 
   const handleConversationClick = (userId: string) => {
+    console.log('Conversation clicked:', userId)
     const path = `/messages/${userId}`
     
+    // Use router for navigation, fallback to force navigation if needed
     try {
       router.push(path)
-      
-      // Fallback for stubborn cases
-      setTimeout(() => {
-        if (window.location.pathname === '/messages') {
-          console.log('Router failed, using force navigation')
-          forceNavigation(path)
-        }
-      }, 500)
     } catch (error) {
-      console.error('Navigation error:', error)
+      console.log('Router failed, using force navigation')
       forceNavigation(path)
     }
   }
@@ -224,7 +205,6 @@ function MessagesPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-
       {/* Stories Feed */}
       <StoriesFeed />
 
@@ -403,19 +383,7 @@ function MessagesPageContent() {
             {!searchQuery && (
               <div className="flex gap-3">
                 <Button
-                  onClick={() => {
-                    console.log('Navigating to discover...')
-                    try {
-                      router.push('/discover')
-                      setTimeout(() => {
-                        if (window.location.pathname === '/messages') {
-                          forceNavigation('/discover')
-                        }
-                      }, 500)
-                    } catch (error) {
-                      forceNavigation('/discover')
-                    }
-                  }}
+                  onClick={() => router.push('/discover')}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
                 >
                   Start Chatting
@@ -426,45 +394,6 @@ function MessagesPageContent() {
                   className="px-6 py-2.5 rounded-full font-medium"
                 >
                   Create Group
-                </Button>
-                {/* Debug buttons for testing navigation */}
-                <Button
-                  onClick={() => {
-                    console.log('Testing navigation to feed...')
-                    try {
-                      router.push('/feed')
-                      setTimeout(() => {
-                        if (window.location.pathname === '/messages') {
-                          forceNavigation('/feed')
-                        }
-                      }, 500)
-                    } catch (error) {
-                      forceNavigation('/feed')
-                    }
-                  }}
-                  variant="outline"
-                  className="px-6 py-2.5 rounded-full font-medium"
-                >
-                  Test Feed Nav
-                </Button>
-                <Button
-                  onClick={() => {
-                    console.log('Testing navigation to profile...')
-                    try {
-                      router.push('/profile')
-                      setTimeout(() => {
-                        if (window.location.pathname === '/messages') {
-                          forceNavigation('/profile')
-                        }
-                      }, 500)
-                    } catch (error) {
-                      forceNavigation('/profile')
-                    }
-                  }}
-                  variant="outline"
-                  className="px-6 py-2.5 rounded-full font-medium"
-                >
-                  Test Profile Nav
                 </Button>
               </div>
             )}
