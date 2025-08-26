@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Navigation } from "./navigation"
+import { InstagramNavigation } from "./instagram-navigation"
 import { WatchLayout } from "./watch-layout"
 import { WatchFeed } from "./watch-feed"
 import { WatchMessages } from "./watch-messages"
@@ -38,7 +38,7 @@ export function ResponsiveLayout({ children, className }: ResponsiveLayoutProps)
     <>
       {/* Standard layout for mobile/desktop */}
       <div className="watch:hidden">
-        <Navigation />
+        <InstagramNavigation />
         <main className={cn(
           "min-h-screen bg-black text-white",
           "lg:ml-16", // Account for desktop sidebar

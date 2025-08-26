@@ -137,6 +137,8 @@ export async function GET(request: NextRequest) {
         and(
           // Only posts with videos - allow both image and video posts for now during transition
           sql`(${postsTable.video} IS NOT NULL OR ${postsTable.image} IS NOT NULL)`,
+          // Exclude user's own posts from feed
+          sql`${postsTable.userId} != ${session.user.id}`,
           // Filter by feed type
           feedType === "following" && followingUserIds.length > 0 
             ? inArray(postsTable.userId, followingUserIds)

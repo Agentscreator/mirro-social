@@ -2,7 +2,7 @@
 "use client"
 import type React from "react"
 import { usePathname } from "next/navigation"
-import { Navigation } from "@/components/navigation"
+import { InstagramNavigation } from "@/components/instagram-navigation"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { HamburgerMenu } from "@/components/hamburger-menu"
 import { StreamProvider } from '@/components/providers/StreamProvider'
@@ -71,7 +71,7 @@ export default function AuthenticatedLayout({
           <StreamVideoProvider>
             <div className="flex min-h-screen flex-col bg-black native-app-layout">
               {/* Native app navigation - simplified */}
-              <Navigation />
+              <InstagramNavigation />
               
               {/* Native app main content - no extra padding/margins */}
               <main className={`flex-1 bg-black ${isInActiveConversation ? 'pb-0' : 'pb-20'}`}>
@@ -98,7 +98,7 @@ export default function AuthenticatedLayout({
       <StreamProvider>
         <StreamVideoProvider>
           <div className="flex min-h-screen flex-col md:flex-row bg-black">
-            <Navigation />
+            <InstagramNavigation />
             {/* Top header with notifications - hidden on feed page and native apps */}
             {!isFeedPage && !isNative && (
               <div className="fixed top-0 right-0 z-40 p-4 lg:ml-16">
