@@ -18,6 +18,7 @@ import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { EventCalendar } from "@/components/messages/EventCalendar"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
+import { isMobileDevice, isNativeApp, hideAddressBar, forceNavigation } from "@/lib/mobile-utils"
 
 function MessagesPageContent() {
   const { data: session } = useSession()
@@ -48,24 +49,29 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Hide browser address bar on mobile without blocking navigation
+  // Mobile-specific setup
   useEffect(() => {
-    // Add class for mobile styling
-    document.body.classList.add('mobile-hide-nav')
-    
-    // Simple scroll to hide address bar on mobile
-    const hideAddressBar = () => {
-      if (window.innerHeight < window.outerHeight) {
-        window.scrollTo(0, 1)
-      }
+    // Hide address bar on mobile web (not native apps)
+    if (isMobileDevice() && !isNativeApp()) {
+      hideAddressBar()
     }
     
-    // Hide address bar after a short delay
-    const timer = setTimeout(hideAddressBar, 100)
+    // Remove any navigation blocking
+    const removeNavigationBlocks = () => {
+      // Remove any event listeners that might block navigation
+      document.removeEventListener('beforeunload', () => {})
+      
+      // Ensure body can scroll normally
+      document.body.style.overflow = 'auto'
+      document.documentElement.style.overflow = 'auto'
+    }
+    
+    removeNavigationBlocks()
     
     return () => {
-      document.body.classList.remove('mobile-hide-nav')
-      clearTimeout(timer)
+      // Cleanup
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
     }
   }, [])
 
@@ -73,8 +79,23 @@ function MessagesPageContent() {
     console.log('Group clicked:', groupId, typeof groupId)
     console.log('Navigating to:', `/groups/${groupId}`)
     
-    // Use router.push without any blocking mechanisms
-    router.push(`/groups/${groupId}`)
+    // Force navigation to ensure it works
+    const path = `/groups/${groupId}`
+    
+    try {
+      router.push(path)
+      
+      // Fallback for stubborn cases
+      setTimeout(() => {
+        if (window.location.pathname === '/messages') {
+          console.log('Router failed, using force navigation')
+          forceNavigation(path)
+        }
+      }, 500)
+    } catch (error) {
+      console.error('Navigation error:', error)
+      forceNavigation(path)
+    }
   }
 
   // Use backup conversations if main hook fails
@@ -86,7 +107,22 @@ function MessagesPageContent() {
   )
 
   const handleConversationClick = (userId: string) => {
-    router.push(`/messages/${userId}`)
+    const path = `/messages/${userId}`
+    
+    try {
+      router.push(path)
+      
+      // Fallback for stubborn cases
+      setTimeout(() => {
+        if (window.location.pathname === '/messages') {
+          console.log('Router failed, using force navigation')
+          forceNavigation(path)
+        }
+      }, 500)
+    } catch (error) {
+      console.error('Navigation error:', error)
+      forceNavigation(path)
+    }
   }
 
   const handleCreateGroup = async () => {
@@ -369,7 +405,16 @@ function MessagesPageContent() {
                 <Button
                   onClick={() => {
                     console.log('Navigating to discover...')
-                    router.push('/discover')
+                    try {
+                      router.push('/discover')
+                      setTimeout(() => {
+                        if (window.location.pathname === '/messages') {
+                          forceNavigation('/discover')
+                        }
+                      }, 500)
+                    } catch (error) {
+                      forceNavigation('/discover')
+                    }
                   }}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
                 >
@@ -386,7 +431,16 @@ function MessagesPageContent() {
                 <Button
                   onClick={() => {
                     console.log('Testing navigation to feed...')
-                    router.push('/feed')
+                    try {
+                      router.push('/feed')
+                      setTimeout(() => {
+                        if (window.location.pathname === '/messages') {
+                          forceNavigation('/feed')
+                        }
+                      }, 500)
+                    } catch (error) {
+                      forceNavigation('/feed')
+                    }
                   }}
                   variant="outline"
                   className="px-6 py-2.5 rounded-full font-medium"
@@ -396,7 +450,16 @@ function MessagesPageContent() {
                 <Button
                   onClick={() => {
                     console.log('Testing navigation to profile...')
-                    router.push('/profile')
+                    try {
+                      router.push('/profile')
+                      setTimeout(() => {
+                        if (window.location.pathname === '/messages') {
+                          forceNavigation('/profile')
+                        }
+                      }, 500)
+                    } catch (error) {
+                      forceNavigation('/profile')
+                    }
                   }}
                   variant="outline"
                   className="px-6 py-2.5 rounded-full font-medium"

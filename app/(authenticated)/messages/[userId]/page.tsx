@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Send, MoreVertical, Smile, Paperclip, Phone, Video, MessageCircle } from "lucide-react"
 import { useSimpleMessages, useSimpleTyping } from "@/hooks/use-simple-messages"
+import { forceNavigation } from "@/lib/mobile-utils"
 
 // WhatsApp-style Message Bubble Component
 function MessageBubble({ message, isMe, showAvatar, senderInfo }: {
@@ -235,23 +236,22 @@ function ChatPageContent() {
     e?.preventDefault()
     e?.stopPropagation()
     
+    console.log('Back navigation clicked')
+    
     try {
-      // Use Next.js router for safer navigation with fallback
-      if (typeof window !== 'undefined') {
-        // Check if we can go back in history
-        if (document.referrer && document.referrer.includes('/messages')) {
-          router.back()
-        } else {
-          // Fallback to messages page
-          router.push('/messages')
+      // Try router first
+      router.push('/messages')
+      
+      // Force navigation if router fails
+      setTimeout(() => {
+        if (window.location.pathname.includes('/messages/')) {
+          console.log('Router failed, using force navigation')
+          forceNavigation('/messages')
         }
-      }
+      }, 500)
     } catch (error) {
       console.error('Navigation error:', error)
-      // Final fallback to direct navigation
-      if (typeof window !== 'undefined') {
-        window.location.href = '/messages'
-      }
+      forceNavigation('/messages')
     }
   }, [router])
 
@@ -532,7 +532,17 @@ function ChatPageContent() {
                 className="flex-1"
                 onClick={() => {
                   setShowUserProfile(false)
-                  router.push(`/profile/${chatUser.id}`)
+                  const path = `/profile/${chatUser.id}`
+                  try {
+                    router.push(path)
+                    setTimeout(() => {
+                      if (window.location.pathname.includes('/messages/')) {
+                        forceNavigation(path)
+                      }
+                    }, 500)
+                  } catch (error) {
+                    forceNavigation(path)
+                  }
                 }}
               >
                 View Profile

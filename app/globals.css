@@ -68,21 +68,49 @@
   }
 }
 
-/* Hide browser address bar on mobile without blocking navigation */
+/* Mobile-specific styles for native app detection */
 @media (max-width: 768px) {
-  html {
-    /* Hide address bar by scrolling */
+  /* Hide browser address bar on mobile web only */
+  html:not(.native-app) {
     scroll-behavior: smooth;
   }
   
   body {
-    /* Ensure proper mobile viewport */
     min-height: 100vh;
     min-height: 100dvh;
   }
   
-  /* Hide extra navigation bars on mobile */
-  .mobile-hide-nav {
-    padding-top: 1px;
+  /* Force hide duplicate navigation bars */
+  .mobile-web {
+    /* Hide browser chrome */
+    -webkit-appearance: none;
   }
+  
+  /* Hide extra navigation on mobile web */
+  .mobile-web .browser-nav,
+  .mobile-web .duplicate-nav {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+/* Native app specific styles */
+.native-app {
+  /* Full screen for native apps */
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Force navigation to work */
+.force-navigation * {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
+/* Ensure no overflow issues block navigation */
+body, html {
+  overflow-x: hidden;
+  overflow-y: auto;
 }

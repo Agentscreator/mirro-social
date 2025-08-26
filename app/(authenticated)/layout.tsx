@@ -27,6 +27,31 @@ export default function AuthenticatedLayout({
     requestNotificationPermission()
   }, [])
 
+  // Detect and setup mobile/native app environment
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Detect native app
+      const isNative = !!(window as any).Capacitor
+      
+      // Add appropriate classes
+      if (isNative) {
+        document.documentElement.classList.add('native-app')
+        document.body.classList.add('native-app')
+      } else {
+        document.documentElement.classList.add('mobile-web')
+        document.body.classList.add('mobile-web')
+      }
+      
+      // Force navigation to work
+      document.body.classList.add('force-navigation')
+      
+      return () => {
+        document.documentElement.classList.remove('native-app', 'mobile-web')
+        document.body.classList.remove('native-app', 'mobile-web', 'force-navigation')
+      }
+    }
+  }, [])
+
   return (
     <ErrorBoundary>
       <StreamProvider>
