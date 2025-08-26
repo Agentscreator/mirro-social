@@ -20,9 +20,10 @@ export function InstagramNavigation() {
   }, [])
 
   // Hide navigation during active conversations but show on main messages page
-  const isInActiveConversation = (pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)) && pathname !== "/messages"
+  const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
+  const isMainMessagesPage = pathname === "/messages"
   
-  if (isInActiveConversation) {
+  if (isInActiveConversation && !isMainMessagesPage) {
     return null
   }
 

@@ -776,23 +776,9 @@ export default function DiscoverPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-light text-white">Discover</h1>
-          {thoughts.length > 0 && (
-            <Button
-              onClick={() => setShowThoughtsUpload(!showThoughtsUpload)}
-              variant="outline"
-              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl"
-              style={{
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1)',
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)'
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {showThoughtsUpload ? 'Hide' : 'Add Thoughts'}
-            </Button>
-          )}
         </div>
 
-        <div className="relative mb-8">
+        <div className="relative mb-4">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
             placeholder="Search users..."
@@ -892,6 +878,23 @@ export default function DiscoverPage() {
           )}
         </div>
 
+        {/* Add Thoughts Button - Under Search Bar */}
+        {thoughts.length > 0 && (
+          <div className="mb-8 flex justify-center">
+            <Button
+              onClick={() => setShowThoughtsUpload(!showThoughtsUpload)}
+              variant="outline"
+              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl"
+              style={{
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1)',
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)'
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {showThoughtsUpload ? 'Hide' : 'Add Thoughts'}
+            </Button>
+          </div>
+        )}
 
         {/* Main Content */}
         {!showSearchResults && (

@@ -129,7 +129,13 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
         } catch (permError) {
           console.error('❌ Error with native camera permissions:', permError);
           console.log('Falling back to getUserMedia...');
-          // Continue to try getUserMedia as fallback
+          
+          // For native apps, show a more explicit error message
+          if (isNativeApp()) {
+            setPermissionDenied(true);
+            return;
+          }
+          // Continue to try getUserMedia as fallback for web
         }
       } else {
         // Web browser permission handling
