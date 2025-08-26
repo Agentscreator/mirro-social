@@ -27,10 +27,21 @@ export async function POST(req: Request) {
     } = body
 
     // Validate required fields
-    if (!username || !email || !password || !dob || !nickname) {
-      console.log('Missing required fields:', { username: !!username, email: !!email, password: !!password, dob: !!dob, nickname: !!nickname })
+    if (!username || !email || !password || !dob || !nickname || !gender || !genderPreference || !preferredAgeMin || !preferredAgeMax || !proximity) {
+      console.log('Missing required fields:', { 
+        username: !!username, 
+        email: !!email, 
+        password: !!password, 
+        dob: !!dob, 
+        nickname: !!nickname,
+        gender: !!gender,
+        genderPreference: !!genderPreference,
+        preferredAgeMin: !!preferredAgeMin,
+        preferredAgeMax: !!preferredAgeMax,
+        proximity: !!proximity
+      })
       return NextResponse.json(
-        { error: "Missing required fields: username, email, password, dob, and nickname are required" },
+        { error: "Missing required fields: username, email, password, dob, nickname, gender, genderPreference, preferredAgeMin, preferredAgeMax, and proximity are required" },
         { status: 400 }
       )
     }
@@ -124,6 +135,11 @@ export async function POST(req: Request) {
           password: hashedPassword,
           nickname,
           dob,
+          gender,
+          genderPreference,
+          preferredAgeMin: parseInt(preferredAgeMin.toString()),
+          preferredAgeMax: parseInt(preferredAgeMax.toString()),
+          proximity,
           timezone: timezone || "UTC",
           metro_area: metro_area || "Unknown",
           latitude: latitude ? parseFloat(latitude.toString()) : 0.0,
