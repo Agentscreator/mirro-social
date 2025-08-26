@@ -118,8 +118,27 @@ const VideoFeedItem = ({
       }
     };
 
+    const handleForceVideoPlay = async (event: CustomEvent) => {
+      try {
+        const { postId } = event.detail;
+        if (postId === post.id) {
+          video.muted = true;
+          await video.play();
+          setIsPlaying(true);
+          console.log('🎬 Force video play triggered for post:', post.id);
+        }
+      } catch (error) {
+        console.error('Force video play failed:', error);
+      }
+    };
+
     window.addEventListener('initialAutoplayTrigger', handleInitialAutoplay);
-    return () => window.removeEventListener('initialAutoplayTrigger', handleInitialAutoplay);
+    window.addEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
+    
+    return () => {
+      window.removeEventListener('initialAutoplayTrigger', handleInitialAutoplay);
+      window.removeEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
+    };
   }, [isActive, post.id]);
 
   // Aggressive autoplay attempt when video becomes active

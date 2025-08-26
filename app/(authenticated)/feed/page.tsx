@@ -167,17 +167,25 @@ export default function FeedPage() {
     if (!loading && getCurrentPosts().length > 0 && currentVideoIndex === 0 && activeTab !== "live") {
       const triggerAutoplay = () => {
         window.dispatchEvent(new CustomEvent('initialAutoplayTrigger'));
+        // Also trigger a more specific event for the first video
+        window.dispatchEvent(new CustomEvent('forceVideoPlay', { 
+          detail: { videoIndex: 0, postId: getCurrentPosts()[0]?.id } 
+        }));
       };
 
-      triggerAutoplay();
+      // Multiple attempts to ensure autoplay works
       const timer1 = setTimeout(triggerAutoplay, 100);
-      const timer2 = setTimeout(triggerAutoplay, 500);
-      const timer3 = setTimeout(triggerAutoplay, 1000);
+      const timer2 = setTimeout(triggerAutoplay, 300);
+      const timer3 = setTimeout(triggerAutoplay, 500);
+      const timer4 = setTimeout(triggerAutoplay, 1000);
+      const timer5 = setTimeout(triggerAutoplay, 2000);
       
       return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
         clearTimeout(timer3);
+        clearTimeout(timer4);
+        clearTimeout(timer5);
       };
     }
   }, [loading, getCurrentPosts().length, currentVideoIndex, activeTab]);
@@ -391,77 +399,79 @@ export default function FeedPage() {
         {/* Feed Tabs */}
         <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/60 to-transparent">
           <div className="px-4 pt-8 pb-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm">
-                <TabsTrigger 
-                  value="explore" 
-                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
-                >
-                  For You
-                  {activeTab === "explore" && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+            <div className="flex items-center justify-between">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+                <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm">
+                  <TabsTrigger 
+                    value="explore" 
+                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                  >
+                    For You
+                    {activeTab === "explore" && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="following" 
+                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                  >
+                    Following
+                    {activeTab === "following" && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="live" 
+                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                  >
+                    Live
+                    {activeTab === "live" && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Search Bar - Beside Live tab */}
+              {activeTab !== "live" && (
+                <div className="ml-4">
+                  {showSearchBar ? (
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
+                      <Input
+                        placeholder="Search..."
+                        className="pl-10 pr-10 py-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-sm focus:bg-white/20 transition-all text-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        autoFocus={true}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-6 h-6"
+                        onClick={() => {
+                          setShowSearchBar(false);
+                          setSearchQuery("");
+                        }}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-white hover:bg-white/10 rounded-full w-10 h-10"
+                      onClick={() => setShowSearchBar(true)}
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
                   )}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="following" 
-                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
-                >
-                  Following
-                  {activeTab === "following" && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="live" 
-                  className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
-                >
-                  Live
-                  {activeTab === "live" && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Search Bar */}
-        {activeTab !== "live" && (
-          <div className="absolute top-20 right-4 z-40">
-            {showSearchBar ? (
-              <div className="relative w-80">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
-                <Input
-                  placeholder="Search..."
-                  className="pl-12 pr-12 py-3 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-sm focus:bg-white/20 transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus={true}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-8 h-8"
-                  onClick={() => {
-                    setShowSearchBar(false);
-                    setSearchQuery("");
-                  }}
-                >
-                  ✕
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/10 rounded-full w-12 h-12"
-                onClick={() => setShowSearchBar(true)}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
-        )}
 
         {/* Tab Content */}
         <Tabs value={activeTab} className="h-full">
