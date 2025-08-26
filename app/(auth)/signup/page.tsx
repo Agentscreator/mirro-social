@@ -37,7 +37,6 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     dob: "",
-    gender: "",
     timezone: "",
   })
 
@@ -171,11 +170,6 @@ export default function SignupPage() {
       return
     }
 
-    // Validate required fields
-    if (!formData.gender) {
-      setError("Please select your gender")
-      return
-    }
 
     // Submit the form directly since we only have one step
     handleSubmit(new Event('submit') as any)
@@ -201,7 +195,6 @@ export default function SignupPage() {
         password: formData.password,
         nickname: formData.nickname.trim(),
         dob: formatDOBForAPI(formData.dob),
-        gender: formData.gender,
         timezone: formData.timezone,
       }
 
@@ -340,20 +333,6 @@ export default function SignupPage() {
                 />
                 {dobError && <p className="text-sm text-red-400 font-medium">{dobError}</p>}
                 <p className="text-sm text-gray-500">You must be at least 16 years old to join</p>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="gender" className="text-white font-medium text-sm tracking-wide">Gender</Label>
-                <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
-                  <SelectTrigger className="bg-gray-900/60 border border-gray-700/50 text-white h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm">
-                    <SelectValue placeholder="Select your gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="non-binary">Non-binary</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-3">
                 <Label htmlFor="password" className="text-white font-medium text-sm tracking-wide">Password</Label>

@@ -27,17 +27,16 @@ export async function POST(req: Request) {
     } = body
 
     // Validate required fields
-    if (!username || !email || !password || !dob || !nickname || !gender) {
+    if (!username || !email || !password || !dob || !nickname) {
       console.log('Missing required fields:', { 
         username: !!username, 
         email: !!email, 
         password: !!password, 
         dob: !!dob, 
-        nickname: !!nickname,
-        gender: !!gender
+        nickname: !!nickname
       })
       return NextResponse.json(
-        { error: "Missing required fields: username, email, password, dob, nickname, and gender are required" },
+        { error: "Missing required fields: username, email, password, dob, and nickname are required" },
         { status: 400 }
       )
     }
@@ -131,7 +130,7 @@ export async function POST(req: Request) {
           password: hashedPassword,
           nickname,
           dob,
-          gender,
+          gender: gender || "other",
           genderPreference: genderPreference || "all",
           preferredAgeMin: preferredAgeMin ? parseInt(preferredAgeMin.toString()) : 18,
           preferredAgeMax: preferredAgeMax ? parseInt(preferredAgeMax.toString()) : 100,
