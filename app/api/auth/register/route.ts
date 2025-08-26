@@ -27,21 +27,17 @@ export async function POST(req: Request) {
     } = body
 
     // Validate required fields
-    if (!username || !email || !password || !dob || !nickname || !gender || !genderPreference || !preferredAgeMin || !preferredAgeMax || !proximity) {
+    if (!username || !email || !password || !dob || !nickname || !gender) {
       console.log('Missing required fields:', { 
         username: !!username, 
         email: !!email, 
         password: !!password, 
         dob: !!dob, 
         nickname: !!nickname,
-        gender: !!gender,
-        genderPreference: !!genderPreference,
-        preferredAgeMin: !!preferredAgeMin,
-        preferredAgeMax: !!preferredAgeMax,
-        proximity: !!proximity
+        gender: !!gender
       })
       return NextResponse.json(
-        { error: "Missing required fields: username, email, password, dob, nickname, gender, genderPreference, preferredAgeMin, preferredAgeMax, and proximity are required" },
+        { error: "Missing required fields: username, email, password, dob, nickname, and gender are required" },
         { status: 400 }
       )
     }
@@ -136,10 +132,10 @@ export async function POST(req: Request) {
           nickname,
           dob,
           gender,
-          genderPreference,
-          preferredAgeMin: parseInt(preferredAgeMin.toString()),
-          preferredAgeMax: parseInt(preferredAgeMax.toString()),
-          proximity,
+          genderPreference: genderPreference || "all",
+          preferredAgeMin: preferredAgeMin ? parseInt(preferredAgeMin.toString()) : 18,
+          preferredAgeMax: preferredAgeMax ? parseInt(preferredAgeMax.toString()) : 100,
+          proximity: proximity || "anywhere",
           timezone: timezone || "UTC",
           metro_area: metro_area || "Unknown",
           latitude: latitude ? parseFloat(latitude.toString()) : 0.0,

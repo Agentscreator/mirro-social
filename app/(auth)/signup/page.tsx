@@ -38,10 +38,6 @@ export default function SignupPage() {
     confirmPassword: "",
     dob: "",
     gender: "",
-    genderPreference: "",
-    preferredAgeMin: "",
-    preferredAgeMax: "",
-    proximity: "",
     timezone: "",
   })
 
@@ -181,28 +177,6 @@ export default function SignupPage() {
       return
     }
 
-    if (!formData.genderPreference) {
-      setError("Please select your gender preference")
-      return
-    }
-
-    if (!formData.preferredAgeMin || !formData.preferredAgeMax) {
-      setError("Please enter your preferred age range")
-      return
-    }
-
-    const ageMin = parseInt(formData.preferredAgeMin)
-    const ageMax = parseInt(formData.preferredAgeMax)
-    if (ageMin < 18 || ageMax > 100 || ageMin >= ageMax) {
-      setError("Please enter a valid age range (18-100)")
-      return
-    }
-
-    if (!formData.proximity) {
-      setError("Please select your proximity preference")
-      return
-    }
-
     // Submit the form directly since we only have one step
     handleSubmit(new Event('submit') as any)
   }
@@ -228,10 +202,6 @@ export default function SignupPage() {
         nickname: formData.nickname.trim(),
         dob: formatDOBForAPI(formData.dob),
         gender: formData.gender,
-        genderPreference: formData.genderPreference,
-        preferredAgeMin: parseInt(formData.preferredAgeMin),
-        preferredAgeMax: parseInt(formData.preferredAgeMax),
-        proximity: formData.proximity,
         timezone: formData.timezone,
       }
 
@@ -382,66 +352,6 @@ export default function SignupPage() {
                     <SelectItem value="female">Female</SelectItem>
                     <SelectItem value="non-binary">Non-binary</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="genderPreference" className="text-white font-medium text-sm tracking-wide">Gender Preference</Label>
-                <Select value={formData.genderPreference} onValueChange={(value) => setFormData(prev => ({ ...prev, genderPreference: value }))}>
-                  <SelectTrigger className="bg-gray-900/60 border border-gray-700/50 text-white h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm">
-                    <SelectValue placeholder="Select your preference" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="non-binary">Non-binary</SelectItem>
-                    <SelectItem value="all">All</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="preferredAgeMin" className="text-white font-medium text-sm tracking-wide">Min Age</Label>
-                  <Input
-                    id="preferredAgeMin"
-                    name="preferredAgeMin"
-                    type="number"
-                    placeholder="18"
-                    min="18"
-                    max="100"
-                    value={formData.preferredAgeMin}
-                    onChange={handleChange}
-                    required
-                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="preferredAgeMax" className="text-white font-medium text-sm tracking-wide">Max Age</Label>
-                  <Input
-                    id="preferredAgeMax"
-                    name="preferredAgeMax"
-                    type="number"
-                    placeholder="35"
-                    min="18"
-                    max="100"
-                    value={formData.preferredAgeMax}
-                    onChange={handleChange}
-                    required
-                    className="bg-gray-900/60 border border-gray-700/50 text-white placeholder:text-gray-500 h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="proximity" className="text-white font-medium text-sm tracking-wide">Distance Preference</Label>
-                <Select value={formData.proximity} onValueChange={(value) => setFormData(prev => ({ ...prev, proximity: value }))}>
-                  <SelectTrigger className="bg-gray-900/60 border border-gray-700/50 text-white h-14 text-base rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:border-gray-600/70 backdrop-blur-sm">
-                    <SelectValue placeholder="Select distance preference" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nearby">Nearby (5 miles)</SelectItem>
-                    <SelectItem value="local">Local (15 miles)</SelectItem>
-                    <SelectItem value="regional">Regional (50 miles)</SelectItem>
-                    <SelectItem value="anywhere">Anywhere</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
