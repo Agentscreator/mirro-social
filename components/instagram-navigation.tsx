@@ -23,10 +23,9 @@ export function InstagramNavigation() {
   const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
   const isMainMessagesPage = pathname === "/messages"
   
-  // Don't hide navigation completely - this might be causing the stuck issue
-  // if (isInActiveConversation && !isMainMessagesPage) {
-  //   return null
-  // }
+  if (isInActiveConversation && !isMainMessagesPage) {
+    return null
+  }
 
   const routes = [
     {
