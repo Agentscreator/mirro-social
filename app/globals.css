@@ -126,6 +126,18 @@ video {
   z-index: 1;
 }
 
+/* Ensure feed page works on mobile */
+@media (max-width: 768px) {
+  .feed-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+}
+
 /* Ensure no overflow issues block navigation */
 body, html {
   overflow-x: hidden;

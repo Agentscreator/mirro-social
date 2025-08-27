@@ -426,7 +426,7 @@ export default function FeedPage() {
   return (
     <>
       <div 
-        className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-30 feed-container feed-page"
+        className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-10 feed-container feed-page"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >

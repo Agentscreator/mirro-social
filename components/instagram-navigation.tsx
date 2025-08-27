@@ -106,7 +106,7 @@ export function InstagramNavigation() {
       </div>
 
       {/* Mobile web navigation (bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom block md:hidden">
         <div className="flex h-16 items-center justify-around px-2">
           {routes.slice(0, 2).map((route) => (
             <Link
@@ -131,13 +131,13 @@ export function InstagramNavigation() {
           
           {/* Create Video Button - Centered */}
           <Link
-            href="/create-video"
+            href="/feed-test"
             className="flex flex-col items-center justify-center p-2"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 shadow-lg">
               <Plus className="h-6 w-6 text-white" />
             </div>
-            <span className="mt-0.5 text-[10px] font-medium text-white">Create</span>
+            <span className="mt-0.5 text-[10px] font-medium text-white">Test</span>
           </Link>
           
           {routes.slice(2).map((route) => (
