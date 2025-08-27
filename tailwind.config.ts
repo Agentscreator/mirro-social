@@ -30,7 +30,16 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "sans-serif"],
+        sans: [
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif"
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
