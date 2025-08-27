@@ -29,10 +29,10 @@ export function InstagramNavigation() {
 
   const routes = [
     {
-      href: "/feed",
+      href: "/feed-simple",
       icon: Home,
       label: "Feed",
-      active: pathname === "/feed",
+      active: pathname === "/feed-simple",
     },    
     {
       href: "/discover",
