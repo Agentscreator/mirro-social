@@ -53,12 +53,13 @@ export default function AuthenticatedLayout({
         document.body.classList.add('desktop-web')
       }
       
-      // Force navigation to work
-      document.body.classList.add('force-navigation')
+      // Ensure navigation works properly
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.userSelect = 'auto'
       
       return () => {
         document.documentElement.classList.remove('native-app', 'mobile-web', 'desktop-web')
-        document.body.classList.remove('native-app', 'mobile-web', 'desktop-web', 'force-navigation')
+        document.body.classList.remove('native-app', 'mobile-web', 'desktop-web')
       }
     }
   }, [])

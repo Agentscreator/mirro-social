@@ -103,10 +103,10 @@
   height: 100dvh;
 }
 
-/* Force navigation to work */
-.force-navigation * {
-  pointer-events: auto !important;
-  user-select: auto !important;
+/* Ensure proper navigation */
+button, a, [role="button"] {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /* Ensure no overflow issues block navigation */

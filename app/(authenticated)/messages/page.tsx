@@ -29,7 +29,7 @@ function MessagesPageContent() {
   const [groupDescription, setGroupDescription] = useState("")
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [showAddStory, setShowAddStory] = useState(false)
-  const [isNavigating, setIsNavigating] = useState(false)
+
 
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
@@ -50,55 +50,14 @@ function MessagesPageContent() {
     console.log('Groups loading:', groupsLoading)
   }, [groups, groupsLoading])
 
-  // Simple page mount logging and navigation setup
+  // Simple page mount logging
   useEffect(() => {
     console.log('Messages page mounted')
-    
-    // Ensure navigation works by removing any blocking styles
-    const style = document.createElement('style')
-    style.id = 'messages-page-fix'
-    style.textContent = `
-      .messages-page * {
-        pointer-events: auto !important;
-        user-select: auto !important;
-      }
-      .messages-page button {
-        cursor: pointer !important;
-        pointer-events: auto !important;
-      }
-    `
-    document.head.appendChild(style)
-    
-    return () => {
-      const existingStyle = document.getElementById('messages-page-fix')
-      if (existingStyle) {
-        existingStyle.remove()
-      }
-    }
   }, [])
 
   const handleGroupClick = (groupId: number) => {
-    if (isNavigating) return
-    
     console.log('Group clicked:', groupId)
-    setIsNavigating(true)
-    
-    try {
-      router.push(`/groups/${groupId}`)
-      
-      // Fallback navigation if router fails
-      setTimeout(() => {
-        if (window.location.pathname.includes('/messages') && !window.location.pathname.includes(`/groups/${groupId}`)) {
-          console.log('Router failed, using fallback navigation')
-          window.location.href = `/groups/${groupId}`
-        }
-        setIsNavigating(false)
-      }, 1000)
-    } catch (error) {
-      console.error('Navigation error:', error)
-      window.location.href = `/groups/${groupId}`
-      setIsNavigating(false)
-    }
+    router.push(`/groups/${groupId}`)
   }
 
   // Use backup conversations if main hook fails
@@ -110,27 +69,8 @@ function MessagesPageContent() {
   )
 
   const handleConversationClick = (userId: string) => {
-    if (isNavigating) return
-    
     console.log('Conversation clicked:', userId)
-    setIsNavigating(true)
-    
-    try {
-      router.push(`/messages/${userId}`)
-      
-      // Fallback navigation if router fails
-      setTimeout(() => {
-        if (window.location.pathname === '/messages') {
-          console.log('Router failed, using fallback navigation')
-          window.location.href = `/messages/${userId}`
-        }
-        setIsNavigating(false)
-      }, 1000)
-    } catch (error) {
-      console.error('Navigation error:', error)
-      window.location.href = `/messages/${userId}`
-      setIsNavigating(false)
-    }
+    router.push(`/messages/${userId}`)
   }
 
   const handleCreateGroup = async () => {
@@ -293,12 +233,7 @@ function MessagesPageContent() {
             {groups.map((group) => (
               <button
                 key={`group-${group.id}`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  console.log('Group clicked:', group.id, group.name)
-                  handleGroupClick(group.id)
-                }}
+                onClick={() => handleGroupClick(group.id)}
                 className="w-full mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group relative text-left"
                 type="button"
                 onKeyDown={(e) => {
@@ -352,11 +287,7 @@ function MessagesPageContent() {
             {filteredConversations.map((conversation, index) => (
               <button
                 key={conversation.id}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handleConversationClick(conversation.userId)
-                }}
+                onClick={() => handleConversationClick(conversation.userId)}
                 className="w-full px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors active:bg-gray-700 text-left"
                 type="button"
               >
