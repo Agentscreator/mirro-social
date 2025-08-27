@@ -19,6 +19,7 @@ import { EventCalendar } from "@/components/messages/EventCalendar"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
 import { isMobileDevice, isNativeApp, hideAddressBar } from "@/lib/mobile-utils"
+import { NavigationDebug } from "@/components/navigation-debug"
 
 function MessagesPageContent() {
   const { data: session } = useSession()
@@ -171,6 +172,9 @@ function MessagesPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-950 messages-page">
+      {/* Debug Navigation - Remove after testing */}
+      <NavigationDebug />
+      
       {/* Stories Feed */}
       <StoriesFeed />
 

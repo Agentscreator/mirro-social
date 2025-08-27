@@ -103,10 +103,27 @@
   height: 100dvh;
 }
 
-/* Ensure proper navigation */
-button, a, [role="button"] {
-  pointer-events: auto;
+/* Ensure proper navigation and interaction */
+button, a, [role="button"], video {
+  pointer-events: auto !important;
   cursor: pointer;
+}
+
+/* Fix video interaction issues */
+video {
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+/* Ensure clickable elements work */
+.feed-container * {
+  pointer-events: auto !important;
+}
+
+/* Fix z-index stacking issues */
+.feed-page {
+  position: relative;
+  z-index: 1;
 }
 
 /* Ensure no overflow issues block navigation */

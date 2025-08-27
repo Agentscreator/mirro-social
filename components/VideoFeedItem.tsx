@@ -73,27 +73,23 @@ const VideoFeedItem = ({
     }
   }, [post.id, post.hasPrivateLocation]);
 
-  // Autoplay effect when component becomes active
+  // Simplified autoplay effect
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
 
     const handleAutoplay = async () => {
       try {
-        if (isActive) {
-          // Start playing when active
+        if (isActive && video.paused) {
+          video.muted = true; // Ensure muted for autoplay
           await video.play();
           setIsPlaying(true);
-          console.log('🎥 Video autoplay started for post:', post.id);
-        } else {
-          // Pause when not active
+        } else if (!isActive && !video.paused) {
           video.pause();
           setIsPlaying(false);
-          console.log('⏸️ Video paused for post:', post.id);
         }
       } catch (error) {
-        console.error('Error handling video autoplay:', error);
-        // Fallback: if autoplay fails, just set playing state
+        console.log('Autoplay blocked, user interaction required');
         setIsPlaying(false);
       }
     };
@@ -101,74 +97,32 @@ const VideoFeedItem = ({
     handleAutoplay();
   }, [isActive, post.id]);
 
-  // Listen for initial autoplay trigger
+  // Listen for video play events
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isVideo() || !isActive) return;
-
-    const handleInitialAutoplay = async () => {
-      try {
-        // Force play the first video when the trigger event is received
-        video.muted = true; // Ensure muted for autoplay policy
-        await video.play();
-        setIsPlaying(true);
-        console.log('🎬 Initial autoplay triggered for post:', post.id);
-      } catch (error) {
-        console.error('Initial autoplay failed:', error);
-      }
-    };
+    if (!video || !isVideo()) return;
 
     const handleForceVideoPlay = async (event: CustomEvent) => {
       try {
         const { postId } = event.detail;
-        if (postId === post.id) {
+        if (postId === post.id && isActive) {
           video.muted = true;
           await video.play();
           setIsPlaying(true);
-          console.log('🎬 Force video play triggered for post:', post.id);
         }
       } catch (error) {
-        console.error('Force video play failed:', error);
+        console.log('Video play failed:', error);
       }
     };
 
-    window.addEventListener('initialAutoplayTrigger', handleInitialAutoplay);
     window.addEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
     
     return () => {
-      window.removeEventListener('initialAutoplayTrigger', handleInitialAutoplay);
       window.removeEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
     };
   }, [isActive, post.id]);
 
-  // Aggressive autoplay attempt when video becomes active
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !isVideo() || !isActive) return;
 
-    const attemptAutoplay = async () => {
-      try {
-        // Multiple attempts to start autoplay
-        if (video.paused) {
-          video.muted = true; // Essential for autoplay policy
-          await video.play();
-          setIsPlaying(true);
-          console.log('🎥 Aggressive autoplay successful for post:', post.id);
-        }
-      } catch (error) {
-        console.log('Autoplay blocked, waiting for user interaction');
-        setIsPlaying(false);
-      }
-    };
-
-    // Try immediately
-    attemptAutoplay();
-
-    // Try again after a short delay
-    const timer = setTimeout(attemptAutoplay, 100);
-    
-    return () => clearTimeout(timer);
-  }, [isActive, post.id]);
 
   // Intersection Observer for better autoplay control and performance
   useEffect(() => {
@@ -346,15 +300,16 @@ const VideoFeedItem = ({
             playsInline
             preload="metadata"
             poster={getMediaUrl()}
-            autoPlay={isActive}
+            autoPlay={false}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
-              // Attempt autoplay when video is loaded and active
-              if (isActive && videoRef.current) {
-                const video = videoRef.current;
-                video.muted = true; // Ensure muted for autoplay
-                video.play().catch(console.error);
+              // Simple autoplay attempt when video loads
+              if (isActive && videoRef.current && videoRef.current.paused) {
+                videoRef.current.muted = true;
+                videoRef.current.play().catch(() => {
+                  console.log('Autoplay blocked for post:', post.id);
+                });
               }
             }}
 

@@ -57,6 +57,10 @@ export default function AuthenticatedLayout({
       document.body.style.pointerEvents = 'auto'
       document.body.style.userSelect = 'auto'
       
+      // Remove any blocking styles that might interfere
+      document.body.style.overflow = 'auto'
+      document.documentElement.style.overflow = 'auto'
+      
       return () => {
         document.documentElement.classList.remove('native-app', 'mobile-web', 'desktop-web')
         document.body.classList.remove('native-app', 'mobile-web', 'desktop-web')
