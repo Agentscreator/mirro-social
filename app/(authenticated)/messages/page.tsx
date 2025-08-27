@@ -9,17 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, MessageCircle, Plus, Users, FileImage } from "lucide-react"
+import { Search, MessageCircle, Plus, Users } from "lucide-react"
 import { useMessages } from "@/hooks/use-messages"
 import { useGroups } from "@/hooks/use-groups"
-import { useOptimizedFetch } from "@/hooks/use-optimized-fetch"
 import { CommunityStories } from "@/components/messages/CommunityStories"
 import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { EventCalendar } from "@/components/messages/EventCalendar"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { toast } from "@/hooks/use-toast"
-import { isMobileDevice, isNativeApp, hideAddressBar } from "@/lib/mobile-utils"
-
 
 function MessagesPageContent() {
   const { data: session } = useSession()
@@ -31,48 +28,23 @@ function MessagesPageContent() {
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [showAddStory, setShowAddStory] = useState(false)
 
-
   const { conversations, loading } = useMessages()
   const { groups, loading: groupsLoading, createGroup, refetch: refetchGroups } = useGroups()
-  
-  // Add optimized fetch for conversations as backup
-  const { data: conversationsBackup, loading: conversationsBackupLoading } = useOptimizedFetch<{conversations: any[]}>(
-    session?.user?.id ? '/api/messages' : null,
-    {
-      cache: true,
-      cacheTTL: 30 * 1000, // 30 seconds cache
-      retries: 2
-    }
-  )
 
-  // Debug groups data
-  useEffect(() => {
-    console.log('Groups data:', groups)
-    console.log('Groups loading:', groupsLoading)
-  }, [groups, groupsLoading])
-
-  // Simple page mount logging
-  useEffect(() => {
-    console.log('Messages page mounted')
-  }, [])
-
+  // Simple navigation handlers
   const handleGroupClick = (groupId: number) => {
-    console.log('Group clicked:', groupId)
     router.push(`/groups/${groupId}`)
   }
 
-  // Use backup conversations if main hook fails
-  const activeConversations = conversations.length > 0 ? conversations : (conversationsBackup?.conversations || [])
-  
-  const filteredConversations = activeConversations.filter(conv =>
+  const handleConversationClick = (userId: string) => {
+    router.push(`/messages/${userId}`)
+  }
+
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv =>
     conv.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.nickname?.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const handleConversationClick = (userId: string) => {
-    console.log('Conversation clicked:', userId)
-    router.push(`/messages/${userId}`)
-  }
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -101,7 +73,6 @@ function MessagesPageContent() {
       setGroupName("")
       setGroupDescription("")
 
-      // Navigate to the new group chat
       if (result && result.id) {
         router.push(`/groups/${result.id}`)
       }
@@ -123,7 +94,7 @@ function MessagesPageContent() {
 
     if (diffInHours < 24) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } else if (diffInHours < 168) { // Less than a week
+    } else if (diffInHours < 168) {
       return date.toLocaleDateString([], { weekday: 'short' })
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
@@ -143,39 +114,12 @@ function MessagesPageContent() {
     )
   }
 
-  // Error boundary for failed API calls
-  if (!loading && !conversationsBackupLoading && activeConversations.length === 0 && groups.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-950">
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-          <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
-            <MessageCircle className="h-12 w-12 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Something went wrong
-          </h3>
-          <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
-            Unable to load messages. Please check your connection and try again.
-          </p>
-          <Button
-            onClick={() => {
-              window.location.reload()
-            }}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gray-950 messages-page">
+    <div className="min-h-screen bg-gray-950">
       {/* Stories Feed */}
       <StoriesFeed />
 
-      {/* Search */}
+      {/* Search Bar */}
       <div className="px-6 py-4 bg-gray-950">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
@@ -217,14 +161,14 @@ function MessagesPageContent() {
         />
       )}
 
-      {/* Event Calendar - Subtle placement */}
+      {/* Event Calendar */}
       <div className="px-4 py-2">
         <EventCalendar />
       </div>
 
       {/* Conversations List */}
       <div className="flex-1">
-        {(loading && conversationsBackupLoading) || groupsLoading ? (
+        {loading || groupsLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
@@ -237,12 +181,6 @@ function MessagesPageContent() {
                 onClick={() => handleGroupClick(group.id)}
                 className="w-full mx-4 mb-2 px-4 py-4 hover:bg-gray-800/40 cursor-pointer transition-all duration-200 rounded-xl group relative text-left"
                 type="button"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleGroupClick(group.id)
-                  }
-                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative flex-shrink-0">
@@ -285,7 +223,7 @@ function MessagesPageContent() {
             ))}
 
             {/* Individual Conversations */}
-            {filteredConversations.map((conversation, index) => (
+            {filteredConversations.map((conversation) => (
               <button
                 key={conversation.id}
                 onClick={() => handleConversationClick(conversation.userId)}
@@ -314,8 +252,6 @@ function MessagesPageContent() {
                         <h3 className="font-semibold text-white truncate">
                           {conversation.nickname || conversation.username}
                         </h3>
-                        {/* Add pinned indicator if needed */}
-                        {/* <Pin className="h-3 w-3 text-gray-400 flex-shrink-0" /> */}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-gray-400">
@@ -374,7 +310,7 @@ function MessagesPageContent() {
       <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
         <DialogContent className="max-w-md bg-gray-900 border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-center">Create New Group</DialogTitle>
+            <DialogTitle className="text-center text-white">Create New Group</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
