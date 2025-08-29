@@ -5,7 +5,7 @@ import { db } from "@/src/db"
 import { postsTable, usersTable } from "@/src/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { postCommentsTable, postLikesTable, postInvitesTable } from "@/src/db/schema"
-import { put } from "@vercel/blob"
+import { uploadToStorage } from "@/src/lib/storage"
 
 // GET - Fetch a single post
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -85,26 +85,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
 }
 
-async function uploadToStorage(options: {
-  buffer: Buffer
-  filename: string
-  mimetype: string
-  folder?: string
-}): Promise<string> {
-  const { buffer, filename, mimetype, folder = "post-media" } = options
 
-  const timestamp = Date.now()
-  const fileExtension = filename.split(".").pop()
-  const uniqueFilename = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExtension}`
-  const pathname = `${folder}/${uniqueFilename}`
-
-  const blob = await put(pathname, buffer, {
-    access: "public",
-    contentType: mimetype,
-  })
-
-  return blob.url
-}
 
 // PUT - Edit a post
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {

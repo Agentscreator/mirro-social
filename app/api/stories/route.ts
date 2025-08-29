@@ -4,7 +4,7 @@ import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { storiesTable, storyViewsTable, usersTable, followersTable, communitiesTable, communityMembersTable, groupStoriesTable, groupStoryViewsTable, groupsTable, groupMembersTable } from "@/src/db/schema"
 import { eq, and, gt, desc, sql, inArray, or } from "drizzle-orm"
-import { put } from '@vercel/blob'
+import { uploadToStorage } from '@/src/lib/storage'
 import { v4 as uuidv4 } from "uuid"
 
 // GET /api/stories - Fetch stories from followed users and own stories
@@ -283,17 +283,19 @@ export async function POST(request: NextRequest) {
       const isVideo = mediaFile.type.startsWith("video/")
       const pathname = `stories/${isVideo ? 'videos' : 'images'}/${fileName}`
 
-      // Upload to Vercel Blob
-      const blob = await put(pathname, buffer, {
-        access: 'public',
-        contentType: mediaFile.type,
+      // Upload to Backblaze B2
+      const fileUrl = await uploadToStorage({
+        buffer,
+        filename: fileName,
+        mimetype: mediaFile.type,
+        folder: `stories/${isVideo ? 'videos' : 'images'}`
       })
 
       // Set the URL
       if (isVideo) {
-        videoUrl = blob.url
+        videoUrl = fileUrl
       } else {
-        imageUrl = blob.url
+        imageUrl = fileUrl
       }
     }
 

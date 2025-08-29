@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/auth"
-import { put } from '@vercel/blob'
+import { uploadToStorage } from '@/src/lib/storage'
 
 export async function POST(request: NextRequest) {
+  let buffer: Buffer | null = null
+  
   try {
     console.log("=== MESSAGE UPLOAD API START ===")
     
@@ -15,7 +17,26 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Session valid, user ID:", session.user.id)
 
-    const formData = await request.formData()
+    // Check content length before parsing to prevent memory issues
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) { // 50MB limit
+      console.error("❌ Request too large:", contentLength)
+      return NextResponse.json({ error: "File too large (max 50MB)" }, { status: 413 })
+    }
+
+    // Parse form data with timeout
+    let formData: FormData
+    try {
+      const parsePromise = request.formData()
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Form data parsing timeout')), 60000) // 60s timeout
+      )
+      formData = await Promise.race([parsePromise, timeoutPromise]) as FormData
+    } catch (parseError) {
+      console.error("❌ Form data parsing failed:", parseError)
+      return NextResponse.json({ error: "Failed to parse upload data" }, { status: 400 })
+    }
+
     const file = formData.get("file") as File
     
     console.log("📁 File received:", {
@@ -29,11 +50,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    // Validate file size (25MB max for better iOS compatibility)
+    const maxSize = 25 * 1024 * 1024 // 25MB
     if (file.size > maxSize) {
       console.log("❌ File too large:", file.size, "bytes")
-      return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 })
+      return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 })
     }
 
     // Validate file type
@@ -55,31 +76,44 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ File validation passed")
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
-    const extension = file.name.split('.').pop() || 'bin'
-    const filename = `${timestamp}-${randomString}.${extension}`
-    const pathname = `messages/${filename}`
+    // Convert file to buffer with memory management
+    let bytes: ArrayBuffer
+    try {
+      bytes = await file.arrayBuffer()
+      buffer = Buffer.from(bytes)
+      
+      // Clear the ArrayBuffer reference to help with garbage collection
+      bytes = null as any
+    } catch (bufferError) {
+      console.error("❌ Buffer conversion failed:", bufferError)
+      return NextResponse.json({ error: "Failed to process file" }, { status: 400 })
+    }
 
-    console.log("📝 Generated filename:", filename)
-    console.log("📁 Blob pathname:", pathname)
-
-    // Upload to Vercel Blob
-    console.log("💾 Uploading to Vercel Blob...")
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    console.log("💾 Uploading to Backblaze B2...")
     
-    const blob = await put(pathname, buffer, {
-      access: 'public',
-      contentType: file.type,
-    })
+    let fileUrl: string
+    try {
+      fileUrl = await uploadToStorage({
+        buffer,
+        filename: file.name,
+        mimetype: file.type,
+        folder: 'messages'
+      })
+    } catch (uploadError) {
+      console.error("❌ Upload to B2 failed:", uploadError)
+      return NextResponse.json({ 
+        error: uploadError instanceof Error ? uploadError.message : "Upload failed" 
+      }, { status: 500 })
+    } finally {
+      // Clear buffer reference to help with memory management
+      buffer = null
+    }
     
-    console.log("✅ File uploaded successfully to blob storage")
-    console.log("🔗 Blob URL:", blob.url)
+    console.log("✅ File uploaded successfully to B2 storage")
+    console.log("🔗 File URL:", fileUrl)
     
     const response = {
-      url: blob.url,
+      url: fileUrl,
       name: file.name,
       type: file.type,
       size: file.size,
@@ -94,8 +128,26 @@ export async function POST(request: NextRequest) {
     console.error("❌ Error uploading file:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack")
     console.log("=== MESSAGE UPLOAD API END (ERROR) ===")
-    return NextResponse.json({ 
-      error: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
-    }, { status: 500 })
+    
+    // Clear buffer if it exists
+    if (buffer) {
+      buffer = null
+    }
+    
+    // Provide more specific error messages for iOS
+    let errorMessage = "Upload failed"
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = "Upload timeout - please try a smaller file or check your connection"
+      } else if (error.message.includes('memory') || error.message.includes('heap')) {
+        errorMessage = "File too large for processing - please try a smaller file"
+      } else if (error.message.includes('network')) {
+        errorMessage = "Network error - please check your connection and try again"
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

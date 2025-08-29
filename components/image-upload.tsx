@@ -21,6 +21,21 @@ export function ImageUpload({ onImageChange, imagePreview }: ImageUploadProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
+    
+    // Validate file size to prevent iOS crashes (max 10MB)
+    if (file && file.size > 10 * 1024 * 1024) {
+      alert('File too large. Please select an image smaller than 10MB.')
+      e.target.value = '' // Clear the input
+      return
+    }
+    
+    // Validate file type
+    if (file && !file.type.startsWith('image/')) {
+      alert('Please select a valid image file.')
+      e.target.value = '' // Clear the input
+      return
+    }
+    
     onImageChange(file)
   }
 
@@ -33,7 +48,16 @@ export function ImageUpload({ onImageChange, imagePreview }: ImageUploadProps) {
 
   return (
     <div>
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+        className="hidden"
+        // Add iOS-specific attributes to prevent crashes
+        capture="environment"
+        multiple={false}
+      />
 
       {!imagePreview ? (
         <Button

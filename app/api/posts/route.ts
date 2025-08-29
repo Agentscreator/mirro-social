@@ -4,40 +4,11 @@ import { authOptions } from "@/src/lib/auth"
 import { db } from "@/src/db"
 import { postsTable, usersTable, postLikesTable, postCommentsTable, postInvitesTable, postLocationsTable, liveEventsTable } from "@/src/db/schema"
 import { desc, eq, count, and } from "drizzle-orm"
-import { put } from "@vercel/blob"
+import { uploadToStorage } from "@/src/lib/storage"
 
 // Configure the API route
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-async function uploadToStorage(options: {
-  buffer: Buffer
-  filename: string
-  mimetype: string
-  folder?: string
-}): Promise<string> {
-  const { buffer, filename, mimetype, folder = "post-media" } = options
-
-  const timestamp = Date.now()
-  const fileExtension = filename.split(".").pop()
-  const uniqueFilename = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExtension}`
-  const pathname = `${folder}/${uniqueFilename}`
-
-  console.log("=== BLOB UPLOAD DEBUG ===")
-  console.log("Uploading to path:", pathname)
-  console.log("File size:", buffer.length)
-  console.log("MIME type:", mimetype)
-
-  const blob = await put(pathname, buffer, {
-    access: "public",
-    contentType: mimetype,
-  })
-
-  console.log("Blob upload successful:", blob.url)
-  console.log("=== BLOB UPLOAD COMPLETE ===")
-
-  return blob.url
-}
 
 // GET - Fetch posts
 export async function GET(request: NextRequest) {
@@ -506,8 +477,8 @@ export async function POST(request: NextRequest) {
 
           mediaType = media.type.startsWith("video/") ? "video" : "image"
           console.log("✅ MEDIA UPLOADED SUCCESSFULLY:", mediaUrl, "Type:", mediaType)
-        } catch (blobError) {
-          console.error("❌ BLOB UPLOAD FAILED:", blobError)
+        } catch (uploadError) {
+          console.error("❌ B2 UPLOAD FAILED:", uploadError)
           
           // Use a working placeholder URL for fallback
           mediaUrl = media.type.startsWith("video/") 
@@ -860,7 +831,7 @@ export async function POST(request: NextRequest) {
       if (errorMsg.includes('database') || errorMsg.includes('sql')) {
         errorMessage = "Database error occurred"
         console.error("🔍 DATABASE ERROR DETAILS:", error.message)
-      } else if (errorMsg.includes('blob') || errorMsg.includes('upload')) {
+      } else if (errorMsg.includes('upload') || errorMsg.includes('storage')) {
         errorMessage = "File upload failed"
         statusCode = 400
       } else if (errorMsg.includes('timeout')) {
