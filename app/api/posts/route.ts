@@ -355,6 +355,8 @@ export async function POST(request: NextRequest) {
             name: media.name,
             size: media.size,
             type: media.type,
+            lastModified: (media as any).lastModified,
+            webkitRelativePath: (media as any).webkitRelativePath,
           }
         : null,
       isInvite,
@@ -370,6 +372,8 @@ export async function POST(request: NextRequest) {
       activityStartTime,
       activityEndDate,
       activityEndTime,
+      userAgent: request.headers.get('user-agent'),
+      contentType: request.headers.get('content-type'),
     })
 
     if (!content?.trim() && !media) {
@@ -443,10 +447,20 @@ export async function POST(request: NextRequest) {
     if (media) {
       console.log("=== PROCESSING MEDIA UPLOAD ===")
 
-      // Validate file type (images and videos)
-      if (!media.type.startsWith("image/") && !media.type.startsWith("video/")) {
+      // Validate file type (images and videos) with iOS compatibility
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
+      const validVideoTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/avi']
+      
+      const isValidImage = validImageTypes.includes(media.type.toLowerCase())
+      const isValidVideo = validVideoTypes.includes(media.type.toLowerCase())
+      
+      if (!isValidImage && !isValidVideo) {
         console.error("❌ INVALID FILE TYPE:", media.type)
-        return NextResponse.json({ error: "File must be an image or video" }, { status: 400 })
+        console.error("Valid image types:", validImageTypes)
+        console.error("Valid video types:", validVideoTypes)
+        return NextResponse.json({ 
+          error: `Unsupported file type: ${media.type}. Please use JPG, PNG, MP4, or MOV files.` 
+        }, { status: 400 })
       }
 
       // Validate file size (max 50MB for videos, 10MB for images)
@@ -468,14 +482,27 @@ export async function POST(request: NextRequest) {
         console.log("Buffer created, size:", buffer.length)
 
         try {
+          // Handle iOS-generated filenames that might not have proper extensions
+          let filename = media.name
+          if (!filename || filename === 'blob' || !filename.includes('.')) {
+            const timestamp = Date.now()
+            const extension = isValidVideo ? 'mp4' : 'jpg'
+            filename = `upload-${timestamp}.${extension}`
+          }
+          
+          // Sanitize filename for iOS compatibility
+          filename = filename.replace(/[^a-zA-Z0-9.-]/g, '_')
+          
+          console.log("Uploading file:", { originalName: media.name, sanitizedName: filename, type: media.type })
+          
           mediaUrl = await uploadToStorage({
             buffer,
-            filename: media.name,
+            filename: filename,
             mimetype: media.type,
             folder: "post-media",
           })
 
-          mediaType = media.type.startsWith("video/") ? "video" : "image"
+          mediaType = isValidVideo ? "video" : "image"
           console.log("✅ MEDIA UPLOADED SUCCESSFULLY:", mediaUrl, "Type:", mediaType)
         } catch (uploadError) {
           console.error("❌ B2 UPLOAD FAILED:", uploadError)
@@ -525,9 +552,32 @@ export async function POST(request: NextRequest) {
       postData.video = mediaUrl
     }
 
+    // Validate data before insertion to catch pattern mismatches
+    if (postData.userId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postData.userId)) {
+      console.error("❌ INVALID USER ID FORMAT:", postData.userId)
+      return NextResponse.json({ error: "Invalid user ID format" }, { status: 400 })
+    }
+    
+    // Validate URL formats if present
+    if (postData.image && postData.image.length > 500) {
+      console.error("❌ IMAGE URL TOO LONG:", postData.image.length)
+      return NextResponse.json({ error: "Image URL too long" }, { status: 400 })
+    }
+    
+    if (postData.video && postData.video.length > 500) {
+      console.error("❌ VIDEO URL TOO LONG:", postData.video.length)
+      return NextResponse.json({ error: "Video URL too long" }, { status: 400 })
+    }
+    
+    // Validate community name length
+    if (postData.communityName && postData.communityName.length > 100) {
+      console.error("❌ COMMUNITY NAME TOO LONG:", postData.communityName.length)
+      postData.communityName = postData.communityName.substring(0, 100)
+    }
+
     console.log("Post data to insert:", {
       userId: postData.userId,
-      content: postData.content,
+      content: postData.content?.substring(0, 100),
       image: postData.image,
       video: postData.video,
       communityName: postData.communityName,

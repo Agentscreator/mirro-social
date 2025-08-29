@@ -88,6 +88,14 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
   // Initialize camera
   const initCamera = useCallback(async () => {
     try {
+      // Check if MediaRecorder is supported (required for video recording)
+      if (!window.MediaRecorder) {
+        console.error('MediaRecorder not supported on this device');
+        alert('Video recording is not supported on this device. Please use the file upload option instead.');
+        onCancel();
+        return;
+      }
+      
       // Check if we're on a native platform
       const isNative = Capacitor.isNativePlatform();
       
@@ -275,7 +283,22 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
 
     try {
       recordedChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(streamRef.current);
+      
+      // Use iOS-compatible recording options
+      const options: MediaRecorderOptions = {};
+      
+      // Check for iOS-compatible codecs
+      if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options.mimeType = 'video/mp4';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        options.mimeType = 'video/webm;codecs=vp8';
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        options.mimeType = 'video/webm';
+      }
+      
+      console.log('Using recording options:', options);
+      
+      const mediaRecorder = new MediaRecorder(streamRef.current, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -285,7 +308,9 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        // Use the same mime type for the blob as was used for recording
+        const mimeType = options.mimeType || 'video/webm';
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         generateThumbnail(blob);
       };
 
@@ -307,6 +332,7 @@ export function TikTokVideoCreator({ onVideoCreated, onCancel }: TikTokVideoCrea
 
     } catch (error) {
       console.error('Error starting recording:', error);
+      alert('Recording failed. Please try again or use the file upload option.');
     }
   }, [maxDuration]);
 

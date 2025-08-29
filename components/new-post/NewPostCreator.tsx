@@ -47,22 +47,36 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      console.log("File selected:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: (file as any).lastModified
+      })
+      
+      // iOS-compatible file type validation
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
+      const validVideoTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/avi']
+      
+      const isValidImage = validImageTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/')
+      const isValidVideo = validVideoTypes.includes(file.type.toLowerCase()) || file.type.startsWith('video/')
+      
+      if (!isValidImage && !isValidVideo) {
+        console.error("Invalid file type:", file.type)
         toast({
           title: "Invalid file type",
-          description: "Please select an image or video file",
+          description: `Unsupported file type: ${file.type}. Please select JPG, PNG, MP4, or MOV files.`,
           variant: "destructive",
         })
         return
       }
 
-      // Validate file size (50MB max)
-      const maxSize = 50 * 1024 * 1024
+      // Validate file size (50MB max for videos, 10MB for images)
+      const maxSize = isValidVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
       if (file.size > maxSize) {
         toast({
           title: "File too large",
-          description: "Please select a file smaller than 50MB",
+          description: `Please select a file smaller than ${isValidVideo ? '50MB' : '10MB'}`,
           variant: "destructive",
         })
         return
@@ -76,8 +90,13 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
 
   // Handle camera recording completion
   const handleVideoRecorded = (videoBlob: Blob, thumbnail: string) => {
-    // Convert blob to file
-    const file = new File([videoBlob], 'recorded-video.webm', { type: 'video/webm' })
+    // Convert blob to file with iOS-compatible format
+    const timestamp = Date.now()
+    const filename = `recorded-video-${timestamp}.mp4`
+    const mimeType = 'video/mp4'
+    
+    // Create file with proper iOS-compatible naming and type
+    const file = new File([videoBlob], filename, { type: mimeType })
     setSelectedFile(file)
     setPreviewUrl(thumbnail)
     setShowCamera(false)
@@ -205,13 +224,23 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         }
       }
 
+      console.log("Sending post request with formData entries:", Array.from(formData.entries()).map(([key, value]) => ({
+        key,
+        type: value instanceof File ? 'File' : 'string',
+        value: value instanceof File ? `${value.name} (${value.size} bytes, ${value.type})` : String(value).substring(0, 50)
+      })))
+
       const response = await fetch('/api/posts', {
         method: 'POST',
         body: formData,
       })
 
+      console.log("Post response status:", response.status)
+      console.log("Post response headers:", Object.fromEntries(response.headers.entries()))
+
       if (response.ok) {
         const result = await response.json()
+        console.log("Post created successfully:", result)
         
         toast({
           title: "Success!",
@@ -230,8 +259,18 @@ export function NewPostCreator({ isOpen, onClose, onPostCreated }: NewPostCreato
         // Refresh feed
         window.dispatchEvent(new CustomEvent('feedRefresh'))
       } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create post')
+        const errorText = await response.text()
+        console.error("Post creation failed:", response.status, errorText)
+        
+        let errorMessage = 'Failed to create post'
+        try {
+          const errorJson = JSON.parse(errorText)
+          errorMessage = errorJson.error || errorMessage
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error('Error creating post:', error)
