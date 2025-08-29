@@ -105,116 +105,120 @@ export function Navigation() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             
             <div className="flex h-22 items-center justify-center px-6 pb-safe-bottom pt-2">
-              {/* Navigation Grid - Perfectly centered */}
-              <div className="flex items-center justify-between w-full max-w-sm px-2">
-                
-                {/* Feed */}
-                <Link
-                  href="/feed"
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
-                    pathname === "/feed" ? "text-blue-400" : "text-gray-500",
-                  )}
-                >
-                  <div
+              {/* Navigation Grid - Perfectly centered with equal spacing */}
+              <div className="flex items-center justify-center w-full max-w-md mx-auto">
+                <div className="grid grid-cols-4 gap-0 w-full items-center justify-items-center">
+                  
+                  {/* Feed */}
+                  <Link
+                    href="/feed"
                     className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
-                      pathname === "/feed" 
-                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
-                        : "group-hover:bg-white/10 group-hover:scale-105",
+                      "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                      pathname === "/feed" ? "text-blue-400" : "text-gray-500",
                     )}
                   >
-                    <Home className={cn(
-                      "h-5 w-5 transition-all duration-300", 
-                      pathname === "/feed" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
-                    )} />
-                  </div>
-                  <span className={cn(
-                    "mt-1 text-xs font-medium transition-all duration-300",
-                    pathname === "/feed" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
-                  )}>
-                    Feed
-                  </span>
-                </Link>
-                
-                {/* Messages */}
-                <Link
-                  href="/messages"
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
-                    pathname === "/messages" ? "text-blue-400" : "text-gray-500",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 relative",
-                      pathname === "/messages" 
-                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
-                        : "group-hover:bg-white/10 group-hover:scale-105",
-                    )}
-                  >
-                    <MessageSquare className={cn(
-                      "h-5 w-5 transition-all duration-300", 
-                      pathname === "/messages" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
-                    )} />
-                    <MessageBadge />
-                  </div>
-                  <span className={cn(
-                    "mt-1 text-xs font-medium transition-all duration-300",
-                    pathname === "/messages" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
-                  )}>
-                    Messages
-                  </span>
-                </Link>
-                
-                {/* Create Button - CENTER */}
-                <button
-                  onClick={() => setIsCreatePostOpen(true)}
-                  className="flex flex-col items-center justify-center p-3 group"
-                >
-                  <div className="relative">
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
-                    
-                    {/* Main button */}
-                    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
-                      <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                        pathname === "/feed" 
+                          ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                          : "group-hover:bg-white/10 group-hover:scale-105",
+                      )}
+                    >
+                      <Home className={cn(
+                        "h-5 w-5 transition-all duration-300", 
+                        pathname === "/feed" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                      )} />
                     </div>
-                  </div>
-                  <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
-                    Create
-                  </span>
-                </button>
-                
-                {/* Profile */}
-                <Link
-                  href="/profile"
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
-                    pathname === "/profile" ? "text-blue-400" : "text-gray-500",
-                  )}
-                >
-                  <div
+                    <span className={cn(
+                      "mt-1 text-xs font-medium transition-all duration-300",
+                      pathname === "/feed" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                    )}>
+                      Feed
+                    </span>
+                  </Link>
+                  
+                  {/* Messages */}
+                  <Link
+                    href="/messages"
                     className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
-                      pathname === "/profile" 
-                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
-                        : "group-hover:bg-white/10 group-hover:scale-105",
+                      "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                      pathname === "/messages" ? "text-blue-400" : "text-gray-500",
                     )}
                   >
-                    <User className={cn(
-                      "h-5 w-5 transition-all duration-300", 
-                      pathname === "/profile" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
-                    )} />
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 relative",
+                        pathname === "/messages" 
+                          ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                          : "group-hover:bg-white/10 group-hover:scale-105",
+                      )}
+                    >
+                      <MessageSquare className={cn(
+                        "h-5 w-5 transition-all duration-300", 
+                        pathname === "/messages" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                      )} />
+                      <MessageBadge />
+                    </div>
+                    <span className={cn(
+                      "mt-1 text-xs font-medium transition-all duration-300",
+                      pathname === "/messages" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                    )}>
+                      Messages
+                    </span>
+                  </Link>
+                  
+                  {/* Create Button - CENTER */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setIsCreatePostOpen(true)}
+                      className="flex flex-col items-center justify-center p-3 group"
+                    >
+                      <div className="relative">
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                        
+                        {/* Main button */}
+                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
+                          <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+                        </div>
+                      </div>
+                      <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
+                        Create
+                      </span>
+                    </button>
                   </div>
-                  <span className={cn(
-                    "mt-1 text-xs font-medium transition-all duration-300",
-                    pathname === "/profile" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
-                  )}>
-                    You
-                  </span>
-                </Link>
-                
+                  
+                  {/* Profile */}
+                  <Link
+                    href="/profile"
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                      pathname === "/profile" ? "text-blue-400" : "text-gray-500",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                        pathname === "/profile" 
+                          ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                          : "group-hover:bg-white/10 group-hover:scale-105",
+                      )}
+                    >
+                      <User className={cn(
+                        "h-5 w-5 transition-all duration-300", 
+                        pathname === "/profile" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                      )} />
+                    </div>
+                    <span className={cn(
+                      "mt-1 text-xs font-medium transition-all duration-300",
+                      pathname === "/profile" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                    )}>
+                      You
+                    </span>
+                  </Link>
+                  
+                </div>
               </div>
             </div>
           </div>
@@ -319,9 +323,9 @@ export function Navigation() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           
           <div className="flex h-18 items-center justify-center px-4 py-2">
-            {/* Navigation Grid - Perfectly centered */}
-            <div className="flex items-center justify-center w-full">
-              <div className="flex items-center justify-between w-full max-w-sm px-4">
+            {/* Navigation Grid - Perfectly centered with equal spacing */}
+            <div className="flex items-center justify-center w-full max-w-md mx-auto">
+              <div className="grid grid-cols-4 gap-0 w-full items-center justify-items-center">
                 
                 {/* Feed */}
                 <Link
@@ -351,25 +355,6 @@ export function Navigation() {
                     Feed
                   </span>
                 </Link>
-                
-                {/* Create Button - CENTER */}
-                <button
-                  onClick={() => setIsCreatePostOpen(true)}
-                  className="flex flex-col items-center justify-center p-3 group"
-                >
-                  <div className="relative">
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
-                    
-                    {/* Main button */}
-                    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
-                      <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
-                    </div>
-                  </div>
-                  <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
-                    Create
-                  </span>
-                </button>
                 
                 {/* Messages */}
                 <Link
@@ -401,6 +386,27 @@ export function Navigation() {
                   </span>
                 </Link>
                 
+                {/* Create Button - CENTER */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setIsCreatePostOpen(true)}
+                    className="flex flex-col items-center justify-center p-3 group"
+                  >
+                    <div className="relative">
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                      
+                      {/* Main button */}
+                      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
+                        <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+                      </div>
+                    </div>
+                    <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
+                      Create
+                    </span>
+                  </button>
+                </div>
+                
                 {/* Profile */}
                 <Link
                   href="/profile"
@@ -431,8 +437,6 @@ export function Navigation() {
                 </Link>
                 
               </div>
-            </div>
-              
             </div>
           </div>
         </div>
