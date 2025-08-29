@@ -24,6 +24,8 @@ export async function fetchRecommendations(
   randomSeed?: number
 ): Promise<RecommendationsResponse> {
   try {
+    console.log(`Fetching recommendations: page=${page}, pageSize=${pageSize}, seed=${randomSeed}`)
+    
     const seedParam = randomSeed ? `&seed=${randomSeed}` : '';
     const response = await fetch(`/api/recommendations?page=${page}&pageSize=${pageSize}${seedParam}`, {
       method: 'GET',
@@ -32,16 +34,36 @@ export async function fetchRecommendations(
       },
     });
 
+    console.log(`Recommendations API response status: ${response.status}`)
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API Error Response:', errorText);
-      throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
+      
+      // Return empty result instead of throwing to prevent infinite loading
+      return {
+        users: [],
+        hasMore: false,
+        nextPage: null,
+        totalCount: 0,
+        currentPage: page
+      };
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log(`Recommendations API returned ${result.users?.length || 0} users`)
+    return result;
   } catch (error) {
     console.error('Error in fetchRecommendations:', error);
-    throw error;
+    
+    // Return empty result instead of throwing to prevent infinite loading
+    return {
+      users: [],
+      hasMore: false,
+      nextPage: null,
+      totalCount: 0,
+      currentPage: page
+    };
   }
 }
 

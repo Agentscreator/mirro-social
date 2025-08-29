@@ -45,6 +45,7 @@ export default function FeedPage() {
   const [discoverStories, setDiscoverStories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [discoverLoading, setDiscoverLoading] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [newThought, setNewThought] = useState("")
   const [touchStart, setTouchStart] = useState<number | null>(null)
@@ -65,10 +66,11 @@ export default function FeedPage() {
   const fetchDiscoverStories = async () => {
     try {
       setDiscoverLoading(true)
+      console.log('Starting fetchDiscoverStories...')
 
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+        setTimeout(() => reject(new Error('Request timeout')), 8000) // Reduced to 8 seconds
       })
 
       // Generate a random seed for this session to ensure different order
@@ -102,6 +104,7 @@ export default function FeedPage() {
 
       setDiscoverStories(usersWithBasicData)
       setDiscoverLoading(false)
+      console.log('Set discover stories, loading complete')
 
       // Generate explanations sequentially after showing users
       if (recommendedUsers.length > 0) {
@@ -112,7 +115,7 @@ export default function FeedPage() {
             // Add timeout for explanation generation too
             const explanationPromise = generateExplanation(user)
             const explanationTimeout = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Explanation timeout')), 5000) // 5 second timeout
+              setTimeout(() => reject(new Error('Explanation timeout')), 3000) // Reduced to 3 seconds
             })
 
             const explanation = await Promise.race([explanationPromise, explanationTimeout]) as string
@@ -139,9 +142,9 @@ export default function FeedPage() {
     } catch (error) {
       console.error('Error fetching discover stories:', error)
 
-      // Set empty stories and stop loading
-      setDiscoverStories([])
+      // Ensure loading is always stopped
       setDiscoverLoading(false)
+      setDiscoverStories([])
 
       toast({
         title: "Error",
@@ -154,18 +157,26 @@ export default function FeedPage() {
   // Load thoughts using original API
   const loadThoughts = async () => {
     try {
+      console.log('Loading thoughts...')
       const response = await fetch('/api/thoughts', {
         method: 'GET',
         credentials: 'include',
       })
+
+      console.log(`Thoughts API response status: ${response.status}`)
+
       if (response.ok) {
         const thoughtsData = await response.json()
+        console.log(`Loaded ${thoughtsData.length} thoughts`)
         return thoughtsData
+      } else {
+        console.error('Thoughts API error:', response.statusText)
+        return []
       }
     } catch (error) {
       console.error('Error loading thoughts:', error)
+      return []
     }
-    return []
   }
 
   // Add thought using original API
@@ -233,41 +244,95 @@ export default function FeedPage() {
   // Load initial posts
   useEffect(() => {
     const loadContent = async () => {
-      if (!session?.user?.id) return
+      if (!session?.user?.id) {
+        console.log('No session user ID, skipping content load')
+        return
+      }
 
+      console.log(`Loading content for tab: ${activeTab}`)
       setLoading(true)
       setCurrentVideoIndex(0)
 
+      // Clear any existing timeout
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+
+      // Set a maximum loading timeout of 15 seconds
+      const timeout = setTimeout(() => {
+        console.warn('Loading timeout reached, forcing stop')
+        setLoading(false)
+        setDiscoverLoading(false)
+        if (activeTab === "discover") {
+          setDiscoverStories([])
+          toast({
+            title: "Loading Timeout",
+            description: "Content is taking too long to load. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }, 15000)
+      setLoadingTimeout(timeout)
+
       if (activeTab === "discover") {
         try {
+          console.log('Loading discover content...')
           // Load thoughts first to determine UI state
           const userThoughts = await loadThoughts()
+          console.log(`User has ${userThoughts.length} thoughts`)
+
           if (userThoughts.length === 0) {
             // User has no thoughts, show the thought input UI
+            console.log('No thoughts found, showing input UI')
             setDiscoverStories([])
+            setLoading(false)
           } else {
             // User has thoughts, fetch recommendations
+            console.log('User has thoughts, fetching recommendations')
             await fetchDiscoverStories()
+            setLoading(false)
           }
         } catch (error) {
           console.error('Error loading discover content:', error)
-          // Fallback to empty state
+          // Ensure loading is stopped on error
+          setLoading(false)
+          setDiscoverLoading(false)
           setDiscoverStories([])
+        } finally {
+          // Clear timeout when done
+          if (timeout) {
+            clearTimeout(timeout)
+          }
         }
       } else {
-        const data = await fetchPosts(activeTab)
+        try {
+          const data = await fetchPosts(activeTab)
 
-        if (activeTab === "explore") {
-          setExplorePosts(data.posts || [])
-        } else if (activeTab === "following") {
-          setFollowingPosts(data.posts || [])
+          if (activeTab === "explore") {
+            setExplorePosts(data.posts || [])
+          } else if (activeTab === "following") {
+            setFollowingPosts(data.posts || [])
+          }
+        } catch (error) {
+          console.error(`Error loading ${activeTab} posts:`, error)
+        } finally {
+          setLoading(false)
+          // Clear timeout when done
+          if (timeout) {
+            clearTimeout(timeout)
+          }
         }
       }
-
-      setLoading(false)
     }
 
     loadContent()
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout)
+      }
+    }
   }, [session?.user?.id, searchQuery, activeTab])
 
   const currentPosts = getCurrentPosts()
@@ -584,25 +649,62 @@ export default function FeedPage() {
           <div className="h-full bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
 
             {/* Add Thoughts Button - Top Right */}
-            <Button
-              onClick={() => {
-                const textarea = document.getElementById('thought-input') as HTMLTextAreaElement
-                if (textarea) {
-                  textarea.focus()
-                  textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              }}
-              className="fixed top-20 right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Thought
-            </Button>
+            <div className="fixed top-20 right-4 z-50 flex gap-2">
+              <Button
+                onClick={() => {
+                  const textarea = document.getElementById('thought-input') as HTMLTextAreaElement
+                  if (textarea) {
+                    textarea.focus()
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }
+                }}
+                className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Thought
+              </Button>
+              <Button
+                onClick={async () => {
+                  console.log('Testing discover API...')
+                  try {
+                    const response = await fetch('/api/debug/discover-test')
+                    const data = await response.json()
+                    console.log('Discover test result:', data)
+                    toast({
+                      title: "Debug Test",
+                      description: `Found ${data.totalUsers || 0} users. Check console for details.`,
+                    })
+                  } catch (error) {
+                    console.error('Debug test failed:', error)
+                    toast({
+                      title: "Debug Test Failed",
+                      description: "Check console for details",
+                      variant: "destructive",
+                    })
+                  }
+                }}
+                className="bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm border border-red-500/30 text-white rounded-full px-3 py-2 text-xs font-medium transition-all"
+              >
+                Debug
+              </Button>
+            </div>
 
             {discoverLoading || loading ? (
               <div className="h-screen flex items-center justify-center">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/30 mx-auto mb-4"></div>
                   <p className="text-white/70 text-sm">Opening journal...</p>
+                  <Button
+                    variant="ghost"
+                    className="mt-4 text-white/60 hover:text-white text-xs"
+                    onClick={() => {
+                      setLoading(false)
+                      setDiscoverLoading(false)
+                      setDiscoverStories([])
+                    }}
+                  >
+                    Cancel Loading
+                  </Button>
                 </div>
               </div>
             ) : discoverStories.length === 0 ? (
@@ -628,13 +730,21 @@ export default function FeedPage() {
                     />
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-xs text-white/40">{newThought.length}/1000</span>
-                      <Button
-                        onClick={addThought}
-                        disabled={!newThought.trim()}
-                        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2 text-sm disabled:opacity-50 transition-all"
-                      >
-                        Begin Journey
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={addThought}
+                          disabled={!newThought.trim()}
+                          className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2 text-sm disabled:opacity-50 transition-all flex-1"
+                        >
+                          Begin Journey
+                        </Button>
+                        <Button
+                          onClick={fetchDiscoverStories}
+                          className="bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 rounded-full px-4 py-2 text-sm transition-all"
+                        >
+                          Retry
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
