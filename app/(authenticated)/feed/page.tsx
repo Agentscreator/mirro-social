@@ -60,16 +60,63 @@ export default function FeedPage() {
     }
   }
 
-  // Fetch discover stories
+  // Fetch discover stories using original API
   const fetchDiscoverStories = async () => {
     try {
       setDiscoverLoading(true)
-      const response = await fetch('/api/discover/stories')
-      if (!response.ok) {
-        throw new Error('Failed to fetch discover stories')
+
+      // Import the original discover functionality
+      const { fetchRecommendations, generateExplanation } = await import('@/src/lib/apiServices')
+
+      // Generate a random seed for this session to ensure different order
+      const randomSeed = Math.floor(Math.random() * 1000)
+
+      // Use the original recommendations API
+      const { users: recommendedUsers, hasMore: moreAvailable } = await fetchRecommendations(1, 10, randomSeed)
+
+      console.log('Recommended Users:', recommendedUsers, 'Has More:', moreAvailable)
+
+      // Convert users to stories format for the journal UI
+      const usersWithBasicData = recommendedUsers.map((user: any) => ({
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname || user.username,
+        narrative: "Generating match explanation...",
+        tags: user.tags || [],
+        score: user.score || 0,
+        profileImage: user.profileImage || user.image
+      }))
+
+      setDiscoverStories(usersWithBasicData)
+      setDiscoverLoading(false)
+
+      // Generate explanations sequentially after showing users
+      if (recommendedUsers.length > 0) {
+        for (let index = 0; index < recommendedUsers.length; index++) {
+          const user = recommendedUsers[index]
+
+          try {
+            const explanation = await generateExplanation(user)
+
+            setDiscoverStories(prevStories => {
+              const newStories = [...prevStories]
+              if (newStories[index]) {
+                newStories[index].narrative = explanation
+              }
+              return newStories
+            })
+          } catch (error) {
+            console.error(`Failed to generate explanation for user ${user.id}:`, error)
+            setDiscoverStories(prevStories => {
+              const newStories = [...prevStories]
+              if (newStories[index]) {
+                newStories[index].narrative = "A kindred spirit whose thoughts resonate with yours..."
+              }
+              return newStories
+            })
+          }
+        }
       }
-      const data = await response.json()
-      setDiscoverStories(data.stories || [])
     } catch (error) {
       console.error('Error fetching discover stories:', error)
       toast({
@@ -77,22 +124,40 @@ export default function FeedPage() {
         description: "Failed to load discover stories",
         variant: "destructive",
       })
-    } finally {
       setDiscoverLoading(false)
     }
   }
 
-  // Add thought to discover
+  // Load thoughts using original API
+  const loadThoughts = async () => {
+    try {
+      const response = await fetch('/api/thoughts', {
+        method: 'GET',
+        credentials: 'include',
+      })
+      if (response.ok) {
+        const thoughtsData = await response.json()
+        return thoughtsData
+      }
+    } catch (error) {
+      console.error('Error loading thoughts:', error)
+    }
+    return []
+  }
+
+  // Add thought using original API
   const addThought = async () => {
-    if (!newThought.trim()) return
+    if (!newThought.trim() || newThought.length > 1000) return
 
     try {
-      const response = await fetch('/api/discover/thoughts', {
+      const response = await fetch('/api/thoughts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
+          title: `Thought ${Date.now()}`,
           content: newThought.trim()
         })
       })
@@ -151,7 +216,15 @@ export default function FeedPage() {
       setCurrentVideoIndex(0)
 
       if (activeTab === "discover") {
-        await fetchDiscoverStories()
+        // Load thoughts first to determine UI state
+        const userThoughts = await loadThoughts()
+        if (userThoughts.length === 0) {
+          // User has no thoughts, show the thought input UI
+          setDiscoverStories([])
+        } else {
+          // User has thoughts, fetch recommendations
+          await fetchDiscoverStories()
+        }
       } else {
         const data = await fetchPosts(activeTab)
 
@@ -522,10 +595,10 @@ export default function FeedPage() {
                       onChange={(e) => setNewThought(e.target.value)}
                       placeholder="What's on your mind? Share a thought, dream, or reflection..."
                       className="w-full h-24 bg-transparent border-none outline-none text-white placeholder:text-white/40 resize-none text-sm leading-relaxed"
-                      maxLength={500}
+                      maxLength={1000}
                     />
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-xs text-white/40">{newThought.length}/500</span>
+                      <span className="text-xs text-white/40">{newThought.length}/1000</span>
                       <Button
                         onClick={addThought}
                         disabled={!newThought.trim()}
