@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ interface Event {
 
 export function EventCalendar() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,6 +94,10 @@ export function EventCalendar() {
     setCurrentDate(new Date())
   }
 
+  const handleCreateEvent = () => {
+    router.push('/create-invite')
+  }
+
   const formatTime = (timeStr: string) => {
     return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
@@ -116,14 +122,25 @@ export function EventCalendar() {
             </Badge>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-gray-400 hover:text-white"
-          >
-            {isExpanded ? 'Collapse' : 'Expand'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCreateEvent}
+              className="text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Create
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs text-gray-400 hover:text-white"
+            >
+              {isExpanded ? 'Collapse' : 'Expand'}
+            </Button>
+          </div>
         </div>
 
         {/* Mini Calendar (always visible) */}

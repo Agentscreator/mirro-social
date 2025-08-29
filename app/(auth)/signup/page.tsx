@@ -16,10 +16,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Eye, EyeOff } from "lucide-react"
 import { isMobileApp } from "@/src/lib/mobile-auth"
+import { ContactsImport } from "@/components/contacts-import"
 
 export default function SignupPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const [showContactsImport, setShowContactsImport] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [emailError, setEmailError] = useState("")
@@ -181,6 +183,34 @@ export default function SignupPage() {
     }
   }
 
+  const handleContactsSelected = async (contacts: any[]) => {
+    console.log('Selected contacts:', contacts)
+    
+    try {
+      const response = await fetch('/api/contacts/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to import contacts')
+      }
+
+      const result = await response.json()
+      console.log('Contacts import result:', result)
+    } catch (error) {
+      console.error('Failed to import contacts:', error)
+      // Don't block the user flow if contacts import fails
+    }
+  }
+
+  const handleContactsComplete = () => {
+    // Redirect to feed after contacts import (or skip)
+    router.push("/feed")
+    router.refresh()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -236,9 +266,9 @@ export default function SignupPage() {
       }
 
       if (result?.ok) {
-        // Redirect to feed page only if login was successful
-        router.push("/feed")
-        router.refresh()
+        // Show contacts import step instead of redirecting immediately
+        setShowContactsImport(true)
+        setLoading(false)
       } else {
         // If login failed for unknown reason, redirect to login
         router.push("/login?message=Account created successfully! Please log in.")
@@ -250,6 +280,35 @@ export default function SignupPage() {
     }
   }
 
+
+  // Show contacts import step after successful registration
+  if (showContactsImport) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-black via-gray-950 to-black">
+        <Link href="/" className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-2 z-10 group">
+          <div className="transition-all duration-300 group-hover:scale-105">
+            <Logo size="sm" />
+          </div>
+        </Link>
+
+        {/* Mobile-optimized logo at top */}
+        <div className="mb-8 sm:mb-12 transition-all duration-500 ease-out">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-xl rounded-full scale-150"></div>
+            <div className="relative">
+              <MirroIcon size="lg" />
+            </div>
+          </div>
+        </div>
+
+        <ContactsImport
+          onContactsSelected={handleContactsSelected}
+          onSkip={handleContactsComplete}
+          onComplete={handleContactsComplete}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-black via-gray-950 to-black">

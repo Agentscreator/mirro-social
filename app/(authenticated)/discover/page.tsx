@@ -1,1138 +1,486 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { Search, MessageCircle, User, ChevronLeft, ChevronRight, Plus, X } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Sparkles, RefreshCw, Plus, Heart, MessageCircle, Share, Bookmark, TrendingUp, Zap, Stars } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { UserCard } from "@/components/user-card"
-import { TypingAnimation } from "@/components/typing-animation"
-import type { RecommendedUser } from "@/src/lib/recommendationService"
-import { fetchRecommendations, generateExplanation } from "@/src/lib/apiServices"
-import type { RecommendedUser as ApiRecommendedUser } from "@/src/lib/apiServices"
 import { useRouter } from "next/navigation"
-import { debounce } from "lodash"
-import { useStreamContext } from "@/components/providers/StreamProvider"
+import { useSession } from "next-auth/react"
 import { toast } from "@/hooks/use-toast"
+import { motion, AnimatePresence } from "framer-motion"
 
-// Define search user type
-interface SearchUser {
-  id: string
-  username: string
-  nickname?: string
+interface DiscoverPost {
+  id: number
+  content: string
   image?: string
-  profileImage?: string
-}
-
-// Extended RecommendedUser type to include profileImage
-interface ExtendedRecommendedUser extends RecommendedUser {
-  profileImage?: string
+  video?: string
+  duration?: number
+  createdAt: string
+  user: {
+    id: string
+    username: string
+    nickname?: string
+    profileImage?: string
+    image?: string
+  }
+  likes: number
+  isLiked: boolean
+  comments: number
+  views?: number
+  isBookmarked?: boolean
 }
 
 export default function DiscoverPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [users, setUsers] = useState<ExtendedRecommendedUser[]>([])
-  const [searchResults, setSearchResults] = useState<SearchUser[]>([])
+  const [posts, setPosts] = useState<DiscoverPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [explanationLoading, setExplanationLoading] = useState<string | null>(null)
-  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false)
+  const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showSearchResults, setShowSearchResults] = useState(false)
-  const [messagingUser, setMessagingUser] = useState<string | null>(null)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [thoughts, setThoughts] = useState<Array<{id: string, title: string, content: string, createdAt: string}>>([])
-  const [newThought, setNewThought] = useState("")
-  const [isTypingThought, setIsTypingThought] = useState(false)
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [showThoughtsUpload, setShowThoughtsUpload] = useState(false)
-  const [isProcessingEmbeddings, setIsProcessingEmbeddings] = useState(false)
+  const [showThoughtsPrompt, setShowThoughtsPrompt] = useState(false)
   const router = useRouter()
-  const { client: streamClient, isReady } = useStreamContext()
-  const thoughtInputRef = useRef<HTMLTextAreaElement>(null)
-  const thoughtsContainerRef = useRef<HTMLDivElement>(null)
+  const { data: session } = useSession()
+  const observerTarget = useRef<HTMLDivElement>(null)
 
-  // Touch/swipe state
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  // Check if user has thoughts
+  const [userHasThoughts, setUserHasThoughts] = useState(true)
 
-  // Helper functions for thoughts management
-  const loadThoughts = async () => {
+  const checkUserThoughts = async () => {
     try {
       const response = await fetch('/api/thoughts', {
         method: 'GET',
         credentials: 'include',
       })
       if (response.ok) {
-        const thoughtsData = await response.json()
-        setThoughts(thoughtsData)
-      }
-    } catch (error) {
-      console.error('Error loading thoughts:', error)
-    }
-  }
-
-  const addThought = async () => {
-    if (newThought.trim() && newThought.length <= 1000) {
-      const totalCharacters = thoughts.map(t => t.content).join("").length + newThought.length
-      if (totalCharacters <= 8000) {
-        try {
-          // Preserve focus state
-          const wasInputFocused = thoughtInputRef.current === document.activeElement
-          
-          const response = await fetch('/api/thoughts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              title: `Thought ${thoughts.length + 1}`,
-              content: newThought.trim()
-            })
-          })
-          
-          if (response.ok) {
-            const newThoughtData = await response.json()
-            setThoughts([newThoughtData, ...thoughts])
-            setNewThought("")
-            
-            // Restore focus if it was previously focused
-            if (wasInputFocused && thoughtInputRef.current) {
-              setTimeout(() => {
-                thoughtInputRef.current?.focus()
-              }, 0)
-            }
-          }
-        } catch (error) {
-          console.error('Error saving thought:', error)
+        const thoughts = await response.json()
+        setUserHasThoughts(thoughts.length > 0)
+        if (thoughts.length === 0) {
+          setShowThoughtsPrompt(true)
         }
       }
-    }
-  }
-
-  const removeThought = async (thoughtId: string) => {
-    try {
-      const response = await fetch(`/api/thoughts/${thoughtId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      
-      if (response.ok) {
-        setThoughts(thoughts.filter(t => t.id !== thoughtId))
-      }
     } catch (error) {
-      console.error('Error deleting thought:', error)
+      console.error('Error checking thoughts:', error)
     }
   }
 
-  const getTotalCharacters = () => {
-    return thoughts.map(t => t.content).join("").length
-  }
-
-  const syncEmbeddings = async () => {
-    setIsProcessingEmbeddings(true)
+  // Fetch discover posts
+  const fetchDiscoverPosts = async (pageNum: number = 1, isRefresh: boolean = false) => {
     try {
-      const response = await fetch('/api/embeddings/sync-to-pinecone', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Embeddings synced:', result)
-        toast({
-          title: "Success!",
-          description: `Synced ${result.synced} user embeddings. Recommendations will appear shortly.`,
-        })
-        
-        // Reload the page after a short delay to show new recommendations
-        setTimeout(() => {
-          window.location.reload()
-        }, 2000)
-      } else {
-        const error = await response.json()
-        toast({
-          title: "Error",
-          description: error.error || "Failed to sync embeddings",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error('Error syncing embeddings:', error)
-      toast({
-        title: "Error",
-        description: "Failed to sync embeddings. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsProcessingEmbeddings(false)
-    }
-  }
-
-  // Handle typing state for pausing recommendations
-  const handleThoughtTyping = (value: string) => {
-    setNewThought(value)
-    
-    // Only set typing state if not already typing to prevent unnecessary re-renders
-    if (!isTypingThought) {
-      setIsTypingThought(true)
-    }
-    
-    // Clear previous timeout
-    if (typingTimeout) {
-      clearTimeout(typingTimeout)
-    }
-    
-    // Set new timeout to mark typing as finished after 3 seconds of inactivity (increased from 2)
-    const newTimeout = setTimeout(() => {
-      setIsTypingThought(false)
-    }, 3000)
-    
-    setTypingTimeout(newTimeout)
-  }
-
-  // Helper function to get the best available image URL
-  const getBestImageUrl = (user: { image?: string | null; profileImage?: string | null }): string | null => {
-    if (user.profileImage && user.profileImage.trim() && !user.profileImage.includes("placeholder")) {
-      return user.profileImage
-    }
-    if (user.image && user.image.trim() && !user.image.includes("placeholder")) {
-      return user.image
-    }
-    return null
-  }
-
-  // Helper function to convert API user to local user type
-  const convertApiUserToLocalUser = (apiUser: ApiRecommendedUser): ExtendedRecommendedUser => {
-    console.log("Converting API user:", apiUser)
-    const bestImageUrl = getBestImageUrl(apiUser as any)
-    return {
-      id: apiUser.id,
-      username: apiUser.username,
-      image: bestImageUrl || "",
-      profileImage: (apiUser as any).profileImage,
-      reason: apiUser.reason,
-      tags: apiUser.tags ?? [],
-      score: (apiUser as any).score ?? 0,
-    }
-  }
-
-  // Search users function
-  const searchUsers = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      setShowSearchResults(false)
-      return
-    }
-    setSearchLoading(true)
-    try {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}&limit=10`, {
-        method: "GET",
-        credentials: "include",
-      })
-      if (response.ok) {
-        const { users } = await response.json()
-        console.log("Search results:", users)
-        const processedUsers = users.map((user: any) => ({
-          ...user,
-          image: getBestImageUrl(user) || "",
-        }))
-        setSearchResults(processedUsers)
-        setShowSearchResults(true)
-      } else {
-        console.warn("Search returned status", response.status)
-        setSearchResults([])
-        setShowSearchResults(false)
-      }
-    } catch (error) {
-      console.error("Search error:", error)
-      setSearchResults([])
-      setShowSearchResults(false)
-    } finally {
-      setSearchLoading(false)
-    }
-  }
-
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((query: string) => searchUsers(query), 300),
-    [],
-  )
-
-  // Handle search input change
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value)
-    if (value.trim()) {
-      debouncedSearch(value)
-    } else {
-      setSearchResults([])
-      setShowSearchResults(false)
-    }
-  }
-
-  // Handle search input focus/blur
-  const handleSearchFocus = () => {
-    if (searchQuery.trim() && searchResults.length > 0) {
-      setShowSearchResults(true)
-    }
-  }
-
-  const handleSearchBlur = (e: React.FocusEvent) => {
-    const relatedTarget = e.relatedTarget as HTMLElement
-    if (relatedTarget && relatedTarget.closest("[data-search-dropdown]")) {
-      return
-    }
-    setTimeout(() => setShowSearchResults(false), 200)
-  }
-
-  // Navigate to user profile
-  const handleViewProfile = (userId: string) => {
-    setShowSearchResults(false)
-    router.push(`/profile/${userId}`)
-  }
-
-  // Start conversation with user
-  const handleMessage = async (userId: string) => {
-    if (!streamClient || !isReady) {
-      toast({
-        title: "Error",
-        description: "Chat is not ready. Please wait a moment and try again.",
-        variant: "destructive",
-      })
-      return
-    }
-    setMessagingUser(userId)
-    setShowSearchResults(false)
-    try {
-      const response = await fetch("/api/stream/channel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientId: userId }),
-      })
+      const response = await fetch(`/api/feed?type=discover&limit=20&page=${pageNum}`)
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to create channel")
+        throw new Error('Failed to fetch discover posts')
       }
-      router.push(`/messages/${userId}`)
+      
+      const data = await response.json()
+      
+      // Transform posts to match our interface
+      const transformedPosts: DiscoverPost[] = (data.posts || []).map((post: any) => ({
+        id: post.id,
+        content: post.content,
+        image: post.image,
+        video: post.video,
+        duration: post.duration,
+        createdAt: post.createdAt,
+        user: {
+          id: post.user.id,
+          username: post.user.username,
+          nickname: post.user.nickname,
+          profileImage: post.user.profileImage || post.user.image,
+          image: post.user.image
+        },
+        likes: post.likes || Math.floor(Math.random() * 1000), // Demo data
+        isLiked: post.isLiked || false,
+        comments: post.comments || Math.floor(Math.random() * 100),
+        views: Math.floor(Math.random() * 5000) + 100,
+        isBookmarked: false
+      }))
+      
+      if (isRefresh) {
+        setPosts(transformedPosts)
+      } else {
+        setPosts(prev => pageNum === 1 ? transformedPosts : [...prev, ...transformedPosts])
+      }
+      
+      setHasMore(data.hasMore || transformedPosts.length === 20)
+      return transformedPosts
     } catch (error) {
-      console.error("Error creating channel:", error)
+      console.error('Error fetching discover posts:', error)
       toast({
         title: "Error",
-        description: "Failed to start conversation. Please try again.",
+        description: "Failed to load discover posts",
         variant: "destructive",
       })
-    } finally {
-      setMessagingUser(null)
+      return []
     }
   }
 
-  // Navigation functions
-  const goToPrevious = () => {
-    // Don't allow navigation while generating any explanation
-    if (isGeneratingExplanation) return
+  // Load initial posts
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!session?.user?.id) return
+      
+      setLoading(true)
+      await Promise.all([
+        fetchDiscoverPosts(1),
+        checkUserThoughts()
+      ])
+      setLoading(false)
+    }
     
-    // Left button: go back to previous user if available
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-    }
-  }
-
-  const goToNext = async () => {
-    // Don't allow navigation while generating any explanation
-    if (isGeneratingExplanation) return
-    
-    if (currentIndex < shuffledUsers.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-      
-      // Preload more users when we're getting close to the end (within 2 users)
-      if (currentIndex >= shuffledUsers.length - 3 && hasMore && !loadingMore && !isTypingThought) {
-        loadMore() // Don't await, run in background
-      }
-    } else if (hasMore && !loadingMore && !isTypingThought) {
-      // Load more users when reaching the end, but not if user is typing
-      await loadMore()
-      if (currentIndex < shuffledUsers.length - 1) {
-        setCurrentIndex(currentIndex + 1)
-      }
-    }
-  }
-
-  // Load more recommendations
-  const loadMore = async () => {
-    if (!hasMore || loadingMore || isTypingThought) return
-    try {
-      setLoadingMore(true)
-      const randomSeed = Math.floor(Math.random() * 1000)
-      const { users: newUsers, hasMore: moreAvailable, nextPage } = await fetchRecommendations(currentPage, 3, randomSeed)
-      const usersWithReasons = [...users]
-      const existingUserIds = new Set(users.map((user) => user.id))
-
-      // First, add all new users immediately with placeholder reasons
-      const newConvertedUsers = []
-      for (const newUser of newUsers) {
-        if (existingUserIds.has(newUser.id)) {
-          continue
-        }
-
-        const convertedUser = convertApiUserToLocalUser(newUser)
-        convertedUser.reason = "Generating match explanation..."
-        usersWithReasons.push(convertedUser)
-        newConvertedUsers.push({ originalUser: newUser, convertedUser })
-        existingUserIds.add(newUser.id)
-      }
-      
-      // Update users immediately so navigation is fast
-      setUsers([...usersWithReasons])
-      
-      // Generate explanations sequentially for better UX
-      if (newConvertedUsers.length > 0) {
-        setIsGeneratingExplanation(true)
-      }
-      
-      for (const { originalUser, convertedUser } of newConvertedUsers) {
-        try {
-          setExplanationLoading(convertedUser.id)
-          const explanation = await generateExplanation(originalUser)
-          // Update the specific user's reason
-          setUsers(prevUsers => {
-            const updatedUsers = [...prevUsers]
-            const userIndex = updatedUsers.findIndex(u => u.id === convertedUser.id)
-            if (userIndex !== -1) {
-              updatedUsers[userIndex].reason = explanation
-            }
-            return updatedUsers
-          })
-        } catch (error) {
-          console.error(`Failed to generate explanation for user ${originalUser.id}:`, error)
-          setUsers(prevUsers => {
-            const updatedUsers = [...prevUsers]
-            const userIndex = updatedUsers.findIndex(u => u.id === convertedUser.id)
-            if (userIndex !== -1) {
-              updatedUsers[userIndex].reason = "Unable to generate match explanation"
-            }
-            return updatedUsers
-          })
-        } finally {
-          setExplanationLoading(null)
-        }
-      }
-      
-      if (newConvertedUsers.length > 0) {
-        setIsGeneratingExplanation(false)
-      }
-
-      // Users already updated above for faster navigation
-      setHasMore(moreAvailable)
-      setCurrentPage(nextPage ?? currentPage)
-    } catch (error) {
-      console.error("Failed to load more recommendations:", error)
-    } finally {
-      setLoadingMore(false)
-    }
-  }
-
-
-
-
-  // Clear local storage position when component mounts to ensure fresh order
-  useEffect(() => {
-    localStorage.removeItem('discover-current-index')
-    setCurrentIndex(0)
-  }, [])
-
-  // Update showThoughtsUpload based on thoughts length
-  useEffect(() => {
-    setShowThoughtsUpload(thoughts.length === 0)
-  }, [thoughts.length])
-
-  // Initial load of recommendations and thoughts
-  useEffect(() => {
-    async function loadInitialData() {
-      try {
-        setLoading(true)
-        
-        // Set a maximum loading time of 800ms
-        const maxLoadingTime = setTimeout(() => {
-          setLoading(false)
-        }, 800)
-        
-        // Generate a random seed for this session to ensure different order
-        const randomSeed = Math.floor(Math.random() * 1000)
-        
-        // Load recommendations and thoughts in parallel
-        const [recommendationsData, _] = await Promise.all([
-          fetchRecommendations(1, 10, randomSeed), // Increased from 3 to 10 for more results
-          loadThoughts()
-        ])
-        
-        clearTimeout(maxLoadingTime)
-        
-        console.log('Recommendations API Response:', recommendationsData)
-        const { users: recommendedUsers, hasMore: moreAvailable, nextPage } = recommendationsData
-        
-        console.log('Recommended Users:', recommendedUsers, 'Length:', recommendedUsers?.length)
-        console.log('Raw recommended users data:', JSON.stringify(recommendedUsers, null, 2))
-        
-        // Convert users first, set basic data immediately
-        const usersWithBasicData = recommendedUsers.map(user => {
-          const convertedUser = convertApiUserToLocalUser(user)
-          convertedUser.reason = "Generating match explanation..."
-          return convertedUser
-        })
-        
-        console.log('Setting users with basic data:', usersWithBasicData.length, 'users')
-        console.log('Users with basic data:', JSON.stringify(usersWithBasicData, null, 2))
-        
-        setUsers(usersWithBasicData)
-        setHasMore(moreAvailable)
-        setCurrentPage(nextPage ?? 1)
-        setLoading(false) // Stop loading here to show users faster
-        
-        // Generate explanations sequentially after showing users
-        if (recommendedUsers.length > 0) {
-          setIsGeneratingExplanation(true)
-        }
-        
-        for (let index = 0; index < recommendedUsers.length; index++) {
-          const user = recommendedUsers[index]
-          const convertedUser = usersWithBasicData[index]
-          
-          try {
-            setExplanationLoading(convertedUser.id)
-            const explanation = await generateExplanation(user)
-            
-            setUsers(prevUsers => {
-              const newUsers = [...prevUsers]
-              if (newUsers[index]) {
-                newUsers[index].reason = explanation
-              }
-              return newUsers
-            })
-          } catch (error) {
-            console.error(`Failed to generate explanation for user ${user.id}:`, error)
-            setUsers(prevUsers => {
-              const newUsers = [...prevUsers]
-              if (newUsers[index]) {
-                newUsers[index].reason = "Unable to generate match explanation"
-              }
-              return newUsers
-            })
-          } finally {
-            setExplanationLoading(null)
-          }
-        }
-        
-        if (recommendedUsers.length > 0) {
-          setIsGeneratingExplanation(false)
-        }
-      } catch (error) {
-        console.error("Failed to load initial data:", error)
-        setLoading(false)
-        setIsGeneratingExplanation(false)
-      }
-    }
     loadInitialData()
-  }, [])
+  }, [session?.user?.id])
 
-  // Filter users based on search query and show users from recommendation system
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase())
-    // Show all users returned by the recommendation system (they already have embeddings)
-    return matchesSearch
-  })
-  
-  // Debug logging
-  console.log('Current users state:', users.length, 'users')
-  console.log('Search query:', searchQuery)
-  console.log('Filtered users:', filteredUsers.length, 'users')
-  console.log('Thoughts length:', thoughts.length)
-  console.log('Loading state:', loading)
-  
-  // Sort users by tier (lower tier number = higher priority) and then by score
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    // First sort by tier (if available)
-    const aTier = (a as any).tier || 3
-    const bTier = (b as any).tier || 3
+  // Infinite scroll
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore) return
     
-    if (aTier !== bTier) {
-      return aTier - bTier // Lower tier number comes first
-    }
-    
-    // If same tier, sort by score (higher score first)
-    return (b.score || 0) - (a.score || 0)
-  })
-  
-  // Add some randomization to prevent the same user always appearing first
-  const shuffledUsers = [...sortedUsers]
-  if (shuffledUsers.length > 1) {
-    // Group by tier and shuffle within each tier
-    const tierGroups: { [key: number]: typeof shuffledUsers } = {}
-    shuffledUsers.forEach(user => {
-      const tier = (user as any).tier || 1 // Default to tier 1 if no tier specified
-      if (!tierGroups[tier]) tierGroups[tier] = []
-      tierGroups[tier].push(user)
-    })
-    
-    // Shuffle within each tier
-    Object.values(tierGroups).forEach(tierUsers => {
-      if (tierUsers.length > 1) {
-        for (let i = Math.min(3, tierUsers.length - 1); i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [tierUsers[i], tierUsers[j]] = [tierUsers[j], tierUsers[i]];
+    setLoadingMore(true)
+    const nextPage = page + 1
+    await fetchDiscoverPosts(nextPage)
+    setPage(nextPage)
+    setLoadingMore(false)
+  }, [hasMore, loadingMore, page])
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
         }
-      }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => observer.disconnect()
+  }, [loadMore])
+
+  // Refresh feed
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    setPage(1)
+    await fetchDiscoverPosts(1, true)
+    setRefreshing(false)
+    
+    toast({
+      title: "Feed refreshed!",
+      description: "Discover new amazing content",
     })
-    
-    // Reconstruct the array with shuffled tiers
-    shuffledUsers.length = 0
-    Object.keys(tierGroups).sort((a, b) => Number(a) - Number(b)).forEach(tier => {
-      shuffledUsers.push(...tierGroups[Number(tier)])
-    })
   }
 
-  // Don't save/restore position - start fresh each time for randomization
-  // (Position saving code removed to ensure fresh experience each visit)
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeout) {
-        clearTimeout(typingTimeout)
-      }
-    }
-  }, [typingTimeout])
-
-  // Capacitor keyboard handling
-  useEffect(() => {
-    const isCapacitor = !!(window as any).Capacitor
+  // Handle like/unlike
+  const handleLike = async (postId: number) => {
+    setPosts(prev => prev.map(post => 
+      post.id === postId 
+        ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 }
+        : post
+    ))
     
-    if (isCapacitor && (window as any).Capacitor?.Plugins?.Keyboard) {
-      const keyboard = (window as any).Capacitor.Plugins.Keyboard
-      
-      const keyboardWillShow = () => {
-        // Add minimal padding to body, don't interfere with scrolling
-        document.body.style.paddingBottom = '100px'
-        // Ensure body can still be scrolled
-        document.body.style.overflowY = 'auto'
-      }
-      
-      const keyboardWillHide = () => {
-        // Remove padding when keyboard hides
-        document.body.style.paddingBottom = '0px'
-        // Restore original overflow
-        document.body.style.overflowY = 'auto'
-      }
-      
-      keyboard.addListener('keyboardWillShow', keyboardWillShow)
-      keyboard.addListener('keyboardWillHide', keyboardWillHide)
-      
-      return () => {
-        keyboard.removeAllListeners()
-        document.body.style.paddingBottom = '0px'
-      }
-    }
-  }, [])
-
-  // Swipe gesture handling
-  const minSwipeDistance = 50
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null) // otherwise the swipe is fired even with usual touch events
-    setTouchStart(e.targetTouches[0].clientX)
+    // TODO: API call to like/unlike post
   }
 
-  const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    if (isGeneratingExplanation) return // Block swipe during explanation generation
-    
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-    
-    if (isLeftSwipe) {
-      // Swipe left - go to next user
-      goToNext()
-    } else if (isRightSwipe) {
-      // Swipe right - go to previous user
-      goToPrevious()
-    }
+  // Handle bookmark
+  const handleBookmark = async (postId: number) => {
+    setPosts(prev => prev.map(post => 
+      post.id === postId 
+        ? { ...post, isBookmarked: !post.isBookmarked }
+        : post
+    ))
   }
 
-  // Get current user to display
-  const currentUser = shuffledUsers[currentIndex]
+  const navigateToNewPost = () => {
+    router.push('/create-invite')
+  }
 
-  // Memoized ThoughtsUploadArea Component to prevent unnecessary re-renders
-  const ThoughtsUploadArea = useMemo(() => {
+  if (!session) {
     return (
-      <div ref={thoughtsContainerRef} className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
-        <div className="text-center mb-4">
-          <h3 className="text-lg font-medium text-white mb-1">Add your first thought to see connection recommendations</h3>
-          <p className="text-sm text-gray-400">Share what's on your mind to connect with like-minded people</p>
-          {isTypingThought && (
-            <p className="text-xs text-blue-400 mt-2 font-medium">
-              ✓ Recommendations paused while typing
-            </p>
-          )}
-        </div>
-
-        {/* Character count */}
-        <div className="text-center mb-4">
-          <span className={`text-xs ${getTotalCharacters() > 7500 ? 'text-red-400' : 'text-gray-500'}`}>
-            {getTotalCharacters()}/8000 characters
-          </span>
-        </div>
-
-        {/* Existing thoughts */}
-        {thoughts.length > 0 && (
-          <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
-            {thoughts.map((thought) => (
-              <div key={thought.id} className="relative bg-gray-800 rounded-lg p-3 group">
-                <p className="text-sm text-gray-200 pr-6">{thought.content}</p>
-                <button
-                  onClick={() => removeThought(thought.id)}
-                  className="absolute top-2 right-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* New thought input */}
-        <div className="space-y-3">
-          <textarea
-            ref={thoughtInputRef}
-            value={newThought}
-            onChange={(e) => handleThoughtTyping(e.target.value)}
-            placeholder="Share a thought, interest, or what you're looking for in connections..."
-            className="w-full h-20 p-3 rounded-lg border border-gray-600 bg-gray-800 resize-none text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            maxLength={1000}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            data-testid="thought-input"
-            onFocus={() => {
-              // Add class to ensure scrolling works while typing
-              document.body.classList.add('typing-thought')
-              
-              // Gentle scroll adjustment only if input is not visible
-              if (window.innerWidth < 1024) {
-                const isCapacitor = !!(window as any).Capacitor
-                
-                setTimeout(() => {
-                  const inputRect = thoughtInputRef.current?.getBoundingClientRect()
-                  if (inputRect && inputRect.bottom > window.innerHeight * 0.6) {
-                    // Only adjust if the input is mostly hidden by keyboard
-                    window.scrollBy({ 
-                      top: Math.min(200, inputRect.bottom - window.innerHeight * 0.6),
-                      behavior: 'smooth' 
-                    })
-                  }
-                }, isCapacitor ? 100 : 300)
-              }
-            }}
-            onBlur={() => {
-              // Remove class when input loses focus
-              document.body.classList.remove('typing-thought')
-            }}
-          />
-          
-          <Button
-            onClick={addThought}
-            disabled={
-              !newThought.trim() || 
-              newThought.length > 1000 || 
-              getTotalCharacters() + newThought.length > 8000
-            }
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 disabled:opacity-50 transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Thought
-          </Button>
+      <div className="h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <p className="text-white/70 text-sm">Loading...</p>
         </div>
       </div>
     )
-  }, [thoughts, newThought, isTypingThought])
+  }
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <TypingAnimation speed={100} />
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6 px-8">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="relative"
+          >
+            <div className="w-16 h-16 rounded-full border-4 border-purple-500/30"></div>
+            <div className="absolute top-0 left-0 w-16 h-16 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
+          </motion.div>
+          <div className="text-center">
+            <p className="text-white text-lg font-medium mb-2">Discovering amazing content</p>
+            <p className="text-white/60 text-sm">Finding the perfect posts for you...</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative">
-      {/* Main Content */}
-      <div className="w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-light text-white">Discover</h1>
-        </div>
-
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            placeholder="Search users..."
-            className="pl-12 h-12 rounded-xl border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-          />
-
-          {/* Search Results Dropdown */}
-          {showSearchResults && (
-            <div
-              className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-lg border border-gray-700 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto"
-              data-search-dropdown
-            >
-              {searchLoading ? (
-                <div className="p-6 text-center">
-                  <TypingAnimation />
-                </div>
-              ) : searchResults.length > 0 ? (
-                <div className="p-2">
-                  {searchResults.map((user) => {
-                    const imageUrl = getBestImageUrl(user)
-                    return (
-                      <div
-                        key={user.id}
-                        className="px-4 py-3 hover:bg-gray-800/80 cursor-pointer rounded-lg mx-1 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                              {imageUrl ? (
-                                <img
-                                  src={imageUrl || "/placeholder.svg"}
-                                  alt={user.username}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    console.log("Image failed to load:", imageUrl)
-                                    e.currentTarget.style.display = "none"
-                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement
-                                    if (fallback) fallback.style.display = "flex"
-                                  }}
-                                />
-                              ) : null}
-                              <div
-                                className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold"
-                                style={{ display: imageUrl ? "none" : "flex" }}
-                              >
-                                {user.username[0]?.toUpperCase() || "?"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-white">{user.username}</div>
-                              {user.nickname && <div className="text-sm text-gray-300">{user.nickname}</div>}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                handleViewProfile(user.id)
-                              }}
-                              className="h-8 px-3 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                            >
-                              <User className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              size="sm"
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                handleMessage(user.id)
-                              }}
-                              className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                              disabled={messagingUser === user.id || !isReady}
-                            >
-                              {messagingUser === user.id ? (
-                                <div className="h-3 w-3 mr-1 animate-spin rounded-full border border-white border-t-transparent"></div>
-                              ) : (
-                                <MessageCircle className="h-3 w-3 mr-1" />
-                              )}
-                              Message
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="p-6 text-center text-gray-400">No users found</div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-purple-900/95 via-blue-900/95 to-indigo-900/95 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="h-8 w-8 text-purple-400" />
+              </motion.div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Discover</h1>
+                <p className="text-sm text-white/60">Trending content just for you</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleRefresh}
+                variant="ghost"
+                size="icon"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                disabled={refreshing}
+              >
+                <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              
+              {!userHasThoughts && (
+                <Button
+                  onClick={navigateToNewPost}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-full px-6"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Thoughts
+                </Button>
               )}
             </div>
-          )}
+          </div>
         </div>
+      </div>
 
-        {/* Add Thoughts Button - Under Search Bar */}
-        {thoughts.length > 0 && (
-          <div className="mb-8 flex justify-center">
-            <Button
-              onClick={() => setShowThoughtsUpload(!showThoughtsUpload)}
-              variant="outline"
-              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl"
-              style={{
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.1)',
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)'
-              }}
+      {/* No Thoughts Prompt */}
+      <AnimatePresence>
+        {showThoughtsPrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto px-4 py-6"
+          >
+            <div className="bg-gradient-to-r from-purple-800/40 to-blue-800/40 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                  <Stars className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    Share your thoughts to get personalized content
+                  </h3>
+                  <p className="text-white/70 text-sm">
+                    Add your interests and thoughts to see content tailored just for you
+                  </p>
+                </div>
+                <Button
+                  onClick={navigateToNewPost}
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full"
+                >
+                  Get Started
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Content Grid */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {posts.length === 0 ? (
+          <div className="text-center py-20">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              {showThoughtsUpload ? 'Hide' : 'Add Thoughts'}
+              <TrendingUp className="h-16 w-16 text-white/40 mx-auto mb-4" />
+            </motion.div>
+            <h3 className="text-xl font-semibold text-white mb-2">No content yet</h3>
+            <p className="text-white/60 mb-6">Be the first to discover amazing content!</p>
+            <Button
+              onClick={handleRefresh}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-full px-8"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Feed
             </Button>
           </div>
-        )}
-
-        {/* Main Content */}
-        {!showSearchResults && (
+        ) : (
           <>
-            {/* Show recommendations or thoughts input based on user state */}
-            {thoughts.length === 0 ? (
-              <div className="flex justify-center items-center min-h-[50vh]">
-                <div className="w-full max-w-2xl">
-                  {ThoughtsUploadArea}
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Show recommendations once user has thoughts */}
-                {filteredUsers.length > 0 ? (
-                  <div className="relative">
-                    {/* Desktop Layout */}
-                    <div className="hidden lg:block">
-                      {/* Navigation */}
-                      <div className="flex items-center justify-center gap-8 mb-8">
-                        <Button
-                          onClick={goToPrevious}
-                          disabled={currentIndex === 0 || isGeneratingExplanation}
-                          variant="ghost"
-                          size="lg"
-                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                        >
-                          <ChevronLeft className="h-5 w-5 text-white" />
-                        </Button>
-
-                        <div className="text-lg font-light text-gray-300 min-w-[120px] text-center">
-                          {/* Pagination counter removed for 1-by-1 browsing */}
-                        </div>
-
-                        <Button
-                          onClick={goToNext}
-                          disabled={isGeneratingExplanation}
-                          variant="ghost"
-                          size="lg"
-                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                        >
-                          {loadingMore ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-white" />
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* Main Content - User Card Only */}
-                      <div className="flex justify-center">
-                        {currentUser && (
-                          <div className="w-full max-w-4xl">
-                            <UserCard
-                              key={currentUser.id}
-                              user={{
-                                id: currentUser.id,
-                                username: currentUser.username,
-                                image: currentUser.image || "",
-                                profileImage: currentUser.profileImage,
-                                reason: currentUser.reason || "Calculating why you'd be a good match...",
-                                tags: [],
-                              }}
-                              onMessage={() => handleMessage(currentUser.id.toString())}
-                              onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                              isMessaging={messagingUser === currentUser.id.toString()}
-                              isLarge={true}
-                            />
+            {/* Masonry Grid Layout */}
+            <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+              {posts.map((post, index) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  className="break-inside-avoid mb-6"
+                >
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20">
+                    {/* Post Media */}
+                    {post.image && (
+                      <div className="relative aspect-square overflow-hidden">
+                        <img
+                          src={post.image}
+                          alt={post.content}
+                          className="w-full h-full object-cover"
+                        />
+                        {post.views && (
+                          <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-white">
+                            {post.views.toLocaleString()} views
                           </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* Mobile Layout */}
-                    <div className="lg:hidden space-y-6">
-                      {/* Navigation */}
-                      <div className="flex items-center justify-center gap-6">
-                        <Button
-                          onClick={goToPrevious}
-                          disabled={currentIndex === 0 || isGeneratingExplanation}
-                          variant="ghost"
-                          size="lg"
-                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                        >
-                          <ChevronLeft className="h-5 w-5 text-white" />
-                        </Button>
-
-                        <div className="text-center">
-                          <p className="text-xs text-gray-500">{isGeneratingExplanation ? "Generating..." : "Swipe to explore"}</p>
-                        </div>
-
-                        <Button
-                          onClick={goToNext}
-                          disabled={isGeneratingExplanation}
-                          variant="ghost"
-                          size="lg"
-                          className="w-12 h-12 rounded-full bg-gray-800/50 hover:bg-gray-700 disabled:opacity-30 transition-colors"
-                        >
-                          {loadingMore ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-white" />
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* User Card */}
-                      {currentUser && (
-                        <div 
-                          className=""
-                          onTouchStart={onTouchStart}
-                          onTouchMove={onTouchMove}
-                          onTouchEnd={onTouchEnd}
-                        >
-                          <UserCard
-                            key={currentUser.id}
-                            user={{
-                              id: currentUser.id,
-                              username: currentUser.username,
-                              image: currentUser.image || "",
-                              profileImage: currentUser.profileImage,
-                              reason: currentUser.reason || "Calculating why you'd be a good match...",
-                              tags: [],
-                            }}
-                            onMessage={() => handleMessage(currentUser.id.toString())}
-                            onViewProfile={() => handleViewProfile(currentUser.id.toString())}
-                            isMessaging={messagingUser === currentUser.id.toString()}
-                            isLarge={true}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Thoughts Upload Overlay */}
-                    {showThoughtsUpload && (
-                      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="w-full max-w-2xl relative">
-                          <Button
-                            onClick={() => setShowThoughtsUpload(false)}
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-12 right-0 text-white hover:bg-white/10"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          {ThoughtsUploadArea}
-                        </div>
-                      </div>
                     )}
-
-                    {explanationLoading === currentUser?.id && (
-                      <div className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                        </div>
-                        Generating connection recommendation...
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {/* No recommendations available - show helpful message */}
-                    <div className="text-center py-16">
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                          <div className="text-gray-400 mb-2">Finding your perfect matches...</div>
-                          <p className="text-sm text-gray-500">This may take a moment</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-gray-400 mb-2">Ready to find connections...</div>
-                          <p className="text-sm text-gray-500 mb-4">Your thoughts are ready! Sync them to our recommendation engine to discover meaningful connections.</p>
-                          <p className="text-xs text-gray-600 mb-4">This will sync all user embeddings and show you compatible matches!</p>
-                          <div className="flex gap-3 justify-center">
-                            <Button
-                              onClick={syncEmbeddings}
-                              disabled={isProcessingEmbeddings}
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              {isProcessingEmbeddings ? (
-                                <>
-                                  <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
-                                  Syncing...
-                                </>
-                              ) : (
-                                "Sync Recommendations"
-                              )}
-                            </Button>
-                            <Button
-                              onClick={() => window.location.reload()}
-                              variant="outline"
-                              className="border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200"
-                            >
-                              Refresh
-                            </Button>
-                            <Button
-                              onClick={async () => {
-                                const response = await fetch('/api/debug/exact-fallback');
-                                const result = await response.json();
-                                console.log('Exact Fallback Test:', result);
-                                alert(`Fallback Query:\nUsers: ${result.totalUsers}\n\nFirst few users:\n${result.users?.slice(0,3).map(u => u.username).join('\n')}`);
-                              }}
-                              variant="outline"
-                              className="border-green-500/50 bg-green-500/10 hover:bg-green-500/20 text-green-300 hover:text-green-200 text-xs"
-                            >
-                              Test Fallback
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
                     
-                    {showThoughtsUpload && (
-                      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="w-full max-w-2xl relative">
-                          <Button
-                            onClick={() => setShowThoughtsUpload(false)}
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-12 right-0 text-white hover:bg-white/10"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          {ThoughtsUploadArea}
+                    {post.video && (
+                      <div className="relative aspect-video overflow-hidden">
+                        <video
+                          src={post.video}
+                          className="w-full h-full object-cover"
+                          muted
+                        />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <div className="w-0 h-0 border-l-[8px] border-l-white border-y-[6px] border-y-transparent ml-1"></div>
+                          </div>
                         </div>
+                        {post.duration && (
+                          <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 text-xs text-white">
+                            {Math.floor(post.duration / 60)}:{(post.duration % 60).toString().padStart(2, '0')}
+                          </div>
+                        )}
                       </div>
                     )}
-                  </>
+
+                    {/* Post Content */}
+                    <div className="p-4">
+                      {/* User Info */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                          {post.user.profileImage || post.user.image ? (
+                            <img
+                              src={post.user.profileImage || post.user.image}
+                              alt={post.user.username}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white text-xs font-semibold">
+                              {post.user.username[0]?.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {post.user.nickname || post.user.username}
+                          </p>
+                          <p className="text-xs text-white/50">
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Post Text */}
+                      {post.content && (
+                        <p className="text-white text-sm mb-4 leading-relaxed">
+                          {post.content}
+                        </p>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => handleLike(post.id)}
+                            className={`flex items-center gap-1 text-xs transition-colors ${
+                              post.isLiked ? 'text-red-400' : 'text-white/60 hover:text-red-400'
+                            }`}
+                          >
+                            <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
+                            {post.likes}
+                          </button>
+                          
+                          <button className="flex items-center gap-1 text-xs text-white/60 hover:text-blue-400 transition-colors">
+                            <MessageCircle className="h-4 w-4" />
+                            {post.comments}
+                          </button>
+                          
+                          <button className="flex items-center gap-1 text-xs text-white/60 hover:text-green-400 transition-colors">
+                            <Share className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => handleBookmark(post.id)}
+                          className={`text-xs transition-colors ${
+                            post.isBookmarked ? 'text-yellow-400' : 'text-white/60 hover:text-yellow-400'
+                          }`}
+                        >
+                          <Bookmark className={`h-4 w-4 ${post.isBookmarked ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Loading More Indicator */}
+            {hasMore && (
+              <div ref={observerTarget} className="text-center py-8">
+                {loadingMore && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Zap className="h-8 w-8 text-purple-400 mx-auto" />
+                  </motion.div>
                 )}
-              </>
+              </div>
             )}
           </>
         )}
       </div>
 
+      {/* Subtle Add Thoughts FAB */}
+      <AnimatePresence>
+        {userHasThoughts && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <Button
+              onClick={navigateToNewPost}
+              className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-xl shadow-purple-500/25 border-2 border-white/20"
+            >
+              <Plus className="h-6 w-6 text-white" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
