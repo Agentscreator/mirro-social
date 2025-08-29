@@ -115,12 +115,12 @@ function MessagesPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-black text-white messages-page">
       {/* Stories Feed */}
       <StoriesFeed />
 
       {/* Search Bar */}
-      <div className="px-6 py-4 bg-gray-950">
+      <div className="px-6 py-4 bg-black">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
@@ -173,7 +173,7 @@ function MessagesPageContent() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
         ) : (filteredConversations.length > 0 || groups.length > 0) ? (
-          <div className="bg-gray-950">
+          <div className="bg-black">
             {/* Group Chats */}
             {groups.map((group) => (
               <button

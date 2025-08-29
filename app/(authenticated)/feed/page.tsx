@@ -183,7 +183,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="fixed inset-0 md:relative md:h-screen bg-black overflow-hidden z-10 feed-container feed-page">
+    <div className="fixed inset-0 md:relative md:h-screen bg-black text-white overflow-hidden z-10 feed-container feed-page">
       
       {/* Feed Tabs */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/60 to-transparent">

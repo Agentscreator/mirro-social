@@ -125,7 +125,7 @@ export function InstagramNavigation() {
               >
                 <route.icon className="h-5 w-5" />
               </div>
-              <span className="mt-0.5 text-[10px] font-medium">{route.label}</span>
+              <span className="sr-only">{route.label}</span>
             </Link>
           ))}
           
@@ -137,7 +137,7 @@ export function InstagramNavigation() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg">
               <Plus className="h-6 w-6 text-white" />
             </div>
-            <span className="mt-0.5 text-[10px] font-medium text-white">Create</span>
+            <span className="sr-only">Create</span>
           </Link>
           
           {routes.slice(2).map((route) => (
@@ -158,7 +158,7 @@ export function InstagramNavigation() {
                 <route.icon className="h-5 w-5" />
                 {route.href === "/messages" && <MessageBadge />}
               </div>
-              <span className="mt-0.5 text-[10px] font-medium">{route.label}</span>
+              <span className="sr-only">{route.label}</span>
             </Link>
           ))}
         </div>

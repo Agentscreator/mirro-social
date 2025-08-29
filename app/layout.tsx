@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" style={{backgroundColor: '#000000', color: '#ffffff'}}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -43,7 +43,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body>
+      <body style={{backgroundColor: '#000000', color: '#ffffff'}}>
         <MobileAppConfig />
         <Providers>
           {children}

@@ -78,6 +78,8 @@
   body {
     min-height: 100vh;
     min-height: 100dvh;
+    background-color: #000000 !important;
+    color: #ffffff !important;
   }
   
   /* Force hide duplicate navigation bars */
@@ -93,6 +95,27 @@
     visibility: hidden !important;
     height: 0 !important;
     overflow: hidden !important;
+  }
+  
+  /* Ensure dark mode on iOS */
+  .ios-device,
+  .mobile-web {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Fix iOS Safari specific issues */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
+    
+    .feed-page,
+    .messages-page {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+    }
   }
 }
 
@@ -142,4 +165,78 @@ video {
 body, html {
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* Force dark mode on all mobile devices */
+@media (max-width: 768px) {
+  html, body, #__next, [data-nextjs-scroll-focus-boundary] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Target specific page containers */
+  .messages-page,
+  .feed-page,
+  main {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Ensure all child elements inherit dark styling */
+  .messages-page *,
+  .feed-page * {
+    color: inherit;
+  }
+  
+  /* Override any white backgrounds */
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100 {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    html {
+      background-color: #000000 !important;
+    }
+    
+    body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    /* Prevent white flash */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+}
+
+/* Hide navigation text on mobile */
+@media (max-width: 768px) {
+  /* Hide all navigation text labels on mobile */
+  nav span:not(.sr-only),
+  .mobile-nav span:not(.sr-only),
+  [class*="navigation"] span:not(.sr-only) {
+    display: none !important;
+  }
+  
+  /* Ensure navigation icons are properly sized */
+  nav a, .mobile-nav a, [class*="navigation"] a {
+    padding: 0.5rem !important;
+  }
+  
+  /* Compact navigation on mobile */
+  .fixed.bottom-0 .flex.h-16 {
+    height: 4rem !important;
+  }
+  
+  .fixed.bottom-0 .flex.h-16 a {
+    padding: 0.25rem !important;
+  }
 }
