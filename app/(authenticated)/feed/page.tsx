@@ -66,15 +66,28 @@ export default function FeedPage() {
     try {
       setDiscoverLoading(true)
 
-      // Use the original discover functionality
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+      })
 
       // Generate a random seed for this session to ensure different order
       const randomSeed = Math.floor(Math.random() * 1000)
 
-      // Use the original recommendations API
-      const { users: recommendedUsers, hasMore: moreAvailable } = await fetchRecommendations(1, 10, randomSeed)
+      // Use the original recommendations API with timeout
+      const recommendationsPromise = fetchRecommendations(1, 10, randomSeed)
+      const result = await Promise.race([recommendationsPromise, timeoutPromise])
+      const { users: recommendedUsers, hasMore: moreAvailable } = result as any
 
       console.log('Recommended Users:', recommendedUsers, 'Has More:', moreAvailable)
+
+      // Handle empty results
+      if (!recommendedUsers || recommendedUsers.length === 0) {
+        console.log('No recommended users found')
+        setDiscoverStories([])
+        setDiscoverLoading(false)
+        return
+      }
 
       // Convert users to stories format for the journal UI
       const usersWithBasicData = recommendedUsers.map((user: any) => ({
@@ -96,7 +109,13 @@ export default function FeedPage() {
           const user = recommendedUsers[index]
 
           try {
-            const explanation = await generateExplanation(user)
+            // Add timeout for explanation generation too
+            const explanationPromise = generateExplanation(user)
+            const explanationTimeout = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Explanation timeout')), 5000) // 5 second timeout
+            })
+
+            const explanation = await Promise.race([explanationPromise, explanationTimeout]) as string
 
             setDiscoverStories(prevStories => {
               const newStories = [...prevStories]
@@ -119,12 +138,16 @@ export default function FeedPage() {
       }
     } catch (error) {
       console.error('Error fetching discover stories:', error)
+
+      // Set empty stories and stop loading
+      setDiscoverStories([])
+      setDiscoverLoading(false)
+
       toast({
         title: "Error",
-        description: "Failed to load discover stories",
+        description: "Failed to load discover stories. Please try again later.",
         variant: "destructive",
       })
-      setDiscoverLoading(false)
     }
   }
 
@@ -216,14 +239,20 @@ export default function FeedPage() {
       setCurrentVideoIndex(0)
 
       if (activeTab === "discover") {
-        // Load thoughts first to determine UI state
-        const userThoughts = await loadThoughts()
-        if (userThoughts.length === 0) {
-          // User has no thoughts, show the thought input UI
+        try {
+          // Load thoughts first to determine UI state
+          const userThoughts = await loadThoughts()
+          if (userThoughts.length === 0) {
+            // User has no thoughts, show the thought input UI
+            setDiscoverStories([])
+          } else {
+            // User has thoughts, fetch recommendations
+            await fetchDiscoverStories()
+          }
+        } catch (error) {
+          console.error('Error loading discover content:', error)
+          // Fallback to empty state
           setDiscoverStories([])
-        } else {
-          // User has thoughts, fetch recommendations
-          await fetchDiscoverStories()
         }
       } else {
         const data = await fetchPosts(activeTab)
