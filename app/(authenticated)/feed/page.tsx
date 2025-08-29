@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import VideoFeedItem from "@/components/VideoFeedItem"
+import { UpcomingEvents } from "@/components/upcoming-events"
+import { AppRatingPrompt } from "@/components/app-rating-prompt"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -184,6 +186,7 @@ export default function FeedPage() {
 
   return (
     <div className="fixed inset-0 md:relative md:h-screen bg-black text-white overflow-hidden z-10 feed-container feed-page">
+      <AppRatingPrompt />
       
       {/* Feed Tabs */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/60 to-transparent">
@@ -306,6 +309,15 @@ export default function FeedPage() {
                 </Button>
               </div>
 
+              {/* Upcoming Events - Show before first video */}
+              {currentVideoIndex === 0 && (
+                <div className="absolute top-24 left-0 right-0 z-30 px-4">
+                  <div className="w-full md:w-[400px] lg:w-[450px] xl:w-[500px] md:max-w-md mx-auto">
+                    <UpcomingEvents />
+                  </div>
+                </div>
+              )}
+
               {/* Video Feed */}
               <div 
                 ref={containerRef}
@@ -324,6 +336,7 @@ export default function FeedPage() {
                           post={post}
                           showInviteButton={true}
                           isActive={index === currentVideoIndex}
+                          autoPlay={index !== 0} // Don't autoplay first video
                         />
                       </div>
                     ))}

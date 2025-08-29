@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { VideoEditorProvider } from '@/contexts/VideoEditorContext';
 import { VideoEditor } from '@/components/video-editor/VideoEditor';
+import { EnhancedVideoEditor } from '@/components/video-editor/enhanced-video-editor';
 import { Button } from '@/components/ui/button';
 import { VideoProject } from '@/types/video-editor';
 import { ArrowLeft, Video, Square, Smartphone, Monitor } from 'lucide-react';
@@ -120,9 +121,9 @@ export default function VideoEditorPage() {
 
   return (
     <VideoEditorProvider>
-      <VideoEditor
-        onSave={() => {
-          console.log('Project saved');
+      <EnhancedVideoEditor
+        onSave={(blob) => {
+          console.log('Project saved:', blob);
         }}
         onExport={(blob) => {
           console.log('Video exported:', blob);
