@@ -9,6 +9,7 @@ import { Search, ChevronUp, ChevronDown, Loader2, Heart, UserPlus, Plus } from "
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { toast } from "@/hooks/use-toast"
+import { fetchRecommendations, generateExplanation } from "@/src/lib/apiServices"
 
 interface Post {
   id: number
@@ -65,8 +66,7 @@ export default function FeedPage() {
     try {
       setDiscoverLoading(true)
 
-      // Import the original discover functionality
-      const { fetchRecommendations, generateExplanation } = await import('@/src/lib/apiServices')
+      // Use the original discover functionality
 
       // Generate a random seed for this session to ensure different order
       const randomSeed = Math.floor(Math.random() * 1000)

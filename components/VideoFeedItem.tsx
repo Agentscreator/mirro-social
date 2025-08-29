@@ -300,16 +300,18 @@ const VideoFeedItem = ({
             playsInline
             preload="metadata"
             poster={getMediaUrl()}
-            autoPlay={false}
+            autoPlay={isActive}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
-              // Simple autoplay attempt when video loads
-              if (isActive && videoRef.current && videoRef.current.paused) {
+              // Ensure autoplay when video loads and is active
+              if (isActive && videoRef.current) {
                 videoRef.current.muted = true;
-                videoRef.current.play().catch(() => {
-                  console.log('Autoplay blocked for post:', post.id);
-                });
+                if (videoRef.current.paused) {
+                  videoRef.current.play().catch(() => {
+                    console.log('Autoplay blocked for post:', post.id);
+                  });
+                }
               }
             }}
 
@@ -388,49 +390,9 @@ const VideoFeedItem = ({
 
 
 
-      {/* Right Side Actions - Minimal Design */}
-      <div className="absolute right-4 bottom-36 md:bottom-28 flex flex-col space-y-4 z-30">
-        <div className="flex flex-col items-center pointer-events-auto">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`w-10 h-10 rounded-full transition-all duration-200 pointer-events-auto ${
-              isLiked 
-                ? 'bg-white text-black' 
-                : 'bg-white/10 text-white hover:bg-white/20'
-            } backdrop-blur-sm`}
-          >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-          </Button>
-          <span className="text-white text-xs font-medium mt-1 pointer-events-none">{currentLikes}</span>
-        </div>
-
-        <div className="flex flex-col items-center pointer-events-auto">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleComment()}
-            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200 pointer-events-auto"
-          >
-            <MessageCircle className="w-5 h-5" />
-          </Button>
-          <span className="text-white text-xs font-medium mt-1 pointer-events-none">{currentComments}</span>
-        </div>
-
-        <div className="flex flex-col items-center pointer-events-auto">
-          <ShareButton
-            postId={post.id}
-            content={post.content}
-            userDisplayName={getUserDisplayName()}
-            className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-200 pointer-events-auto"
-            variant="ghost"
-            size="icon"
-          />
-          <span className="text-white text-xs font-medium mt-1 pointer-events-none">Share</span>
-        </div>
-
+      {/* Right Side Actions - Hidden for cleaner swipe experience */}
+      <div className="absolute right-4 bottom-36 md:bottom-28 flex flex-col space-y-4 z-30 opacity-0 pointer-events-none">
+        {/* Actions hidden to prevent interference with swiping */}
       </div>
 
       {/* Bottom Content - Clean & Elegant */}
@@ -463,6 +425,34 @@ const VideoFeedItem = ({
         <p className="text-white text-base mb-4 leading-relaxed font-medium">
           {post.content}
         </p>
+        
+        {/* Action Buttons - Horizontal Layout */}
+        <div className="flex items-center space-x-6 mb-4">
+          <button 
+            onClick={handleLike}
+            disabled={isLiking}
+            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+          >
+            <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+            <span className="text-white text-sm font-medium">{currentLikes}</span>
+          </button>
+          
+          <button 
+            onClick={() => handleComment()}
+            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+          >
+            <MessageCircle className="w-6 h-6 text-white" />
+            <span className="text-white text-sm font-medium">{currentComments}</span>
+          </button>
+          
+          <ShareButton
+            postId={post.id}
+            content={post.content}
+            userDisplayName={getUserDisplayName()}
+            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105 bg-transparent border-none p-0 h-auto"
+            variant="ghost"
+          />
+        </div>
         
         {/* Invite Section */}
         {showInviteButton && (
