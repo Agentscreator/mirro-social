@@ -34,12 +34,7 @@ export function InstagramNavigation() {
       label: "Feed",
       active: pathname === "/feed",
     },    
-    {
-      href: "/discover",
-      icon: Search,
-      label: "Discover",
-      active: pathname === "/discover",
-    },
+
     {
       href: "/events",
       icon: Calendar,

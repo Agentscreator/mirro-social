@@ -278,15 +278,15 @@ function MessagesPageContent() {
             <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
               {searchQuery
                 ? 'Try searching for a different name or username.'
-                : 'Start a conversation by discovering new people, messaging someone from your feed, or creating a group.'}
+                : 'Start a conversation by exploring your feed, connecting through the discover journal, or creating a group.'}
             </p>
             {!searchQuery && (
               <div className="flex gap-3">
                 <Button
-                  onClick={() => router.push('/discover')}
+                  onClick={() => router.push('/feed')}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
                 >
-                  Start Chatting
+                  Explore Feed
                 </Button>
                 <Button
                   onClick={() => setShowCreateGroup(true)}

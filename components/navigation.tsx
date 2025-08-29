@@ -63,12 +63,6 @@ export function Navigation() {
       icon: Home,
       label: "Feed",
       active: pathname === "/feed",
-    },    
-    {
-      href: "/discover",
-      icon: Search,
-      label: "Discover",
-      active: pathname === "/discover",
     },
     {
       href: "/messages",
@@ -169,7 +163,7 @@ export function Navigation() {
           <MirroIcon size="md" />
         </Link>
         <div className="flex flex-col items-center space-y-6">
-          {routes.slice(0, 2).map((route) => (
+          {routes.slice(0, 1).map((route) => (
             <NavigationItem key={route.href} route={route} />
           ))}
           
@@ -183,7 +177,7 @@ export function Navigation() {
             <span className="sr-only">Create</span>
           </Link>
           
-          {routes.slice(2).map((route) => (
+          {routes.slice(1).map((route) => (
             <NavigationItem key={route.href} route={route} className="relative" />
           ))}
         </div>
@@ -193,7 +187,7 @@ export function Navigation() {
       {/* Mobile web navigation (bottom) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom md:hidden">
         <div className="flex h-16 items-center justify-around px-2">
-          {routes.slice(0, 2).map((route) => (
+          {routes.slice(0, 1).map((route) => (
             <Link
               key={route.href}
               href={route.href}
@@ -225,7 +219,7 @@ export function Navigation() {
             <span className="sr-only">Create</span>
           </Link>
           
-          {routes.slice(2).map((route) => (
+          {routes.slice(1).map((route) => (
             <Link
               key={route.href}
               href={route.href}
