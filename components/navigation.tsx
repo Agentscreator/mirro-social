@@ -100,44 +100,92 @@ export function Navigation() {
       <>
         {/* Native app bottom navigation - simplified */}
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-t border-gray-800/50">
-          <div className="flex h-20 items-center justify-around px-4 pb-safe-bottom">
-            {routes.map((route) => (
+          <div className="flex h-20 items-center justify-center px-4 pb-safe-bottom">
+            <div className="flex items-center justify-between w-full max-w-sm">
+              {/* Left - Feed */}
               <Link
-                key={route.href}
-                href={route.href}
+                href="/feed"
                 className={cn(
                   "flex flex-col items-center justify-center p-3 transition-all duration-200",
-                  route.active ? "text-blue-400" : "text-gray-500",
+                  pathname === "/feed" ? "text-blue-400" : "text-gray-500",
                 )}
               >
                 <div
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
-                    route.active && "bg-blue-500/20 scale-110",
+                    pathname === "/feed" && "bg-blue-500/20 scale-110",
                   )}
                 >
-                  <route.icon className={cn("h-5 w-5", route.active && "text-blue-400")} />
-                  {route.href === "/messages" && <MessageBadge />}
+                  <Home className={cn("h-5 w-5", pathname === "/feed" && "text-blue-400")} />
                 </div>
                 <span className={cn(
                   "mt-1 text-xs font-medium transition-all duration-200",
-                  route.active ? "text-blue-400" : "text-gray-500"
+                  pathname === "/feed" ? "text-blue-400" : "text-gray-500"
                 )}>
-                  {route.label}
+                  Feed
                 </span>
               </Link>
-            ))}
-            
-            {/* Native Create Button - floating style */}
-            <Link
-              href="/create-video"
-              className="flex flex-col items-center justify-center p-3"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                <Plus className="h-6 w-6 text-white" />
-              </div>
-              <span className="mt-1 text-xs font-medium text-blue-400">Create</span>
-            </Link>
+              
+              {/* Center - Create Button */}
+              <button
+                onClick={() => setIsCreatePostOpen(true)}
+                className="flex flex-col items-center justify-center p-3"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <span className="mt-1 text-xs font-medium text-blue-400">Create</span>
+              </button>
+              
+              {/* Right - Messages */}
+              <Link
+                href="/messages"
+                className={cn(
+                  "flex flex-col items-center justify-center p-3 transition-all duration-200",
+                  pathname === "/messages" ? "text-blue-400" : "text-gray-500",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 relative",
+                    pathname === "/messages" && "bg-blue-500/20 scale-110",
+                  )}
+                >
+                  <MessageSquare className={cn("h-5 w-5", pathname === "/messages" && "text-blue-400")} />
+                  <MessageBadge />
+                </div>
+                <span className={cn(
+                  "mt-1 text-xs font-medium transition-all duration-200",
+                  pathname === "/messages" ? "text-blue-400" : "text-gray-500"
+                )}>
+                  Messages
+                </span>
+              </Link>
+              
+              {/* Far Right - Profile */}
+              <Link
+                href="/profile"
+                className={cn(
+                  "flex flex-col items-center justify-center p-3 transition-all duration-200",
+                  pathname === "/profile" ? "text-blue-400" : "text-gray-500",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
+                    pathname === "/profile" && "bg-blue-500/20 scale-110",
+                  )}
+                >
+                  <User className={cn("h-5 w-5", pathname === "/profile" && "text-blue-400")} />
+                </div>
+                <span className={cn(
+                  "mt-1 text-xs font-medium transition-all duration-200",
+                  pathname === "/profile" ? "text-blue-400" : "text-gray-500"
+                )}>
+                  You
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -163,83 +211,101 @@ export function Navigation() {
           <MirroIcon size="md" />
         </Link>
         <div className="flex flex-col items-center space-y-6">
-          {routes.slice(0, 1).map((route) => (
-            <NavigationItem key={route.href} route={route} />
-          ))}
+          {/* Feed */}
+          <NavigationItem route={routes[0]} />
           
-          {/* Create Video Button */}
-          <Link
-            href="/create-video"
+          {/* Create Post Button */}
+          <button
+            onClick={() => setIsCreatePostOpen(true)}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
-            aria-label="Create Video"
+            aria-label="Create Post"
           >
             <Plus className="h-5 w-5 text-white" />
             <span className="sr-only">Create</span>
-          </Link>
+          </button>
           
-          {routes.slice(1).map((route) => (
-            <NavigationItem key={route.href} route={route} className="relative" />
-          ))}
+          {/* Messages */}
+          <NavigationItem route={routes[1]} className="relative" />
+          
+          {/* Profile */}
+          <NavigationItem route={routes[2]} />
         </div>
         <div className="h-10"></div> {/* Spacer */}
       </div>
 
       {/* Mobile web navigation (bottom) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom md:hidden">
-        <div className="flex h-16 items-center justify-around px-2">
-          {routes.slice(0, 1).map((route) => (
+        <div className="flex h-16 items-center justify-center px-2">
+          <div className="flex items-center justify-between w-full max-w-sm">
+            {/* Left side - Feed */}
             <Link
-              key={route.href}
-              href={route.href}
+              href="/feed"
               className={cn(
                 "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                route.active ? "text-white" : "text-gray-400",
+                pathname === "/feed" ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full",
-                  route.active && "bg-white/20",
+                  pathname === "/feed" && "bg-white/20",
                 )}
               >
-                <route.icon className="h-5 w-5" />
+                <Home className="h-5 w-5" />
               </div>
-              <span className="sr-only">{route.label}</span>
+              <span className="sr-only">Feed</span>
             </Link>
-          ))}
-          
-          {/* Create Video Button */}
-          <Link
-            href="/create-video"
-            className="flex flex-col items-center justify-center p-2"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
-              <Plus className="h-6 w-6 text-white" />
-            </div>
-            <span className="sr-only">Create</span>
-          </Link>
-          
-          {routes.slice(1).map((route) => (
+            
+            {/* Center - Create Button */}
+            <button
+              onClick={() => setIsCreatePostOpen(true)}
+              className="flex flex-col items-center justify-center p-2"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
+                <Plus className="h-6 w-6 text-white" />
+              </div>
+              <span className="sr-only">Create</span>
+            </button>
+            
+            {/* Right side - Messages */}
             <Link
-              key={route.href}
-              href={route.href}
+              href="/messages"
               className={cn(
                 "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                route.active ? "text-white" : "text-gray-400",
+                pathname === "/messages" ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full relative",
-                  route.active && "bg-white/20",
+                  pathname === "/messages" && "bg-white/20",
                 )}
               >
-                <route.icon className="h-5 w-5" />
-                {route.href === "/messages" && <MessageBadge />}
+                <MessageSquare className="h-5 w-5" />
+                <MessageBadge />
               </div>
-              <span className="sr-only">{route.label}</span>
+              <span className="sr-only">Messages</span>
             </Link>
-          ))}
+            
+            {/* Far right - Profile */}
+            <Link
+              href="/profile"
+              className={cn(
+                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
+                pathname === "/profile" ? "text-white" : "text-gray-400",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  pathname === "/profile" && "bg-white/20",
+                )}
+              >
+                <User className="h-5 w-5" />
+              </div>
+              <span className="sr-only">Profile</span>
+            </Link>
+          </div>
         </div>
       </div>
 
