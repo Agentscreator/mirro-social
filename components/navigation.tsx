@@ -98,93 +98,124 @@ export function Navigation() {
   if (isNative) {
     return (
       <>
-        {/* Native app bottom navigation - simplified */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-t border-gray-800/50">
-          <div className="flex h-20 items-center justify-center px-4 pb-safe-bottom">
-            <div className="flex items-center justify-between w-full max-w-sm">
-              {/* Left - Feed */}
-              <Link
-                href="/feed"
-                className={cn(
-                  "flex flex-col items-center justify-center p-3 transition-all duration-200",
-                  pathname === "/feed" ? "text-blue-400" : "text-gray-500",
-                )}
-              >
-                <div
+        {/* Native app bottom navigation - Enhanced */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-gray-800/50">
+          <div className="relative">
+            {/* Gradient overlay for premium feel */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            
+            <div className="flex h-22 items-center justify-center px-6 pb-safe-bottom pt-2">
+              {/* Navigation Grid - Perfectly centered */}
+              <div className="grid grid-cols-4 gap-0 w-full max-w-sm items-center">
+                
+                {/* Feed */}
+                <Link
+                  href="/feed"
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
-                    pathname === "/feed" && "bg-blue-500/20 scale-110",
+                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                    pathname === "/feed" ? "text-blue-400" : "text-gray-500",
                   )}
                 >
-                  <Home className={cn("h-5 w-5", pathname === "/feed" && "text-blue-400")} />
-                </div>
-                <span className={cn(
-                  "mt-1 text-xs font-medium transition-all duration-200",
-                  pathname === "/feed" ? "text-blue-400" : "text-gray-500"
-                )}>
-                  Feed
-                </span>
-              </Link>
-              
-              {/* Center - Create Button */}
-              <button
-                onClick={() => setIsCreatePostOpen(true)}
-                className="flex flex-col items-center justify-center p-3"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                  <Plus className="h-6 w-6 text-white" />
-                </div>
-                <span className="mt-1 text-xs font-medium text-blue-400">Create</span>
-              </button>
-              
-              {/* Right - Messages */}
-              <Link
-                href="/messages"
-                className={cn(
-                  "flex flex-col items-center justify-center p-3 transition-all duration-200",
-                  pathname === "/messages" ? "text-blue-400" : "text-gray-500",
-                )}
-              >
-                <div
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                      pathname === "/feed" 
+                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                        : "group-hover:bg-white/10 group-hover:scale-105",
+                    )}
+                  >
+                    <Home className={cn(
+                      "h-5 w-5 transition-all duration-300", 
+                      pathname === "/feed" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "mt-1 text-xs font-medium transition-all duration-300",
+                    pathname === "/feed" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                  )}>
+                    Feed
+                  </span>
+                </Link>
+                
+                {/* Messages */}
+                <Link
+                  href="/messages"
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 relative",
-                    pathname === "/messages" && "bg-blue-500/20 scale-110",
+                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                    pathname === "/messages" ? "text-blue-400" : "text-gray-500",
                   )}
                 >
-                  <MessageSquare className={cn("h-5 w-5", pathname === "/messages" && "text-blue-400")} />
-                  <MessageBadge />
-                </div>
-                <span className={cn(
-                  "mt-1 text-xs font-medium transition-all duration-200",
-                  pathname === "/messages" ? "text-blue-400" : "text-gray-500"
-                )}>
-                  Messages
-                </span>
-              </Link>
-              
-              {/* Far Right - Profile */}
-              <Link
-                href="/profile"
-                className={cn(
-                  "flex flex-col items-center justify-center p-3 transition-all duration-200",
-                  pathname === "/profile" ? "text-blue-400" : "text-gray-500",
-                )}
-              >
-                <div
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 relative",
+                      pathname === "/messages" 
+                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                        : "group-hover:bg-white/10 group-hover:scale-105",
+                    )}
+                  >
+                    <MessageSquare className={cn(
+                      "h-5 w-5 transition-all duration-300", 
+                      pathname === "/messages" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                    )} />
+                    <MessageBadge />
+                  </div>
+                  <span className={cn(
+                    "mt-1 text-xs font-medium transition-all duration-300",
+                    pathname === "/messages" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                  )}>
+                    Messages
+                  </span>
+                </Link>
+                
+                {/* Create Button - CENTER */}
+                <button
+                  onClick={() => setIsCreatePostOpen(true)}
+                  className="flex flex-col items-center justify-center p-3 group"
+                >
+                  <div className="relative">
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                    
+                    {/* Main button */}
+                    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
+                      <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+                    </div>
+                  </div>
+                  <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
+                    Create
+                  </span>
+                </button>
+                
+                {/* Profile */}
+                <Link
+                  href="/profile"
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
-                    pathname === "/profile" && "bg-blue-500/20 scale-110",
+                    "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                    pathname === "/profile" ? "text-blue-400" : "text-gray-500",
                   )}
                 >
-                  <User className={cn("h-5 w-5", pathname === "/profile" && "text-blue-400")} />
-                </div>
-                <span className={cn(
-                  "mt-1 text-xs font-medium transition-all duration-200",
-                  pathname === "/profile" ? "text-blue-400" : "text-gray-500"
-                )}>
-                  You
-                </span>
-              </Link>
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                      pathname === "/profile" 
+                        ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                        : "group-hover:bg-white/10 group-hover:scale-105",
+                    )}
+                  >
+                    <User className={cn(
+                      "h-5 w-5 transition-all duration-300", 
+                      pathname === "/profile" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "mt-1 text-xs font-medium transition-all duration-300",
+                    pathname === "/profile" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                  )}>
+                    You
+                  </span>
+                </Link>
+                
+              </div>
             </div>
           </div>
         </div>
@@ -205,106 +236,200 @@ export function Navigation() {
   // Web navigation - original design
   return (
     <>
-      {/* Desktop navigation (side) - FORCE HIDE on mobile */}
-      <div className="fixed left-0 top-0 z-50 hidden lg:flex lg:flex-col lg:items-center lg:justify-between lg:py-6 h-screen w-16 border-r border-gray-800 bg-black max-lg:!hidden">
-        <Link href="/feed" className="flex items-center justify-center">
-          <MirroIcon size="md" />
-        </Link>
-        <div className="flex flex-col items-center space-y-6">
-          {/* Feed */}
-          <NavigationItem route={routes[0]} />
+      {/* Desktop navigation (side) - Enhanced */}
+      <div className="fixed left-0 top-0 z-50 hidden lg:flex lg:flex-col lg:items-center lg:justify-between lg:py-6 h-screen w-18 border-r border-gray-800/50 bg-black/95 backdrop-blur-xl max-lg:!hidden">
+        <div className="relative">
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent pointer-events-none" />
           
-          {/* Create Post Button */}
+          <Link href="/feed" className="relative flex items-center justify-center p-2 rounded-xl hover:bg-white/10 transition-all duration-300">
+            <MirroIcon size="md" />
+          </Link>
+        </div>
+        
+        <div className="flex flex-col items-center space-y-8">
+          {/* Feed */}
+          <Link
+            href="/feed"
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group",
+              pathname === "/feed" 
+                ? "bg-blue-500/20 text-blue-400 scale-110 shadow-lg shadow-blue-500/25" 
+                : "text-gray-400 hover:bg-white/10 hover:text-white hover:scale-105"
+            )}
+            aria-label="Feed"
+          >
+            <Home className="h-6 w-6 transition-all duration-300" />
+          </Link>
+          
+          {/* Create Post Button - CENTER */}
           <button
             onClick={() => setIsCreatePostOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
+            className="group relative"
             aria-label="Create Post"
           >
-            <Plus className="h-5 w-5 text-white" />
-            <span className="sr-only">Create</span>
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+              
+              {/* Main button */}
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
+                <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+              </div>
+            </div>
           </button>
           
           {/* Messages */}
-          <NavigationItem route={routes[1]} className="relative" />
+          <Link
+            href="/messages"
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group relative",
+              pathname === "/messages" 
+                ? "bg-blue-500/20 text-blue-400 scale-110 shadow-lg shadow-blue-500/25" 
+                : "text-gray-400 hover:bg-white/10 hover:text-white hover:scale-105"
+            )}
+            aria-label="Messages"
+          >
+            <MessageSquare className="h-6 w-6 transition-all duration-300" />
+            <MessageBadge />
+          </Link>
           
           {/* Profile */}
-          <NavigationItem route={routes[2]} />
+          <Link
+            href="/profile"
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group",
+              pathname === "/profile" 
+                ? "bg-blue-500/20 text-blue-400 scale-110 shadow-lg shadow-blue-500/25" 
+                : "text-gray-400 hover:bg-white/10 hover:text-white hover:scale-105"
+            )}
+            aria-label="Profile"
+          >
+            <User className="h-6 w-6 transition-all duration-300" />
+          </Link>
         </div>
+        
         <div className="h-10"></div> {/* Spacer */}
       </div>
 
-      {/* Mobile web navigation (bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom md:hidden">
-        <div className="flex h-16 items-center justify-center px-2">
-          <div className="flex items-center justify-between w-full max-w-sm">
-            {/* Left side - Feed */}
-            <Link
-              href="/feed"
-              className={cn(
-                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                pathname === "/feed" ? "text-white" : "text-gray-400",
-              )}
-            >
-              <div
+      {/* Mobile web navigation (bottom) - Enhanced */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-gray-800/50 pb-safe-bottom md:hidden">
+        <div className="relative">
+          {/* Gradient overlay for premium feel */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+          
+          <div className="flex h-18 items-center justify-center px-4 py-2">
+            {/* Navigation Grid - Perfectly centered */}
+            <div className="grid grid-cols-4 gap-0 w-full max-w-xs items-center">
+              
+              {/* Feed */}
+              <Link
+                href="/feed"
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
-                  pathname === "/feed" && "bg-white/20",
+                  "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                  pathname === "/feed" ? "text-white" : "text-gray-500",
                 )}
               >
-                <Home className="h-5 w-5" />
-              </div>
-              <span className="sr-only">Feed</span>
-            </Link>
-            
-            {/* Center - Create Button */}
-            <button
-              onClick={() => setIsCreatePostOpen(true)}
-              className="flex flex-col items-center justify-center p-2"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
-                <Plus className="h-6 w-6 text-white" />
-              </div>
-              <span className="sr-only">Create</span>
-            </button>
-            
-            {/* Right side - Messages */}
-            <Link
-              href="/messages"
-              className={cn(
-                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                pathname === "/messages" ? "text-white" : "text-gray-400",
-              )}
-            >
-              <div
+                <div
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                    pathname === "/feed" 
+                      ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                      : "group-hover:bg-white/10 group-hover:scale-105",
+                  )}
+                >
+                  <Home className={cn(
+                    "h-5 w-5 transition-all duration-300", 
+                    pathname === "/feed" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                  )} />
+                </div>
+                <span className={cn(
+                  "mt-1 text-xs font-medium transition-all duration-300",
+                  pathname === "/feed" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                )}>
+                  Feed
+                </span>
+              </Link>
+              
+              {/* Messages */}
+              <Link
+                href="/messages"
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full relative",
-                  pathname === "/messages" && "bg-white/20",
+                  "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                  pathname === "/messages" ? "text-white" : "text-gray-500",
                 )}
               >
-                <MessageSquare className="h-5 w-5" />
-                <MessageBadge />
-              </div>
-              <span className="sr-only">Messages</span>
-            </Link>
-            
-            {/* Far right - Profile */}
-            <Link
-              href="/profile"
-              className={cn(
-                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                pathname === "/profile" ? "text-white" : "text-gray-400",
-              )}
-            >
-              <div
+                <div
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 relative",
+                    pathname === "/messages" 
+                      ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                      : "group-hover:bg-white/10 group-hover:scale-105",
+                  )}
+                >
+                  <MessageSquare className={cn(
+                    "h-5 w-5 transition-all duration-300", 
+                    pathname === "/messages" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                  )} />
+                  <MessageBadge />
+                </div>
+                <span className={cn(
+                  "mt-1 text-xs font-medium transition-all duration-300",
+                  pathname === "/messages" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                )}>
+                  Messages
+                </span>
+              </Link>
+              
+              {/* Create Button - CENTER */}
+              <button
+                onClick={() => setIsCreatePostOpen(true)}
+                className="flex flex-col items-center justify-center p-3 group"
+              >
+                <div className="relative">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                  
+                  {/* Main button */}
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-active:scale-95">
+                    <Plus className="h-7 w-7 text-white transition-transform duration-300 group-hover:rotate-90" />
+                  </div>
+                </div>
+                <span className="mt-1 text-xs font-medium text-blue-400 transition-all duration-300 group-hover:text-blue-300">
+                  Create
+                </span>
+              </button>
+              
+              {/* Profile */}
+              <Link
+                href="/profile"
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
-                  pathname === "/profile" && "bg-white/20",
+                  "flex flex-col items-center justify-center p-3 transition-all duration-300 group",
+                  pathname === "/profile" ? "text-white" : "text-gray-500",
                 )}
               >
-                <User className="h-5 w-5" />
-              </div>
-              <span className="sr-only">Profile</span>
-            </Link>
+                <div
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300",
+                    pathname === "/profile" 
+                      ? "bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/25" 
+                      : "group-hover:bg-white/10 group-hover:scale-105",
+                  )}
+                >
+                  <User className={cn(
+                    "h-5 w-5 transition-all duration-300", 
+                    pathname === "/profile" ? "text-blue-400" : "text-gray-400 group-hover:text-white"
+                  )} />
+                </div>
+                <span className={cn(
+                  "mt-1 text-xs font-medium transition-all duration-300",
+                  pathname === "/profile" ? "text-blue-400" : "text-gray-500 group-hover:text-gray-300"
+                )}>
+                  You
+                </span>
+              </Link>
+              
+            </div>
           </div>
         </div>
       </div>
