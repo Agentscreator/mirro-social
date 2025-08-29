@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import VideoFeedItem from "@/components/VideoFeedItem"
-import { UpcomingEvents } from "@/components/upcoming-events"
 import { AppRatingPrompt } from "@/components/app-rating-prompt"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -309,14 +308,6 @@ export default function FeedPage() {
                 </Button>
               </div>
 
-              {/* Upcoming Events - Show before first video */}
-              {currentVideoIndex === 0 && (
-                <div className="absolute top-24 left-0 right-0 z-30 px-4">
-                  <div className="w-full md:w-[400px] lg:w-[450px] xl:w-[500px] md:max-w-md mx-auto">
-                    <UpcomingEvents />
-                  </div>
-                </div>
-              )}
 
               {/* Video Feed */}
               <div 

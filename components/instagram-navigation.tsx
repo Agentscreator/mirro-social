@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Search, User, MessageSquare, Plus } from "lucide-react"
+import { Home, Search, User, MessageSquare, Plus, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { MessageBadge } from "@/components/messages/MessageBadge"
@@ -41,6 +41,12 @@ export function InstagramNavigation() {
       active: pathname === "/discover",
     },
     {
+      href: "/events",
+      icon: Calendar,
+      label: "Events",
+      active: pathname === "/events",
+    },
+    {
       href: "/messages",
       icon: MessageSquare,
       label: "Messages",
@@ -63,8 +69,8 @@ export function InstagramNavigation() {
             <span className="text-white font-bold text-sm">M</span>
           </div>
         </Link>
-        <div className="flex flex-col items-center space-y-6">
-          {routes.slice(0, 2).map((route) => (
+        <div className="flex flex-col items-center space-y-4">
+          {routes.slice(0, 3).map((route) => (
             <Link
               key={route.href}
               href={route.href}
@@ -87,7 +93,7 @@ export function InstagramNavigation() {
             <Plus className="h-5 w-5 text-white" />
           </Link>
           
-          {routes.slice(2).map((route) => (
+          {routes.slice(3).map((route) => (
             <Link
               key={route.href}
               href={route.href}
@@ -107,55 +113,23 @@ export function InstagramNavigation() {
 
       {/* Mobile web navigation (bottom) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom block md:hidden">
-        <div className="flex h-16 items-center justify-around px-2">
-          {routes.slice(0, 2).map((route) => (
+        <div className="flex h-16 items-center justify-around px-1">
+          {routes.map((route) => (
             <Link
               key={route.href}
               href={route.href}
               className={cn(
-                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
+                "flex flex-col items-center justify-center rounded-full p-1 transition-colors flex-1",
                 route.active ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  "flex h-8 w-8 items-center justify-center rounded-full relative",
                   route.active && "bg-white/20",
                 )}
               >
-                <route.icon className="h-5 w-5" />
-              </div>
-              <span className="sr-only">{route.label}</span>
-            </Link>
-          ))}
-          
-          {/* Create Video Button - Centered */}
-          <Link
-            href="/create-video"
-            className="flex flex-col items-center justify-center p-2"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg">
-              <Plus className="h-6 w-6 text-white" />
-            </div>
-            <span className="sr-only">Create</span>
-          </Link>
-          
-          {routes.slice(2).map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-full p-2 transition-colors",
-                route.active ? "text-white" : "text-gray-400",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full relative",
-                  route.active && "bg-white/20",
-                )}
-              >
-                <route.icon className="h-5 w-5" />
+                <route.icon className="h-4 w-4" />
                 {route.href === "/messages" && <MessageBadge />}
               </div>
               <span className="sr-only">{route.label}</span>
