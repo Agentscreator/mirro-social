@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import VideoFeedItem from "@/components/VideoFeedItem"
-import { UpcomingEvents } from "@/components/upcoming-events"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,15 +35,12 @@ export default function FeedPage() {
   const [showSearchBar, setShowSearchBar] = useState(false)
   const [activeTab, setActiveTab] = useState("explore")
   const containerRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
   const { data: session } = useSession()
 
   // Feed data states
   const [explorePosts, setExplorePosts] = useState<Post[]>([])
   const [followingPosts, setFollowingPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const [hasMore, setHasMore] = useState(true)
-
   // Get current posts based on active tab
   const getCurrentPosts = () => {
     switch (activeTab) {
@@ -97,7 +93,6 @@ export default function FeedPage() {
         setFollowingPosts(data.posts || [])
       }
 
-      setHasMore(data.hasMore || false)
       setLoading(false)
     }
 

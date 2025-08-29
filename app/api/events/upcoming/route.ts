@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { authOptions } from '@/src/lib/auth'
 
 // Mock data for demonstration - replace with actual database queries
 const mockEvents = [
