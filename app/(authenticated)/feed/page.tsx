@@ -42,7 +42,6 @@ export default function FeedPage() {
   // Feed data states
   const [explorePosts, setExplorePosts] = useState<Post[]>([])
   const [followingPosts, setFollowingPosts] = useState<Post[]>([])
-  const [discoverPosts, setDiscoverPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
 
@@ -51,8 +50,6 @@ export default function FeedPage() {
     switch (activeTab) {
       case "following":
         return followingPosts
-      case "discover":
-        return discoverPosts
       default:
         return explorePosts
     }
@@ -98,8 +95,6 @@ export default function FeedPage() {
         setExplorePosts(data.posts || [])
       } else if (activeTab === "following") {
         setFollowingPosts(data.posts || [])
-      } else if (activeTab === "discover") {
-        setDiscoverPosts(data.posts || [])
       }
 
       setHasMore(data.hasMore || false)
@@ -233,7 +228,7 @@ export default function FeedPage() {
             /* Normal tabs with search icon */
             <div className="flex items-center justify-between">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-                <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm">
+                <TabsList className="grid w-full grid-cols-2 bg-transparent backdrop-blur-sm">
                   <TabsTrigger
                     value="explore"
                     className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
@@ -249,15 +244,6 @@ export default function FeedPage() {
                   >
                     Following
                     {activeTab === "following" && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="discover"
-                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
-                  >
-                    Discover
-                    {activeTab === "discover" && (
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
                     )}
                   </TabsTrigger>
@@ -418,73 +404,6 @@ export default function FeedPage() {
           )}
         </TabsContent>
 
-        {/* Discover Tab */}
-        <TabsContent value="discover" className="h-full mt-0">
-          {currentPosts.length === 0 && !loading ? (
-            <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-              <div className="text-center text-white px-8 max-w-sm">
-                <div className="mb-6">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-                    <Search className="w-8 h-8 text-white/60" />
-                  </div>
-                </div>
-                <h2 className="text-xl font-bold mb-3">Discover New Content</h2>
-                <p className="text-white/70 text-sm mb-6 leading-relaxed">
-                  Explore trending content and discover new creators!
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Navigation Controls */}
-              <div className="hidden md:flex fixed right-4 xl:right-12 top-1/2 -translate-y-1/2 z-40 flex-col gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToPreviousVideo}
-                  disabled={currentVideoIndex === 0}
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToNextVideo}
-                  disabled={currentVideoIndex >= currentPosts.length - 1}
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </Button>
-              </div>
-
-              {/* Video Feed */}
-              <div
-                ref={containerRef}
-                className="h-full overflow-y-scroll snap-y snap-mandatory absolute inset-0 pt-24"
-                style={{
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                  paddingBottom: 'env(safe-area-inset-bottom)'
-                }}
-              >
-                <div className="w-full md:flex md:justify-center">
-                  <div className="w-full md:w-[400px] lg:w-[450px] xl:w-[500px] md:max-w-md">
-                    {currentPosts.map((post, index) => (
-                      <div key={post.id} className="h-screen w-full snap-start snap-always relative">
-                        <VideoFeedItem
-                          post={post}
-                          showInviteButton={true}
-                          isActive={index === currentVideoIndex}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </TabsContent>
       </Tabs>
     </div>
   )
