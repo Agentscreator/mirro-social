@@ -108,31 +108,41 @@ export default function FeedPage() {
         return
       }
 
-      // Convert users to stories format with enhanced narratives
-      const storiesWithNarratives = usersWithEmbeddings.map((user: any, index: number) => {
-        // Create varied narrative templates for better user experience
-        const narratives = [
-          "A kindred spirit whose thoughts might resonate deeply with yours...",
-          "Someone who shares your curiosity about life's deeper questions...",
-          "A thoughtful soul who might understand your perspective...",
-          "Another dreamer walking a similar path of self-discovery...",
-          "A reflective mind that could spark meaningful conversations...",
-          "Someone whose inner world might beautifully complement yours..."
-        ]
+      // Generate AI narratives for each user based on their thoughts
+      const fallbackNarratives = [
+        "A kindred spirit whose thoughts might resonate deeply with yours...",
+        "Someone who shares your curiosity about life's deeper questions...",
+        "A thoughtful soul who might understand your perspective...",
+        "Another dreamer walking a similar path of self-discovery...",
+        "A reflective mind that could spark meaningful conversations...",
+        "Someone whose inner world might beautifully complement yours..."
+      ]
 
-        const selectedNarrative = narratives[index % narratives.length]
+      const storiesWithNarratives = await Promise.all(
+        usersWithEmbeddings.map(async (user: any, index: number) => {
+          // Generate AI narrative based on user's thoughts
+          let narrative = await generateUserNarrative(user.id)
+          let aiGenerated = true
 
-        return {
-          id: user.id,
-          username: user.username,
-          nickname: user.nickname || user.username,
-          narrative: selectedNarrative,
-          tags: user.tags || [],
-          score: user.score || 0,
-          profileImage: user.profileImage || user.image,
-          similarity: user.similarity || 0
-        }
-      })
+          // Fallback to template if AI generation fails
+          if (!narrative) {
+            narrative = fallbackNarratives[index % fallbackNarratives.length]
+            aiGenerated = false
+          }
+
+          return {
+            id: user.id,
+            username: user.username,
+            nickname: user.nickname || user.username,
+            narrative,
+            tags: user.tags || [],
+            score: user.score || 0,
+            profileImage: user.profileImage || user.image,
+            similarity: user.similarity || 0,
+            aiGenerated
+          }
+        })
+      )
 
       setDiscoverStories(storiesWithNarratives)
       setCurrentStoryIndex(0) // Reset to first story
@@ -179,6 +189,33 @@ export default function FeedPage() {
       console.error('Error loading thoughts:', error)
       setUserThoughts([])
       return []
+    }
+  }
+
+  // Generate AI narrative for a user based on their thoughts
+  const generateUserNarrative = async (userId: string) => {
+    try {
+      console.log(`Generating narrative for user ${userId}`)
+      const response = await fetch('/api/users/narrative', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`Generated narrative for user ${userId}:`, data.narrative)
+        return data.narrative
+      } else {
+        console.error('Narrative generation failed:', response.statusText)
+        return null
+      }
+    } catch (error) {
+      console.error('Error generating user narrative:', error)
+      return null
     }
   }
 
@@ -633,29 +670,30 @@ export default function FeedPage() {
           <div className="h-full bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
 
             {/* Add Thoughts Button - Top Right */}
-            <div className="fixed top-20 right-4 z-50 flex gap-2">
-              {userThoughts.length > 0 && (
+            <div className="fixed top-20 right-4 z-50 flex flex-col gap-2">
+              <div className="flex gap-2">
+                {userThoughts.length > 0 && (
+                  <Button
+                    onClick={() => setShowThoughts(!showThoughts)}
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
+                  >
+                    {showThoughts ? 'Hide' : 'View'} Thoughts ({userThoughts.length})
+                  </Button>
+                )}
                 <Button
-                  onClick={() => setShowThoughts(!showThoughts)}
+                  onClick={() => {
+                    const textarea = document.getElementById('thought-input') as HTMLTextAreaElement
+                    if (textarea) {
+                      textarea.focus()
+                      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  }}
                   className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
                 >
-                  {showThoughts ? 'Hide' : 'View'} Thoughts ({userThoughts.length})
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Thought
                 </Button>
-              )}
-              <Button
-                onClick={() => {
-                  const textarea = document.getElementById('thought-input') as HTMLTextAreaElement
-                  if (textarea) {
-                    textarea.focus()
-                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }
-                }}
-                className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Thought
-              </Button>
-
+              </div>
             </div>
 
             {discoverLoading || loading ? (

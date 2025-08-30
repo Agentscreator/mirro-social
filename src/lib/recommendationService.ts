@@ -1,12 +1,13 @@
 
 import { db } from "../db"
-import { 
-  usersTable, 
-  userTagsTable, 
-  tagsTable, 
-  thoughtsTable, 
-  communityMembersTable, 
+import {
+  usersTable,
+  userTagsTable,
+  tagsTable,
+  thoughtsTable,
+  communityMembersTable,
   communitiesTable,
+  followersTable,
   liveEventParticipantsTable,
   liveEventsTable,
   postInviteParticipantsTable,
@@ -65,88 +66,61 @@ type TierResults = {
 }
 
 /**
- * Gets recommendations for a user with pagination, only showing users with embeddings
- * Returns users with embeddings, prioritized by whether current user has embeddings for explanation generation
+ * Gets recommendations for a user based on thought similarity and community connections
+ * Excludes users they already follow and prioritizes thought-based matching
  */
 export async function getRecommendations(userId: string, page = 1, pageSize = 5): Promise<PaginatedRecommendations> {
   try {
     console.log(`=== STARTING getRecommendations for user ${userId}, page ${page}, pageSize ${pageSize} ===`)
-    
-    // ENHANCED FALLBACK: Return only users with embeddings for AI narrative generation
-    console.log('Using enhanced database fallback - filtering for users with embeddings only')
-    const simpleUsers = await db
-      .select({
-        id: usersTable.id,
-        username: usersTable.username,
-        nickname: usersTable.nickname,
-        image: usersTable.image,
-        profileImage: usersTable.profileImage,
-        dob: usersTable.dob,
-        metro_area: usersTable.metro_area,
-        thoughtCount: sql<number>`(
-          SELECT COUNT(*) FROM ${thoughtsTable}
-          WHERE ${thoughtsTable.userId} = ${usersTable.id}
-          AND ${thoughtsTable.embedding} IS NOT NULL
-        )`,
-      })
-      .from(usersTable)
-      .where(
-        and(
-          ne(usersTable.id, userId),
-          sql`EXISTS (
-            SELECT 1 FROM ${thoughtsTable}
-            WHERE ${thoughtsTable.userId} = ${usersTable.id}
-            AND ${thoughtsTable.embedding} IS NOT NULL
-            AND ${thoughtsTable.content} IS NOT NULL
-            AND LENGTH(${thoughtsTable.content}) > 10
-            LIMIT 1
-          )`
-        )
-      )
-      .limit(pageSize * 3) // Get more than needed for better variety
-    
-    console.log(`Simple database query found ${simpleUsers.length} users`)
-    
-    const convertedUsers = simpleUsers.map(user => {
-      // Calculate age from date of birth
-      const age = user.dob ? Math.floor((Date.now() - new Date(user.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined;
-      
-      return {
-        id: user.id,
-        username: user.username,
-        nickname: user.nickname || null,
-        image: user.image || null,
-        profileImage: user.profileImage || null,
-        tags: [],
-        similarity: 0.5,
-        proximity: undefined,
-        score: 0.5,
-        reason: null,
-        tier: 2,
-        age: age,
-        location: user.metro_area || undefined,
+
+    // First, try Pinecone-based thought similarity if available
+    if (process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_NAME) {
+      try {
+        const pineconeResults = await getThoughtBasedRecommendations(userId, pageSize * 2)
+        if (pineconeResults.length > 0) {
+          console.log(`Found ${pineconeResults.length} thought-based recommendations`)
+
+          // Apply pagination
+          const startIdx = (page - 1) * pageSize
+          const endIdx = startIdx + pageSize
+          const paginatedUsers = pineconeResults.slice(startIdx, endIdx)
+          const hasMore = endIdx < pineconeResults.length
+
+          return {
+            users: paginatedUsers,
+            hasMore,
+            nextPage: hasMore ? page + 1 : null,
+            totalCount: pineconeResults.length,
+            currentPage: page,
+          }
+        }
+      } catch (pineconeError) {
+        console.warn("Pinecone recommendations failed, falling back to community-based:", pineconeError)
       }
-    })
-    
+    }
+
+    // Fallback to community-based recommendations
+    console.log('Using community-based recommendations')
+    const communityResults = await getCommunityBasedRecommendations(userId, pageSize * 2)
+
     // Apply pagination
     const startIdx = (page - 1) * pageSize
     const endIdx = startIdx + pageSize
-    const paginatedUsers = convertedUsers.slice(startIdx, endIdx)
-    const hasMore = endIdx < convertedUsers.length
-    
-    console.log(`Returning ${paginatedUsers.length} paginated users from ${convertedUsers.length} total`)
-    
+    const paginatedUsers = communityResults.slice(startIdx, endIdx)
+    const hasMore = endIdx < communityResults.length
+
+    console.log(`Returning ${paginatedUsers.length} community-based recommendations`)
+
     return {
       users: paginatedUsers,
       hasMore,
       nextPage: hasMore ? page + 1 : null,
-      totalCount: convertedUsers.length,
+      totalCount: communityResults.length,
       currentPage: page,
     }
   } catch (error) {
     console.error("ERROR in getRecommendations:", error)
-    console.error("Error stack:", error.stack)
-    
+
     // Return empty results on error
     return {
       users: [],
@@ -155,6 +129,227 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
       totalCount: 0,
       currentPage: page,
     }
+  }
+}
+
+/**
+ * Get thought-based recommendations using Pinecone similarity
+ * Excludes users the current user already follows
+ */
+async function getThoughtBasedRecommendations(userId: string, maxResults: number): Promise<RecommendedUser[]> {
+  try {
+    // Get current user's most recent thought embedding
+    const userEmbedding = await getMostRecentUserEmbedding(userId)
+    if (!userEmbedding || userEmbedding.length === 0) {
+      console.log("No embedding found for current user")
+      return []
+    }
+
+    // Get users that current user is already following
+    const followingUsers = await db
+      .select({ followingId: followersTable.followingId })
+      .from(followersTable)
+      .where(eq(followersTable.followerId, userId))
+
+    const followingIds = followingUsers.map(f => f.followingId)
+    console.log(`User ${userId} is following ${followingIds.length} users`)
+
+    // Query Pinecone for similar users
+    const indexName = process.env.PINECONE_INDEX || 'mirro-public'
+    const index = pineconeClient.index(indexName)
+
+    const queryResponse = await index.namespace('user-embeddings').query({
+      vector: userEmbedding,
+      topK: maxResults * 3, // Get more to account for filtering
+      includeMetadata: true,
+    })
+
+    console.log(`Pinecone returned ${queryResponse.matches?.length || 0} matches`)
+
+    // Filter out current user and users they already follow
+    const filteredMatches = queryResponse.matches?.filter(match => {
+      const matchUserId = match.metadata?.userId
+      return matchUserId && matchUserId !== userId && !followingIds.includes(matchUserId as string)
+    }) || []
+
+    console.log(`After filtering: ${filteredMatches.length} potential matches`)
+
+    // Get user details from database
+    const userIds = filteredMatches
+      .map(match => match.metadata?.userId)
+      .filter((id): id is string => Boolean(id))
+
+    if (userIds.length === 0) {
+      return []
+    }
+
+    const userDetails = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        image: usersTable.image,
+        profileImage: usersTable.profileImage,
+        dob: usersTable.dob,
+        metro_area: usersTable.metro_area,
+      })
+      .from(usersTable)
+      .where(inArray(usersTable.id, userIds))
+
+    const userDetailsMap = new Map(userDetails.map(user => [user.id, user]))
+
+    // Create recommendations with similarity scores
+    const recommendations: RecommendedUser[] = []
+
+    for (const match of filteredMatches) {
+      const userDetail = userDetailsMap.get(match.metadata?.userId as string)
+      if (!userDetail) continue
+
+      // Calculate age
+      const age = userDetail.dob ?
+        Math.floor((Date.now() - new Date(userDetail.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) :
+        undefined
+
+      // Handle proximity - convert to number if it's a string
+      const proximity = match.metadata?.proximity
+      const proximityValue = typeof proximity === 'string' ? parseFloat(proximity) :
+        typeof proximity === 'number' ? proximity : undefined
+
+      recommendations.push({
+        id: userDetail.id,
+        username: userDetail.username,
+        nickname: userDetail.nickname || null,
+        image: userDetail.image || null,
+        profileImage: userDetail.profileImage || null,
+        tags: [],
+        similarity: match.score || 0,
+        proximity: proximityValue,
+        score: match.score || 0,
+        reason: null, // Will be generated later with AI narratives
+        age,
+        location: userDetail.metro_area || undefined,
+      })
+    }
+
+    // Sort by similarity score and return top results
+    return recommendations
+      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
+      .slice(0, maxResults)
+
+  } catch (error) {
+    console.error("Error in getThoughtBasedRecommendations:", error)
+    return []
+  }
+}
+
+/**
+ * Get community-based recommendations for users in similar communities
+ * Excludes users the current user already follows
+ */
+async function getCommunityBasedRecommendations(userId: string, maxResults: number): Promise<RecommendedUser[]> {
+  try {
+    // Get current user's communities
+    const userCommunities = await db
+      .select({ communityId: communityMembersTable.communityId })
+      .from(communityMembersTable)
+      .where(eq(communityMembersTable.userId, userId))
+
+    const communityIds = userCommunities.map(c => c.communityId)
+    console.log(`User ${userId} is in ${communityIds.length} communities`)
+
+    if (communityIds.length === 0) {
+      return []
+    }
+
+    // Get users that current user is already following
+    const followingUsers = await db
+      .select({ followingId: followersTable.followingId })
+      .from(followersTable)
+      .where(eq(followersTable.followerId, userId))
+
+    const followingIds = followingUsers.map(f => f.followingId)
+
+    // Find users in same communities who have thoughts and aren't followed
+    const communityUsers = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        nickname: usersTable.nickname,
+        image: usersTable.image,
+        profileImage: usersTable.profileImage,
+        dob: usersTable.dob,
+        metro_area: usersTable.metro_area,
+        communityId: communityMembersTable.communityId,
+        thoughtCount: sql<number>`(
+          SELECT COUNT(*) FROM ${thoughtsTable}
+          WHERE ${thoughtsTable.userId} = ${usersTable.id}
+          AND ${thoughtsTable.content} IS NOT NULL
+          AND LENGTH(${thoughtsTable.content}) > 10
+        )`,
+      })
+      .from(usersTable)
+      .innerJoin(communityMembersTable, eq(usersTable.id, communityMembersTable.userId))
+      .where(
+        and(
+          ne(usersTable.id, userId),
+          inArray(communityMembersTable.communityId, communityIds),
+          sql`${usersTable.id} NOT IN (${followingIds.length > 0 ? followingIds.join("','") : "''"})`,
+          sql`EXISTS (
+            SELECT 1 FROM ${thoughtsTable}
+            WHERE ${thoughtsTable.userId} = ${usersTable.id}
+            AND ${thoughtsTable.content} IS NOT NULL
+            AND LENGTH(${thoughtsTable.content}) > 10
+            LIMIT 1
+          )`
+        )
+      )
+      .limit(maxResults * 2)
+
+    console.log(`Found ${communityUsers.length} users in shared communities with thoughts`)
+
+    // Calculate community overlap scores
+    const userScores = new Map<string, { user: any, sharedCommunities: number }>()
+
+    for (const user of communityUsers) {
+      if (!userScores.has(user.id)) {
+        userScores.set(user.id, { user, sharedCommunities: 0 })
+      }
+      userScores.get(user.id)!.sharedCommunities++
+    }
+
+    // Convert to recommendations
+    const recommendations: RecommendedUser[] = Array.from(userScores.values()).map(({ user, sharedCommunities }) => {
+      const age = user.dob ?
+        Math.floor((Date.now() - new Date(user.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) :
+        undefined
+
+      // Score based on shared communities and thought count
+      const score = (sharedCommunities * 0.7) + (Math.min(user.thoughtCount, 10) * 0.03)
+
+      return {
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname || null,
+        image: user.image || null,
+        profileImage: user.profileImage || null,
+        tags: [],
+        similarity: score,
+        proximity: undefined,
+        score,
+        reason: null,
+        age,
+        location: user.metro_area || undefined,
+      }
+    })
+
+    // Sort by score and return top results
+    return recommendations
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxResults)
+
+  } catch (error) {
+    console.error("Error in getCommunityBasedRecommendations:", error)
+    return []
   }
 }
 
@@ -174,7 +369,7 @@ async function userHasEmbeddings(userId: string): Promise<boolean> {
         )
       )
       .limit(1)
-    
+
     return thoughtWithEmbedding.length > 0
   } catch (error) {
     console.error("Error checking user embeddings:", error)
@@ -191,12 +386,12 @@ async function getAllTierUsers(userId: string, currentUserHasEmbeddings: boolean
     tier2Users: [],
     tier3Users: []
   }
-  
+
   try {
     // Get embedding-based users if Pinecone is available
     if (process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_NAME) {
       const embeddingUsers = await getEmbeddingBasedUsers(userId, 50) // Get more results
-      
+
       // Separate embedding users by tier
       if (currentUserHasEmbeddings) {
         // If current user has embeddings, these are Tier 1 (AI explanation possible)
@@ -206,20 +401,20 @@ async function getAllTierUsers(userId: string, currentUserHasEmbeddings: boolean
         results.tier2Users = embeddingUsers
       }
     }
-    
+
     // Get database users (Tier 3)
     const databaseUsers = await getDatabaseUsers(userId, 50)
-    
+
     // Filter out users already in higher tiers
     const existingUserIds = new Set([
       ...results.tier1Users.map(u => u.id),
       ...results.tier2Users.map(u => u.id)
     ])
-    
+
     results.tier3Users = databaseUsers.filter(user => !existingUserIds.has(user.id))
-    
+
     console.log(`Tier distribution - T1: ${results.tier1Users.length}, T2: ${results.tier2Users.length}, T3: ${results.tier3Users.length}`)
-    
+
     return results
   } catch (error) {
     console.error("Error getting tier users:", error)
@@ -234,13 +429,13 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
   try {
     // Get current user's data for matching preferences
     const currentUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)
-    
+
     if (currentUser.length === 0) {
       return []
     }
-    
+
     const user = currentUser[0]
-    
+
     // Get current user's tags and communities for similarity scoring
     const userTags = await db
       .select({
@@ -251,17 +446,17 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
       .from(userTagsTable)
       .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
       .where(eq(userTagsTable.userId, userId))
-    
+
     const userCommunities = await db
       .select({
         communityId: communityMembersTable.communityId,
       })
       .from(communityMembersTable)
       .where(eq(communityMembersTable.userId, userId))
-    
+
     const userTagIds = userTags.map((tag) => tag.tagId)
     const userCommunityIds = userCommunities.map((community) => community.communityId)
-    
+
     // Get potential matches
     const potentialMatches = await db
       .select({
@@ -276,10 +471,10 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
       .from(usersTable)
       .where(ne(usersTable.id, userId))
       .limit(maxResults)
-    
+
     // Score matches based on shared communities (prioritized) and common tags
     const scoredMatches: RecommendedUser[] = []
-    
+
     for (const match of potentialMatches) {
       // Get tags and communities for this potential match
       const matchTags = await db
@@ -291,26 +486,26 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
         .from(userTagsTable)
         .innerJoin(tagsTable, eq(userTagsTable.tagId, tagsTable.id))
         .where(eq(userTagsTable.userId, match.id))
-      
+
       const matchCommunities = await db
         .select({
           communityId: communityMembersTable.communityId,
         })
         .from(communityMembersTable)
         .where(eq(communityMembersTable.userId, match.id))
-      
+
       const matchTagIds = matchTags.map((tag) => tag.tagId)
       const matchCommunityIds = matchCommunities.map((community) => community.communityId)
-      
+
       // Calculate compatibility score - prioritize shared communities
       const commonCommunityIds = userCommunityIds.filter((communityId) => matchCommunityIds.includes(communityId))
       const commonTagIds = userTagIds.filter((tagId) => matchTagIds.includes(tagId))
-      
+
       // Weight shared communities more heavily than tags
       const communityScore = commonCommunityIds.length * 3 // 3x weight for shared communities
       const tagScore = commonTagIds.length
       const score = communityScore + tagScore
-      
+
       const recommendedUser: RecommendedUser = {
         id: match.id,
         username: match.username,
@@ -322,13 +517,13 @@ async function getDatabaseUsers(userId: string, maxResults: number): Promise<Rec
         similarity: score / Math.max(userTagIds.length + userCommunityIds.length * 3, matchTagIds.length + matchCommunityIds.length * 3),
         reason: null,
       }
-      
+
       scoredMatches.push(recommendedUser)
     }
-    
+
     // Sort by score (highest compatibility first)
     scoredMatches.sort((a, b) => b.score - a.score)
-    
+
     return scoredMatches
   } catch (error) {
     console.error("Error getting database users:", error)
@@ -453,7 +648,7 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         });
         console.log(`Pinecone query with filter returned ${queryResponse.matches?.length || 0} matches`);
       } catch (filterError) {
-        console.log('Pinecone filter failed, trying without filter:', filterError.message);
+        console.log('Pinecone filter failed, trying without filter:', filterError instanceof Error ? filterError.message : String(filterError));
         queryResponse = await index.namespace('user-embeddings').query({
           vector: userEmbedding,
           topK: maxResults * 5,
@@ -461,15 +656,15 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         });
         console.log(`Pinecone query without filter returned ${queryResponse.matches?.length || 0} matches`);
       }
-      
+
       console.log(`Pinecone query returned ${queryResponse.matches?.length || 0} matches`)
 
       // Filter out current user and get user IDs
       const userIds = queryResponse.matches
         ?.map((match) => match.metadata?.userId)
-        .filter(Boolean)
+        .filter((id): id is string => Boolean(id) && typeof id === 'string')
         .filter(id => id !== userId) || []
-      
+
       console.log(`Found ${userIds.length} potential user matches (excluding current user)`)
 
       // TEMPORARY: Force fallback for testing
@@ -515,72 +710,6 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         }))
       }
 
-      console.log(`Looking up users with IDs:`, userIds)
-      
-      // Get user details and also check which users have embeddings
-      const userDetails = await db
-        .select({
-          id: usersTable.id,
-          username: usersTable.username,
-          nickname: usersTable.nickname,
-          image: usersTable.image,
-          profileImage: usersTable.profileImage,
-          hasEmbeddings: sql<boolean>`EXISTS (
-            SELECT 1 FROM ${thoughtsTable}
-            WHERE ${thoughtsTable.userId} = ${usersTable.id}
-            AND ${thoughtsTable.embedding} IS NOT NULL
-            LIMIT 1
-          )`,
-        })
-        .from(usersTable)
-        .where(inArray(usersTable.id, userIds))
-      
-      console.log(`Found ${userDetails.length} users in database from ${userIds.length} IDs`)
-
-      // Create a map for quick lookup
-      const userDetailsMap = new Map(userDetails.map((user) => [user.id, user]))
-
-      // Process results and calculate enhanced similarities
-      const results: RecommendedUser[] = []
-      
-      for (const match of queryResponse.matches || []) {
-        const metadata = match.metadata || {}
-        const userDetail = userDetailsMap.get(metadata.userId)
-        
-        // Skip users without embeddings
-        if (!userDetail?.hasEmbeddings) {
-          continue
-        }
-
-        const similarity = match.score ?? 0
-        
-        // Calculate additional similarity factors
-        const eventSimilarity = await calculateEventAttendanceSimilarity(userId, metadata.userId)
-        const feedSimilarity = await calculateFeedPreferenceSimilarity(userId, metadata.userId)
-        
-        const enhancedScore = calculateOverallScore(
-          similarity, 
-          metadata.proximity, 
-          eventSimilarity, 
-          feedSimilarity
-        )
-
-        results.push({
-          id: metadata.userId,
-          username: userDetail.username,
-          nickname: userDetail.nickname || null,
-          image: userDetail.image || null,
-          profileImage: userDetail.profileImage || null,
-          tags: metadata.tags ? JSON.parse(metadata.tags) : [],
-          similarity: similarity,
-          proximity: metadata.proximity || undefined,
-          score: enhancedScore,
-          reason: null,
-        })
-      }
-
-      // Sort by enhanced score and return results
-      return results.sort((a, b) => b.score - a.score).slice(0, maxResults)
     } else {
       // Current user has no embeddings - return a diverse set of users with embeddings
       console.log(`User ${userId} has no embeddings, getting diverse users with embeddings`)
@@ -607,7 +736,7 @@ async function getEmbeddingBasedUsers(userId: string, maxResults = 10): Promise<
         .limit(maxResults)
 
       console.log(`Found ${usersWithEmbeddings.length} diverse users with embeddings for user ${userId}`)
-      
+
       return usersWithEmbeddings.map(user => ({
         id: user.id,
         username: user.username,
@@ -711,7 +840,7 @@ async function getDatabaseRecommendations(
     // Calculate compatibility score - prioritize shared communities
     const commonCommunityIds = userCommunityIds.filter((communityId) => matchCommunityIds.includes(communityId))
     const commonTagIds = userTagIds.filter((tagId) => matchTagIds.includes(tagId))
-    
+
     // Weight shared communities more heavily than tags
     const communityScore = commonCommunityIds.length * 3 // 3x weight for shared communities
     const tagScore = commonTagIds.length
@@ -1129,7 +1258,13 @@ async function getMostRecentUserEmbedding(userId: string): Promise<number[]> {
       return []
     }
 
-    const embedding = parseEmbedding(userThought[0].embedding)
+    const embeddingStr = userThought[0].embedding
+    if (!embeddingStr) {
+      console.log(`No embedding found for user ${userId}`)
+      return []
+    }
+
+    const embedding = parseEmbedding(embeddingStr)
     if (!embedding) {
       console.log(`Invalid embedding found for user ${userId}`)
       return []
@@ -1253,7 +1388,7 @@ async function calculateEventAttendanceSimilarity(userAId: string, userBId: stri
 
     // Calculate similarity score based on shared events/activities
     const sharedEventCount = sharedEventIds.size + sharedInviteIds.size
-    
+
     // Return normalized score (0-1, with diminishing returns)
     return Math.min(sharedEventCount * 0.1, 1.0) // Each shared event adds 0.1, max 1.0
   } catch (error) {
