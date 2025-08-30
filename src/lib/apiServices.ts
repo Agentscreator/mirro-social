@@ -26,14 +26,20 @@ export async function fetchRecommendations(
   try {
     console.log(`Fetching recommendations: page=${page}, pageSize=${pageSize}, seed=${randomSeed}`)
     
+    // Add a timeout to the fetch request itself
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+    
     const seedParam = randomSeed ? `&seed=${randomSeed}` : '';
     const response = await fetch(`/api/recommendations?page=${page}&pageSize=${pageSize}${seedParam}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId)
     console.log(`Recommendations API response status: ${response.status}`)
 
     if (!response.ok) {

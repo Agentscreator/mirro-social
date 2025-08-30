@@ -62,41 +62,45 @@ export default function FeedPage() {
     }
   }
 
-  // Fetch discover stories using original API
+  // Simplified fetch discover stories - bypass complex AI APIs for now
   const fetchDiscoverStories = async () => {
     try {
       setDiscoverLoading(true)
-      console.log('Starting fetchDiscoverStories...')
+      console.log('Starting simplified fetchDiscoverStories...')
 
-      // Add timeout to prevent infinite loading
+      // Use a much shorter timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 8000) // Reduced to 8 seconds
+        setTimeout(() => reject(new Error('Request timeout')), 3000) // 3 seconds max
       })
 
-      // Generate a random seed for this session to ensure different order
-      const randomSeed = Math.floor(Math.random() * 1000)
+      // Try the recommendations API with a very short timeout
+      const recommendationsPromise = fetchRecommendations(1, 5) // Smaller page size
 
-      // Use the original recommendations API with timeout
-      const recommendationsPromise = fetchRecommendations(1, 10, randomSeed)
-      const result = await Promise.race([recommendationsPromise, timeoutPromise])
-      const { users: recommendedUsers, hasMore: moreAvailable } = result as any
+      let recommendedUsers: any[] = []
+      try {
+        const result = await Promise.race([recommendationsPromise, timeoutPromise]) as any
+        recommendedUsers = result?.users || []
+        console.log('Got recommendations:', recommendedUsers.length)
+      } catch (error) {
+        console.log('Recommendations API failed, using fallback:', (error as Error).message)
+        // Fallback: create some mock users for testing
+        recommendedUsers = []
+      }
 
-      console.log('Recommended Users:', recommendedUsers, 'Has More:', moreAvailable)
-
-      // Handle empty results
-      if (!recommendedUsers || recommendedUsers.length === 0) {
-        console.log('No recommended users found')
+      // If no users from API, show empty state immediately
+      if (recommendedUsers.length === 0) {
+        console.log('No recommended users found, showing empty state')
         setDiscoverStories([])
         setDiscoverLoading(false)
         return
       }
 
-      // Convert users to stories format for the journal UI
+      // Convert users to stories format with simple narratives (no AI generation)
       const usersWithBasicData = recommendedUsers.map((user: any) => ({
         id: user.id,
         username: user.username,
         nickname: user.nickname || user.username,
-        narrative: "Generating match explanation...",
+        narrative: "A kindred spirit whose thoughts might resonate with yours...",
         tags: user.tags || [],
         score: user.score || 0,
         profileImage: user.profileImage || user.image
@@ -104,45 +108,12 @@ export default function FeedPage() {
 
       setDiscoverStories(usersWithBasicData)
       setDiscoverLoading(false)
-      console.log('Set discover stories, loading complete')
+      console.log('Set discover stories complete:', usersWithBasicData.length)
 
-      // Generate explanations sequentially after showing users
-      if (recommendedUsers.length > 0) {
-        for (let index = 0; index < recommendedUsers.length; index++) {
-          const user = recommendedUsers[index]
-
-          try {
-            // Add timeout for explanation generation too
-            const explanationPromise = generateExplanation(user)
-            const explanationTimeout = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Explanation timeout')), 3000) // Reduced to 3 seconds
-            })
-
-            const explanation = await Promise.race([explanationPromise, explanationTimeout]) as string
-
-            setDiscoverStories(prevStories => {
-              const newStories = [...prevStories]
-              if (newStories[index]) {
-                newStories[index].narrative = explanation
-              }
-              return newStories
-            })
-          } catch (error) {
-            console.error(`Failed to generate explanation for user ${user.id}:`, error)
-            setDiscoverStories(prevStories => {
-              const newStories = [...prevStories]
-              if (newStories[index]) {
-                newStories[index].narrative = "A kindred spirit whose thoughts resonate with yours..."
-              }
-              return newStories
-            })
-          }
-        }
-      }
     } catch (error) {
       console.error('Error fetching discover stories:', error)
 
-      // Ensure loading is always stopped
+      // Always ensure loading is stopped
       setDiscoverLoading(false)
       setDiscoverStories([])
 
@@ -277,21 +248,12 @@ export default function FeedPage() {
       if (activeTab === "discover") {
         try {
           console.log('Loading discover content...')
-          // Load thoughts first to determine UI state
-          const userThoughts = await loadThoughts()
-          console.log(`User has ${userThoughts.length} thoughts`)
 
-          if (userThoughts.length === 0) {
-            // User has no thoughts, show the thought input UI
-            console.log('No thoughts found, showing input UI')
-            setDiscoverStories([])
-            setLoading(false)
-          } else {
-            // User has thoughts, fetch recommendations
-            console.log('User has thoughts, fetching recommendations')
-            await fetchDiscoverStories()
-            setLoading(false)
-          }
+          // Simplified approach: always try to fetch recommendations first
+          console.log('Fetching recommendations directly')
+          await fetchDiscoverStories()
+          setLoading(false)
+
         } catch (error) {
           console.error('Error loading discover content:', error)
           // Ensure loading is stopped on error
