@@ -150,19 +150,19 @@ export function UserCard({
 
   return (
     <Card
-      className={cn(cardClasses, "cursor-pointer")}
+      className={cn(cardClasses, "cursor-pointer touch-manipulation mobile-card")}
       onClick={() => {
         console.log("Card clicked for user:", user.id, user.username)
         handleViewProfile()
       }}
     >
-      <CardContent className={contentClasses}>
-        {/* Header with profile picture and username inline */}
-        <div className="flex items-center gap-4 mb-6">
+      <CardContent className={cn(contentClasses, "mobile-padding")}>
+        {/* Header with profile picture and username inline - Mobile Optimized */}
+        <div className="flex items-center gap-4 mb-6 mobile-gap">
           <div
             className={cn(
-              "relative flex-shrink-0 overflow-hidden rounded-full shadow-lg border-2 border-gray-600",
-              imageSize,
+              "relative flex-shrink-0 overflow-hidden rounded-full shadow-lg border-2 border-gray-600 touch-manipulation",
+              "h-14 w-14", // Enhanced mobile size
             )}
           >
             {shouldShowPrimaryImage ? (
@@ -204,7 +204,7 @@ export function UserCard({
             )}
           </div>
 
-          <div className="flex-1 flex items-center justify-between">
+          <div className="flex-1 flex items-center justify-between mobile-gap">
             <h3 className="text-xl font-semibold text-white">@{user.username}</h3>
             <Button
               onClick={(e) => {
@@ -213,10 +213,10 @@ export function UserCard({
               }}
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-1.5 text-sm font-medium"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-4 py-2 text-base font-medium h-12 touch-manipulation"
             >
-              <User className="h-3.5 w-3.5 mr-1.5" />
-              View profile
+              <User className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">View profile</span>
             </Button>
           </div>
         </div>
@@ -254,25 +254,25 @@ export function UserCard({
         )}
 
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
+        {/* Action buttons - Mobile Optimized */}
+        <div className="flex gap-3 mobile-gap">
           <Button
             onClick={(e) => {
               e.stopPropagation()
               handleMessage()
             }}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors h-12 text-base font-medium touch-manipulation"
             disabled={isMessaging}
           >
             {isMessaging ? (
-              <div className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border border-white border-t-transparent mr-2"></div>
             ) : (
-              <MessageSquare className="h-4 w-4 mr-2" />
+              <MessageSquare className="h-5 w-5 mr-2" />
             )}
             {isMessaging ? "Messaging..." : "Message"}
           </Button>
 
-          {/* Save Profile Button */}
+          {/* Save Profile Button - Mobile Optimized */}
           {(onSaveProfile || onUnsaveProfile) && (
             <Button
               onClick={(e) => {
@@ -280,15 +280,15 @@ export function UserCard({
                 handleSaveProfile()
               }}
               variant="outline"
-              className="border-gray-600 hover:bg-gray-700 transition-colors"
+              className="border-gray-600 hover:bg-gray-700 transition-colors h-12 w-12 touch-manipulation"
               disabled={isSaving}
             >
               {isSaving ? (
-                <div className="h-4 w-4 animate-spin rounded-full border border-gray-400 border-t-transparent"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border border-gray-400 border-t-transparent"></div>
               ) : isSaved ? (
-                <BookmarkCheck className="h-4 w-4 text-blue-500" />
+                <BookmarkCheck className="h-5 w-5 text-blue-500" />
               ) : (
-                <Bookmark className="h-4 w-4" />
+                <Bookmark className="h-5 w-5" />
               )}
             </Button>
           )}

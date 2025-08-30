@@ -580,61 +580,61 @@ const VideoFeedItem = ({
         {/* Actions hidden to prevent interference with swiping */}
       </div>
 
-      {/* Bottom Content - Clean & Elegant */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pb-20 md:pb-8 pr-20">
-        {/* User Info */}
-        <div className="flex items-center space-x-3 mb-4">
+      {/* Bottom Content - Mobile Optimized */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black via-black/80 to-transparent p-4 pb-24 md:pb-8 pr-4 mobile-padding" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 6rem)' }}>
+        {/* User Info - Mobile Optimized */}
+        <div className="flex items-center space-x-3 mb-4 mobile-gap">
           <Avatar 
-            className="w-12 h-12 border-2 border-white cursor-pointer hover:scale-105 transition-transform duration-200"
+            className="w-14 h-14 border-2 border-white cursor-pointer hover:scale-105 transition-transform duration-200 touch-manipulation"
             onClick={() => {
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
             <AvatarImage src={getUserAvatar()} alt={getUserDisplayName()} />
-            <AvatarFallback className="bg-white text-black font-semibold">
+            <AvatarFallback className="bg-white text-black font-semibold text-lg">
               {getUserDisplayName().charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div 
-            className="cursor-pointer hover:opacity-80 transition-opacity"
+            className="cursor-pointer hover:opacity-80 transition-opacity touch-manipulation"
             onClick={() => {
               window.location.href = `/profile/${post.user.id}`;
             }}
           >
-            <h3 className="font-semibold text-white text-lg">{getUserDisplayName()}</h3>
-            <p className="text-white/60 text-sm">@{post.user.username}</p>
+            <h3 className="font-semibold text-white text-xl leading-tight">{getUserDisplayName()}</h3>
+            <p className="text-white/60 text-base">@{post.user.username}</p>
           </div>
         </div>
 
-        {/* Content */}
-        <p className="text-white text-base mb-4 leading-relaxed font-medium">
+        {/* Content - Mobile Optimized */}
+        <p className="text-white text-lg mb-6 leading-relaxed font-medium">
           {post.content}
         </p>
         
-        {/* Action Buttons - Horizontal Layout */}
-        <div className="flex items-center space-x-6 mb-4">
+        {/* Action Buttons - Mobile Optimized Layout */}
+        <div className="flex items-center space-x-8 mb-6 mobile-gap">
           <button 
             onClick={handleLike}
             disabled={isLiking}
-            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+            className="flex items-center space-x-3 transition-all duration-200 hover:scale-105 touch-manipulation min-h-12 min-w-12"
           >
-            <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            <span className="text-white text-sm font-medium">{currentLikes}</span>
+            <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+            <span className="text-white text-base font-medium">{currentLikes}</span>
           </button>
           
           <button 
             onClick={() => handleComment()}
-            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+            className="flex items-center space-x-3 transition-all duration-200 hover:scale-105 touch-manipulation min-h-12 min-w-12"
           >
-            <MessageCircle className="w-6 h-6 text-white" />
-            <span className="text-white text-sm font-medium">{currentComments}</span>
+            <MessageCircle className="w-7 h-7 text-white" />
+            <span className="text-white text-base font-medium">{currentComments}</span>
           </button>
           
           <ShareButton
             postId={post.id}
             content={post.content}
             userDisplayName={getUserDisplayName()}
-            className="flex items-center space-x-2 transition-all duration-200 hover:scale-105 bg-transparent border-none p-0 h-auto"
+            className="flex items-center space-x-3 transition-all duration-200 hover:scale-105 bg-transparent border-none p-0 h-auto touch-manipulation min-h-12"
             variant="ghost"
           />
         </div>

@@ -32,7 +32,7 @@ export default function AuthenticatedLayout({
     requestNotificationPermission()
   }, [])
 
-  // Detect and setup mobile/native app environment
+  // Enhanced mobile/native app environment detection and setup
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const nativeApp = isNativeApp()
@@ -41,29 +41,46 @@ export default function AuthenticatedLayout({
       setIsNative(nativeApp)
       setIsMobile(mobileDevice)
       
-      // Add appropriate classes
-      if (nativeApp) {
-        document.documentElement.classList.add('native-app')
-        document.body.classList.add('native-app')
-      } else if (mobileDevice) {
-        document.documentElement.classList.add('mobile-web')
-        document.body.classList.add('mobile-web')
-      } else {
-        document.documentElement.classList.add('desktop-web')
-        document.body.classList.add('desktop-web')
+      // Import and run mobile optimizations
+      import('@/lib/mobile-performance').then(({ optimizeMobilePerformance }) => {
+        optimizeMobilePerformance()
+      })
+      
+      // Add appropriate classes with enhanced detection
+      const deviceType = nativeApp ? 'native-app' : mobileDevice ? 'mobile-web' : 'desktop-web'
+      document.documentElement.classList.add(deviceType)
+      document.body.classList.add(deviceType)
+      
+      // iOS-specific optimizations
+      if (mobileDevice && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('ios-device')
+        document.body.classList.add('ios-device')
+        
+        // Set CSS custom property for iOS viewport height
+        const setIOSViewport = () => {
+          const vh = window.innerHeight * 0.01
+          document.documentElement.style.setProperty('--vh', `${vh}px`)
+        }
+        setIOSViewport()
+        window.addEventListener('resize', setIOSViewport)
+        window.addEventListener('orientationchange', () => setTimeout(setIOSViewport, 100))
       }
       
-      // Ensure navigation works properly
+      // Android-specific optimizations
+      if (mobileDevice && /Android/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('android-device')
+        document.body.classList.add('android-device')
+      }
+      
+      // Ensure proper interaction and navigation
       document.body.style.pointerEvents = 'auto'
       document.body.style.userSelect = 'auto'
-      
-      // Remove any blocking styles that might interfere
       document.body.style.overflow = 'auto'
       document.documentElement.style.overflow = 'auto'
       
       return () => {
-        document.documentElement.classList.remove('native-app', 'mobile-web', 'desktop-web')
-        document.body.classList.remove('native-app', 'mobile-web', 'desktop-web')
+        document.documentElement.classList.remove('native-app', 'mobile-web', 'desktop-web', 'ios-device', 'android-device')
+        document.body.classList.remove('native-app', 'mobile-web', 'desktop-web', 'ios-device', 'android-device')
       }
     }
   }, [])

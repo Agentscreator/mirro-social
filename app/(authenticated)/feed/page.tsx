@@ -377,19 +377,19 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="fixed inset-0 md:relative md:h-screen bg-black text-white overflow-hidden z-10 feed-container feed-page">
+    <div className="fixed inset-0 md:relative md:h-screen bg-black text-white overflow-hidden z-10 feed-container feed-page mobile-optimized ios-viewport-fix">
 
-      {/* Feed Tabs */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/60 to-transparent">
-        <div className="px-4 pt-8 pb-4">
+      {/* Feed Tabs - Mobile Optimized */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="px-4 pt-safe-top pt-8 pb-4 mobile-padding">
           {showSearchBar ? (
-            /* Search Bar */
-            <div className="flex items-center justify-between">
+            /* Search Bar - Mobile Optimized */
+            <div className="flex items-center justify-between mobile-gap">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
                 <Input
                   placeholder="Search..."
-                  className="pl-10 pr-10 py-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-sm focus:bg-white/20 transition-all text-sm w-full"
+                  className="pl-12 pr-12 py-3 h-12 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full backdrop-blur-sm focus:bg-white/20 transition-all text-base w-full touch-manipulation"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus={true}
@@ -397,7 +397,7 @@ export default function FeedPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-6 h-6"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white rounded-full w-8 h-8 touch-manipulation"
                   onClick={() => {
                     setShowSearchBar(false)
                     setSearchQuery("")
@@ -408,7 +408,7 @@ export default function FeedPage() {
               </div>
               <Button
                 variant="ghost"
-                className="ml-4 text-white/70 hover:text-white text-sm"
+                className="ml-4 text-white/70 hover:text-white text-base px-4 py-3 h-12 touch-manipulation"
                 onClick={() => {
                   setShowSearchBar(false)
                   setSearchQuery("")
@@ -418,48 +418,48 @@ export default function FeedPage() {
               </Button>
             </div>
           ) : (
-            /* Normal tabs with search icon */
-            <div className="flex items-center justify-between">
+            /* Normal tabs with search icon - Mobile Optimized */
+            <div className="flex items-center justify-between mobile-gap">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-                <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm">
+                <TabsList className="grid w-full grid-cols-3 bg-transparent backdrop-blur-sm h-12">
                   <TabsTrigger
                     value="explore"
-                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                    className="text-white/70 data-[state=active]:text-white text-base font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3 h-12 touch-manipulation"
                   >
                     For You
                     {activeTab === "explore" && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-white rounded-full" />
                     )}
                   </TabsTrigger>
                   <TabsTrigger
                     value="following"
-                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                    className="text-white/70 data-[state=active]:text-white text-base font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3 h-12 touch-manipulation"
                   >
                     Following
                     {activeTab === "following" && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-white rounded-full" />
                     )}
                   </TabsTrigger>
                   <TabsTrigger
                     value="discover"
-                    className="text-white/70 data-[state=active]:text-white text-sm font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3"
+                    className="text-white/70 data-[state=active]:text-white text-base font-normal data-[state=active]:font-medium transition-all duration-200 bg-transparent data-[state=active]:bg-transparent relative pb-3 h-12 touch-manipulation"
                   >
                     Discover
                     {activeTab === "discover" && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-white rounded-full" />
                     )}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
 
-              {/* Search Icon */}
+              {/* Search Icon - Mobile Optimized */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-white/10 rounded-full w-10 h-10 ml-4"
+                className="text-white hover:bg-white/10 rounded-full w-12 h-12 ml-4 touch-manipulation"
                 onClick={() => setShowSearchBar(true)}
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-5 w-5" />
               </Button>
             </div>
           )}

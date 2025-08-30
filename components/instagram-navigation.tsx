@@ -108,60 +108,60 @@ export function InstagramNavigation() {
         <div className="h-10"></div>
       </div>
 
-      {/* Mobile web navigation (bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom block md:hidden">
-        <div className="flex h-16 items-center justify-around px-1">
-          {/* First two routes */}
+      {/* Mobile web navigation (bottom) - Enhanced */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-black pb-safe-bottom block md:hidden" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}>
+        <div className="flex h-20 items-center justify-around px-2 mobile-padding">
+          {/* First two routes - Mobile Optimized */}
           {routes.slice(0, 2).map((route) => (
             <Link
               key={route.href}
               href={route.href}
               className={cn(
-                "flex flex-col items-center justify-center rounded-full p-1 transition-colors flex-1",
+                "flex flex-col items-center justify-center rounded-xl p-2 transition-all duration-200 flex-1 mobile-nav-item touch-manipulation min-h-12",
                 route.active ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full relative",
-                  route.active && "bg-white/20",
+                  "flex h-10 w-10 items-center justify-center rounded-xl relative transition-all duration-200",
+                  route.active && "bg-white/20 scale-110",
                 )}
               >
-                <route.icon className="h-4 w-4" />
+                <route.icon className="h-5 w-5" />
                 {route.href === "/messages" && <MessageBadge />}
               </div>
               <span className="sr-only">{route.label}</span>
             </Link>
           ))}
           
-          {/* Create Video Button - Center */}
+          {/* Create Video Button - Center - Mobile Optimized */}
           <Link
             href="/create-video"
-            className="flex flex-col items-center justify-center rounded-full p-1 transition-colors flex-1"
+            className="flex flex-col items-center justify-center rounded-xl p-2 transition-all duration-200 flex-1 mobile-nav-item touch-manipulation min-h-12"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg">
-              <Plus className="h-4 w-4 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg">
+              <Plus className="h-6 w-6 text-white" />
             </div>
             <span className="sr-only">Create</span>
           </Link>
           
-          {/* Last two routes */}
+          {/* Last two routes - Mobile Optimized */}
           {routes.slice(2).map((route) => (
             <Link
               key={route.href}
               href={route.href}
               className={cn(
-                "flex flex-col items-center justify-center rounded-full p-1 transition-colors flex-1",
+                "flex flex-col items-center justify-center rounded-xl p-2 transition-all duration-200 flex-1 mobile-nav-item touch-manipulation min-h-12",
                 route.active ? "text-white" : "text-gray-400",
               )}
             >
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full relative",
-                  route.active && "bg-white/20",
+                  "flex h-10 w-10 items-center justify-center rounded-xl relative transition-all duration-200",
+                  route.active && "bg-white/20 scale-110",
                 )}
               >
-                <route.icon className="h-4 w-4" />
+                <route.icon className="h-5 w-5" />
                 {route.href === "/messages" && <MessageBadge />}
               </div>
               <span className="sr-only">{route.label}</span>

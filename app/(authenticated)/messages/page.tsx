@@ -114,37 +114,37 @@ function MessagesPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white messages-page">
+    <div className="min-h-screen bg-black text-white messages-page mobile-optimized ios-viewport-fix" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Stories Feed */}
       <StoriesFeed />
 
-      {/* Search Bar */}
-      <div className="px-6 py-4 bg-black">
-        <div className="flex items-center gap-3">
+      {/* Search Bar - Mobile Optimized */}
+      <div className="px-4 py-4 bg-black mobile-padding" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+        <div className="flex items-center gap-3 mobile-gap">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
             <Input
               placeholder="Search conversations..."
-              className="pl-12 h-12 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              className="pl-14 h-14 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-base touch-manipulation"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
-          {/* Add Story Button */}
+          {/* Add Story Button - Mobile Optimized */}
           {!groupsLoading && groups.length > 0 && (
             <Button
               size="sm"
               variant="ghost"
-              className={`px-3 py-2 h-12 rounded-xl transition-all duration-200 flex-shrink-0 ${
+              className={`px-4 py-2 h-14 rounded-xl transition-all duration-200 flex-shrink-0 touch-manipulation ${
                 showAddStory 
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
               }`}
               onClick={() => setShowAddStory(!showAddStory)}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Add Story</span>
+              <Plus className="h-5 w-5 mr-2" />
+              <span className="hidden sm:inline text-base">Add Story</span>
             </Button>
           )}
         </div>
