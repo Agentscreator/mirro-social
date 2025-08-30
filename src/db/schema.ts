@@ -618,3 +618,23 @@ export const savedProfilesTable = pgTable("saved_profiles", {
     .references(() => usersTable.id), // The user whose profile is saved
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// User Activity Logs (NEW TABLE) - Track all user activities for retention analysis
+export const userActivityLogsTable = pgTable("user_activity_logs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  activityType: varchar("activity_type", { length: 50 }).notNull(), // login, post_created, post_liked, etc.
+  metadata: text("metadata"), // JSON data for additional context
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+})
+
+// Retention Cohorts (NEW TABLE) - Store calculated cohort data
+export const retentionCohortsTable = pgTable("retention_cohorts", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  cohortMonth: varchar("cohort_month", { length: 20 }).notNull().unique(), // YYYY-MM format
+  cohortSize: integer("cohort_size").notNull(),
+  retentionData: text("retention_data").notNull(), // JSON with retention rates and active users
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+})
