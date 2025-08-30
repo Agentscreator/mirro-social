@@ -525,29 +525,6 @@ export default function FeedPage() {
             </div>
           ) : (
             <>
-              {/* Desktop Navigation Controls */}
-              <div className="hidden md:flex fixed right-4 xl:right-12 top-1/2 -translate-y-1/2 z-40 flex-col gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToPreviousVideo}
-                  disabled={currentVideoIndex === 0}
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToNextVideo}
-                  disabled={currentVideoIndex >= currentPosts.length - 1}
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </Button>
-              </div>
-
-
               {/* Video Feed */}
               <div
                 ref={containerRef}
@@ -594,28 +571,6 @@ export default function FeedPage() {
             </div>
           ) : (
             <>
-              {/* Desktop Navigation Controls */}
-              <div className="hidden md:flex fixed right-4 xl:right-12 top-1/2 -translate-y-1/2 z-40 flex-col gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToPreviousVideo}
-                  disabled={currentVideoIndex === 0}
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm transition-all"
-                  onClick={goToNextVideo}
-                  disabled={currentVideoIndex >= currentPosts.length - 1}
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </Button>
-              </div>
-
               {/* Video Feed */}
               <div
                 ref={containerRef}
