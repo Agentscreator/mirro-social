@@ -593,30 +593,7 @@ export default function FeedPage() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Thought
               </Button>
-              <Button
-                onClick={async () => {
-                  console.log('Testing discover API...')
-                  try {
-                    const response = await fetch('/api/debug/discover-test')
-                    const data = await response.json()
-                    console.log('Discover test result:', data)
-                    toast({
-                      title: "Debug Test",
-                      description: `Found ${data.totalUsers || 0} users. Check console for details.`,
-                    })
-                  } catch (error) {
-                    console.error('Debug test failed:', error)
-                    toast({
-                      title: "Debug Test Failed",
-                      description: "Check console for details",
-                      variant: "destructive",
-                    })
-                  }
-                }}
-                className="bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm border border-red-500/30 text-white rounded-full px-3 py-2 text-xs font-medium transition-all"
-              >
-                Debug
-              </Button>
+
             </div>
 
             {discoverLoading || loading ? (

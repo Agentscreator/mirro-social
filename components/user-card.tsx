@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { MessageSquare, User, Bookmark, BookmarkCheck } from "lucide-react"
+import { MessageSquare, User, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, MapPin, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -16,14 +16,20 @@ interface UserCardProps {
     profileImage?: string
     reason?: string
     tags: string[]
+    age?: number
+    location?: string
   }
   onMessage?: (userId: string | number) => void
   onViewProfile?: () => void
   onSaveProfile?: (userId: string | number) => Promise<void>
   onUnsaveProfile?: (userId: string | number) => Promise<void>
+  onNext?: () => void
+  onPrevious?: () => void
   isMessaging?: boolean
   isLarge?: boolean
   isSaved?: boolean
+  showNavigation?: boolean
+  showDetails?: boolean
 }
 
 export function UserCard({
@@ -32,9 +38,13 @@ export function UserCard({
   onViewProfile,
   onSaveProfile,
   onUnsaveProfile,
+  onNext,
+  onPrevious,
   isMessaging = false,
   isLarge = false,
-  isSaved = false
+  isSaved = false,
+  showNavigation = false,
+  showDetails = false
 }: UserCardProps) {
   const [imageError, setImageError] = useState(false)
   const [gifError, setGifError] = useState(false)
@@ -157,6 +167,38 @@ export function UserCard({
       }}
     >
       <CardContent className={cn(contentClasses, "mobile-padding")}>
+        {/* Navigation buttons - Top */}
+        {showNavigation && (
+          <div className="flex justify-between items-center mb-4">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                onPrevious?.()
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-2 text-sm font-medium h-10 touch-manipulation"
+              disabled={!onPrevious}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                onNext?.()
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-2 text-sm font-medium h-10 touch-manipulation"
+              disabled={!onNext}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
+
         {/* Header with profile picture and username inline - Mobile Optimized */}
         <div className="flex items-center gap-4 mb-6 mobile-gap">
           <div
@@ -254,6 +296,27 @@ export function UserCard({
         )}
 
 
+        {/* Optional user details */}
+        {showDetails && (user.age || user.location) && (
+          <div className="mb-4 p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+            <h4 className="text-sm font-medium text-white/90 mb-2">Additional Details</h4>
+            <div className="flex flex-wrap gap-3 text-sm text-gray-300">
+              {user.age && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span>{user.age} years old</span>
+                </div>
+              )}
+              {user.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <span>{user.location}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Action buttons - Mobile Optimized */}
         <div className="flex gap-3 mobile-gap">
           <Button
@@ -293,6 +356,38 @@ export function UserCard({
             </Button>
           )}
         </div>
+
+        {/* Navigation buttons - Bottom */}
+        {showNavigation && (
+          <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-600/50">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                onPrevious?.()
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-2 text-sm font-medium h-10 touch-manipulation"
+              disabled={!onPrevious}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation()
+                onNext?.()
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors px-3 py-2 text-sm font-medium h-10 touch-manipulation"
+              disabled={!onNext}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
 
       </CardContent>
     </Card>

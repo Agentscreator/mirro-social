@@ -39,6 +39,8 @@ export type RecommendedUser = {
   score: number
   reason?: string | null
   tier?: number // Add tier information for debugging
+  age?: number // Add age field
+  location?: string // Add location field
 }
 
 type PaginatedRecommendations = {
@@ -79,6 +81,8 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
         nickname: usersTable.nickname,
         image: usersTable.image,
         profileImage: usersTable.profileImage,
+        dob: usersTable.dob,
+        metro_area: usersTable.metro_area,
       })
       .from(usersTable)
       .where(
@@ -96,19 +100,26 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
     
     console.log(`Simple database query found ${simpleUsers.length} users`)
     
-    const convertedUsers = simpleUsers.map(user => ({
-      id: user.id,
-      username: user.username,
-      nickname: user.nickname || null,
-      image: user.image || null,
-      profileImage: user.profileImage || null,
-      tags: [],
-      similarity: 0.5,
-      proximity: undefined,
-      score: 0.5,
-      reason: null,
-      tier: 2
-    }))
+    const convertedUsers = simpleUsers.map(user => {
+      // Calculate age from date of birth
+      const age = user.dob ? Math.floor((Date.now() - new Date(user.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined;
+      
+      return {
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname || null,
+        image: user.image || null,
+        profileImage: user.profileImage || null,
+        tags: [],
+        similarity: 0.5,
+        proximity: undefined,
+        score: 0.5,
+        reason: null,
+        tier: 2,
+        age: age,
+        location: user.metro_area || undefined,
+      }
+    })
     
     // Apply pagination
     const startIdx = (page - 1) * pageSize

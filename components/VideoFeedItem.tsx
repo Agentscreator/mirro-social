@@ -74,24 +74,29 @@ const VideoFeedItem = ({
     }
   }, [post.id]);
 
-  // Simplified video setup for all platforms
+  // Enhanced video setup for all platforms
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
 
-    // Basic video configuration that works everywhere
+    // Enhanced video configuration for better compatibility
     video.muted = true;
     video.playsInline = true;
     video.controls = false;
     video.disablePictureInPicture = true;
+    video.preload = 'metadata';
     video.setAttribute('webkit-playsinline', 'true');
     video.setAttribute('playsinline', 'true');
     video.setAttribute('muted', 'true');
+    video.setAttribute('autoplay', 'true');
+    
+    // Force load the video
+    video.load();
     
     if (process.env.NODE_ENV === 'development') {
       console.log('🎬 Video configured for post:', post.id, 'URL:', video.src);
     }
-  }, [post.id]);
+  }, [post.id, post.video]);
 
   // Sync comment count when post prop changes
   useEffect(() => {
@@ -386,6 +391,18 @@ const VideoFeedItem = ({
               if (isActive && videoRef.current?.paused) {
                 videoRef.current.play().then(() => {
                   setIsPlaying(true);
+                }).catch((error) => {
+                  console.log('Auto-play failed:', error);
+                  setIsPlaying(false);
+                });
+              }
+            }}
+            onLoadedMetadata={() => {
+              console.log('Video metadata loaded for post:', post.id);
+              // Additional attempt to play when metadata is ready
+              if (isActive && videoRef.current?.paused) {
+                videoRef.current.play().then(() => {
+                  setIsPlaying(true);
                 }).catch(() => {
                   setIsPlaying(false);
                 });
@@ -406,7 +423,7 @@ const VideoFeedItem = ({
               backgroundColor: '#000'
             }}
           />
-        ) : (
+        ) : hasMedia() ? (
           <img
             className="w-full h-full object-cover"
             src={getMediaUrl()}
@@ -416,7 +433,20 @@ const VideoFeedItem = ({
               height: '100%',
               objectFit: 'cover'
             }}
+            onError={(e) => {
+              console.error('Image failed to load:', getMediaUrl());
+              e.currentTarget.style.display = 'none';
+            }}
           />
+        ) : (
+          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+            <div className="text-center text-white/70">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                <Play className="w-8 h-8" />
+              </div>
+              <p className="text-sm">No media available</p>
+            </div>
+          </div>
         )}
       </div>
       

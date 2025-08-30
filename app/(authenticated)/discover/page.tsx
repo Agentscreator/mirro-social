@@ -957,11 +957,17 @@ export default function DiscoverPage() {
                                 profileImage: currentUser.profileImage,
                                 reason: currentUser.reason || "Calculating why you'd be a good match...",
                                 tags: [],
+                                age: (currentUser as any).age,
+                                location: (currentUser as any).location,
                               }}
                               onMessage={() => handleMessage(currentUser.id.toString())}
                               onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                              onNext={currentIndex < shuffledUsers.length - 1 || hasMore ? goToNext : undefined}
+                              onPrevious={currentIndex > 0 ? goToPrevious : undefined}
                               isMessaging={messagingUser === currentUser.id.toString()}
                               isLarge={true}
+                              showNavigation={true}
+                              showDetails={true}
                             />
                           </div>
                         )}
@@ -1018,11 +1024,17 @@ export default function DiscoverPage() {
                               profileImage: currentUser.profileImage,
                               reason: currentUser.reason || "Calculating why you'd be a good match...",
                               tags: [],
+                              age: (currentUser as any).age,
+                              location: (currentUser as any).location,
                             }}
                             onMessage={() => handleMessage(currentUser.id.toString())}
                             onViewProfile={() => handleViewProfile(currentUser.id.toString())}
+                            onNext={currentIndex < shuffledUsers.length - 1 || hasMore ? goToNext : undefined}
+                            onPrevious={currentIndex > 0 ? goToPrevious : undefined}
                             isMessaging={messagingUser === currentUser.id.toString()}
                             isLarge={true}
+                            showNavigation={true}
+                            showDetails={true}
                           />
                         </div>
                       )}
