@@ -8,7 +8,7 @@ import {
   liveEventsTable, 
   liveEventParticipantsTable 
 } from "@/src/db/schema"
-import { eq, and, gte, sql } from "drizzle-orm"
+import { eq, and, gte, sql, ne } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id
 
-    // Get mutual friends (people who follow you AND you follow them back)
-    const mutualFriends = await db
+    // Get people you follow
+    const peopleYouFollow = await db
       .select({
         id: usersTable.id,
         username: usersTable.username,
@@ -34,17 +34,26 @@ export async function GET(request: NextRequest) {
         followersTable, 
         eq(followersTable.followingId, usersTable.id)
       )
-      .where(
-        and(
-          eq(followersTable.followerId, userId),
-          // Check if they also follow you back
-          sql`EXISTS (
-            SELECT 1 FROM ${followersTable} f2 
-            WHERE f2.follower_id = ${usersTable.id} 
-            AND f2.following_id = ${userId}
-          )`
+      .where(eq(followersTable.followerId, userId))
+
+    // Filter to only mutual friends (they also follow you back)
+    const mutualFriends = []
+    for (const person of peopleYouFollow) {
+      const followsYouBack = await db
+        .select()
+        .from(followersTable)
+        .where(
+          and(
+            eq(followersTable.followerId, person.id),
+            eq(followersTable.followingId, userId)
+          )
         )
-      )
+        .limit(1)
+      
+      if (followsYouBack.length > 0) {
+        mutualFriends.push(person)
+      }
+    }
 
     console.log(`Found ${mutualFriends.length} mutual friends for user ${userId}`)
 
@@ -94,7 +103,7 @@ export async function GET(request: NextRequest) {
               eq(liveEventParticipantsTable.userId, friend.id),
               gte(liveEventsTable.date, new Date().toISOString().split('T')[0]),
               // Don't include events they're hosting (already got those)
-              sql`${liveEventsTable.hostId} != ${friend.id}`
+              ne(liveEventsTable.hostId, friend.id)
             )
           )
           .orderBy(liveEventsTable.date)
