@@ -230,28 +230,13 @@ body, html {
     /* Ensure proper mobile video playback */
     -webkit-playsinline: true !important;
     
-    /* Prevent video controls from showing */
-    -webkit-media-controls: none !important;
-    -webkit-media-controls-panel: none !important;
-    -webkit-media-controls-play-button: none !important;
-    -webkit-media-controls-start-playback-button: none !important;
-    
     /* Ensure proper sizing */
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     
-    /* Prevent user interaction with video element directly */
-    pointer-events: none !important;
-    
     /* Ensure black background */
     background-color: #000000 !important;
-  }
-  
-  /* Re-enable pointer events for our custom controls */
-  .video-controls,
-  .video-overlay {
-    pointer-events: auto !important;
   }
   
   /* Touch optimization */

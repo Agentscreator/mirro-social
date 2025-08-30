@@ -66,45 +66,45 @@ const VideoFeedItem = ({
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Detect mobile device
+  // Detect mobile device and initialize
   useEffect(() => {
     setIsMobile(isMobileDevice());
     setIsIOS(isIOSDevice());
+    
+    // Enable video playback on mobile with first user interaction
+    if (isMobileDevice()) {
+      const enableVideo = () => {
+        const video = videoRef.current;
+        if (video) {
+          video.muted = true;
+          video.load(); // Preload video
+        }
+      };
+      
+      // Listen for any user interaction to enable video
+      document.addEventListener('touchstart', enableVideo, { once: true, passive: true });
+      document.addEventListener('click', enableVideo, { once: true, passive: true });
+      
+      return () => {
+        document.removeEventListener('touchstart', enableVideo);
+        document.removeEventListener('click', enableVideo);
+      };
+    }
   }, []);
 
-  // Mobile-specific video setup
+  // Simple video setup for all devices
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isVideo() || !isMobile) return;
+    if (!video || !isVideo()) return;
 
-    // Configure video for mobile
-    const setupMobileVideo = () => {
-      video.muted = true;
-      video.playsInline = true;
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
-      video.setAttribute('muted', 'true');
-      video.controls = false;
-      video.disablePictureInPicture = true;
-      
-      // iOS specific settings
-      if (isIOS) {
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('x-webkit-airplay', 'deny');
-      }
-      
-      console.log('📱 Mobile video configured:', post.id);
-    };
-
-    setupMobileVideo();
+    // Basic video configuration
+    video.muted = true;
+    video.playsInline = true;
+    video.controls = false;
+    video.disablePictureInPicture = true;
     
-    // Re-setup on video load
-    video.addEventListener('loadedmetadata', setupMobileVideo);
-    
-    return () => {
-      video.removeEventListener('loadedmetadata', setupMobileVideo);
-    };
-  }, [isMobile, isIOS, post.id]);
+    console.log('📱 Video configured:', post.id);
+  }, [post.id]);
 
   // Sync comment count when post prop changes
   useEffect(() => {
@@ -127,45 +127,35 @@ const VideoFeedItem = ({
     }
   }, [post.id, post.hasPrivateLocation]);
 
-  // Mobile-optimized autoplay effect
+  // Simplified mobile-first autoplay effect
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
 
     const handleAutoplay = async () => {
-      try {
-        if (isActive && video.paused) {
-          // Ensure video is properly configured for mobile
+      if (isActive && video.paused) {
+        try {
+          // Always ensure muted for autoplay
           video.muted = true;
-          video.playsInline = true;
-          video.setAttribute('playsinline', 'true');
-          video.setAttribute('webkit-playsinline', 'true');
-          
-          // Small delay to ensure video is ready
-          setTimeout(async () => {
-            try {
-              await video.play();
-              setIsPlaying(true);
-              console.log('✅ Video playing:', post.id);
-            } catch (playError) {
-              console.log('⚠️ Autoplay blocked, user interaction required:', post.id);
-              setIsPlaying(false);
-            }
-          }, 100);
-        } else if (!isActive && !video.paused) {
-          video.pause();
+          await video.play();
+          setIsPlaying(true);
+          console.log('✅ Video playing:', post.id);
+        } catch (error) {
+          console.log('⚠️ Autoplay failed, showing play button:', post.id);
           setIsPlaying(false);
         }
-      } catch (error) {
-        console.log('Autoplay setup error:', error);
+      } else if (!isActive && !video.paused) {
+        video.pause();
         setIsPlaying(false);
       }
     };
 
-    handleAutoplay();
+    // Small delay to ensure video element is ready
+    const timer = setTimeout(handleAutoplay, 200);
+    return () => clearTimeout(timer);
   }, [isActive, post.id]);
 
-  // Listen for video play events and handle mobile interaction
+  // Simple video event handling
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -183,36 +173,12 @@ const VideoFeedItem = ({
       }
     };
 
-    // Mobile-specific: Enable video playback on first user interaction
-    const enableVideoPlayback = async () => {
-      if (isMobile && video.paused) {
-        try {
-          video.muted = true;
-          video.playsInline = true;
-          // Just load the video, don't play yet
-          video.load();
-          console.log('📱 Video enabled for mobile interaction:', post.id);
-        } catch (error) {
-          console.log('Mobile video enable failed:', error);
-        }
-      }
-    };
-
-    // Listen for user interactions to enable video
-    const interactionEvents = ['touchstart', 'touchend', 'click'];
-    interactionEvents.forEach(event => {
-      document.addEventListener(event, enableVideoPlayback, { once: true, passive: true });
-    });
-
     window.addEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
     
     return () => {
       window.removeEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
-      interactionEvents.forEach(event => {
-        document.removeEventListener(event, enableVideoPlayback);
-      });
     };
-  }, [isActive, post.id, isMobile]);
+  }, [isActive, post.id]);
 
 
 
@@ -409,68 +375,26 @@ const VideoFeedItem = ({
             ref={videoRef}
             className="w-full h-full object-cover"
             src={getMediaUrl()}
-            muted={true}
+            muted
             loop
-            playsInline={true}
-            webkit-playsinline="true"
-            x-webkit-airplay="deny"
+            playsInline
             preload="metadata"
             poster={getMediaUrl()}
             controls={false}
-            disablePictureInPicture={true}
-            crossOrigin="anonymous"
-            onPlay={() => {
-              setIsPlaying(true);
-              console.log('🎥 Video started playing:', post.id);
-            }}
-            onPause={() => {
-              setIsPlaying(false);
-              console.log('⏸️ Video paused:', post.id);
-            }}
+            disablePictureInPicture
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
-              console.log('📱 Video loaded:', post.id);
-              // Ensure mobile-friendly settings
-              if (videoRef.current) {
-                const video = videoRef.current;
-                video.muted = true;
-                video.playsInline = true;
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('webkit-playsinline', 'true');
-                
-                // Try to play if active
-                if (isActive && video.paused) {
-                  video.play().catch((error) => {
-                    console.log('⚠️ Autoplay blocked for post:', post.id, error);
-                    setIsPlaying(false);
-                  });
-                }
-              }
-            }}
-            onLoadedMetadata={() => {
-              console.log('📊 Video metadata loaded:', post.id);
-            }}
-            onCanPlay={() => {
-              console.log('▶️ Video can play:', post.id);
-              // Additional attempt to play when ready
+              // Try to play if active
               if (isActive && videoRef.current?.paused) {
                 videoRef.current.play().catch(() => {
-                  console.log('⚠️ Play attempt failed:', post.id);
+                  setIsPlaying(false);
                 });
               }
             }}
-            onError={(e) => {
-              console.error('❌ Video error for post:', post.id, e);
+            onError={() => {
               setIsPlaying(false);
               setVideoError(true);
-            }}
-            onStalled={() => {
-              console.log('🔄 Video stalled:', post.id);
-            }}
-            onWaiting={() => {
-              console.log('⏳ Video buffering:', post.id);
-            }}
-            onSuspend={() => {
-              console.log('⏸️ Video suspended:', post.id);
             }}
             style={{
               width: '100%',
@@ -499,44 +423,62 @@ const VideoFeedItem = ({
       {/* Play/Pause Overlay - Mobile optimized */}
       {isVideo() && !isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center z-10 video-overlay">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const video = videoRef.current;
-              if (video) {
-                try {
-                  video.muted = true;
-                  video.playsInline = true;
-                  video.setAttribute('playsinline', 'true');
-                  video.setAttribute('webkit-playsinline', 'true');
-                  await video.play();
-                  setIsPlaying(true);
-                  console.log('▶️ Manual play triggered:', post.id);
-                } catch (error) {
-                  console.error('❌ Manual play failed:', post.id, error);
-                  setIsPlaying(false);
-                  // Show user-friendly message on mobile
-                  if (isMobile) {
-                    toast({
-                      title: "Video Playback",
-                      description: "Tap the video to play",
-                      duration: 2000,
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const video = videoRef.current;
+                if (video) {
+                  try {
+                    console.log('🎬 Attempting to play video:', post.id);
+                    console.log('Video state:', {
+                      paused: video.paused,
+                      muted: video.muted,
+                      readyState: video.readyState,
+                      src: video.src
                     });
+                    
+                    video.muted = true;
+                    const playPromise = video.play();
+                    
+                    if (playPromise !== undefined) {
+                      await playPromise;
+                      setIsPlaying(true);
+                      console.log('✅ Video playing successfully:', post.id);
+                    }
+                  } catch (error) {
+                    console.error('❌ Video play failed:', post.id, error);
+                    setIsPlaying(false);
+                    
+                    // Show error to user on mobile
+                    if (isMobile) {
+                      toast({
+                        title: "Video Error",
+                        description: `Cannot play video: ${error.message}`,
+                        variant: "destructive",
+                        duration: 3000,
+                      });
+                    }
                   }
                 }
-              }
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="w-20 h-20 rounded-full bg-black/40 hover:bg-black/60 text-white hover:text-white backdrop-blur-md transition-all duration-300 border border-white/20 touch-manipulation video-controls"
-          >
-            <Play className="w-10 h-10 ml-1" />
-          </Button>
+              }}
+              className="w-20 h-20 rounded-full bg-black/40 hover:bg-black/60 text-white hover:text-white backdrop-blur-md transition-all duration-300 border border-white/20 touch-manipulation video-controls"
+            >
+              <Play className="w-10 h-10 ml-1" />
+            </Button>
+            
+            {/* Debug info for mobile */}
+            {isMobile && (
+              <div className="text-xs text-white/60 text-center">
+                <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
+                <div>iOS: {isIOS ? 'Yes' : 'No'}</div>
+                <div>Post: {post.id}</div>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -551,7 +493,6 @@ const VideoFeedItem = ({
             if (video && !video.paused) {
               video.pause();
               setIsPlaying(false);
-              console.log('⏸️ Manual pause triggered:', post.id);
             }
           }}
           onTouchStart={(e) => {
