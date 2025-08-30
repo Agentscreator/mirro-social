@@ -7,6 +7,17 @@ import { ShareButton } from "@/components/share-button";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
+// Mobile detection utility
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+const isIOSDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+};
+
 interface VideoFeedItemProps {
   post: {
     id: number;
@@ -50,7 +61,50 @@ const VideoFeedItem = ({
   const [currentComments, setCurrentComments] = useState(post.comments);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Detect mobile device
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    setIsIOS(isIOSDevice());
+  }, []);
+
+  // Mobile-specific video setup
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo() || !isMobile) return;
+
+    // Configure video for mobile
+    const setupMobileVideo = () => {
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('muted', 'true');
+      video.controls = false;
+      video.disablePictureInPicture = true;
+      
+      // iOS specific settings
+      if (isIOS) {
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('x-webkit-airplay', 'deny');
+      }
+      
+      console.log('📱 Mobile video configured:', post.id);
+    };
+
+    setupMobileVideo();
+    
+    // Re-setup on video load
+    video.addEventListener('loadedmetadata', setupMobileVideo);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', setupMobileVideo);
+    };
+  }, [isMobile, isIOS, post.id]);
 
   // Sync comment count when post prop changes
   useEffect(() => {
@@ -73,7 +127,7 @@ const VideoFeedItem = ({
     }
   }, [post.id, post.hasPrivateLocation]);
 
-  // Simplified autoplay effect
+  // Mobile-optimized autoplay effect
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -81,15 +135,29 @@ const VideoFeedItem = ({
     const handleAutoplay = async () => {
       try {
         if (isActive && video.paused) {
-          video.muted = true; // Ensure muted for autoplay
-          await video.play();
-          setIsPlaying(true);
+          // Ensure video is properly configured for mobile
+          video.muted = true;
+          video.playsInline = true;
+          video.setAttribute('playsinline', 'true');
+          video.setAttribute('webkit-playsinline', 'true');
+          
+          // Small delay to ensure video is ready
+          setTimeout(async () => {
+            try {
+              await video.play();
+              setIsPlaying(true);
+              console.log('✅ Video playing:', post.id);
+            } catch (playError) {
+              console.log('⚠️ Autoplay blocked, user interaction required:', post.id);
+              setIsPlaying(false);
+            }
+          }, 100);
         } else if (!isActive && !video.paused) {
           video.pause();
           setIsPlaying(false);
         }
       } catch (error) {
-        console.log('Autoplay blocked, user interaction required');
+        console.log('Autoplay setup error:', error);
         setIsPlaying(false);
       }
     };
@@ -97,7 +165,7 @@ const VideoFeedItem = ({
     handleAutoplay();
   }, [isActive, post.id]);
 
-  // Listen for video play events
+  // Listen for video play events and handle mobile interaction
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -115,12 +183,36 @@ const VideoFeedItem = ({
       }
     };
 
+    // Mobile-specific: Enable video playback on first user interaction
+    const enableVideoPlayback = async () => {
+      if (isMobile && video.paused) {
+        try {
+          video.muted = true;
+          video.playsInline = true;
+          // Just load the video, don't play yet
+          video.load();
+          console.log('📱 Video enabled for mobile interaction:', post.id);
+        } catch (error) {
+          console.log('Mobile video enable failed:', error);
+        }
+      }
+    };
+
+    // Listen for user interactions to enable video
+    const interactionEvents = ['touchstart', 'touchend', 'click'];
+    interactionEvents.forEach(event => {
+      document.addEventListener(event, enableVideoPlayback, { once: true, passive: true });
+    });
+
     window.addEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
     
     return () => {
       window.removeEventListener('forceVideoPlay', handleForceVideoPlay as EventListener);
+      interactionEvents.forEach(event => {
+        document.removeEventListener(event, enableVideoPlayback);
+      });
     };
-  }, [isActive, post.id]);
+  }, [isActive, post.id, isMobile]);
 
 
 
@@ -290,44 +382,101 @@ const VideoFeedItem = ({
     <div className="relative w-full h-full bg-black overflow-hidden">
       {/* Media Background - Full Screen */}
       <div className="absolute inset-0">
-        {isVideo() ? (
+        {videoError ? (
+          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+            <div className="text-center text-white">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                <Play className="w-8 h-8" />
+              </div>
+              <p className="text-sm text-white/70">Video unavailable</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setVideoError(false);
+                  if (videoRef.current) {
+                    videoRef.current.load();
+                  }
+                }}
+                className="mt-2 text-white/60 hover:text-white"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        ) : isVideo() ? (
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
             src={getMediaUrl()}
             muted={true}
             loop
-            playsInline
+            playsInline={true}
+            webkit-playsinline="true"
+            x-webkit-airplay="deny"
             preload="metadata"
             poster={getMediaUrl()}
-            autoPlay={isActive}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            controls={false}
+            disablePictureInPicture={true}
+            crossOrigin="anonymous"
+            onPlay={() => {
+              setIsPlaying(true);
+              console.log('🎥 Video started playing:', post.id);
+            }}
+            onPause={() => {
+              setIsPlaying(false);
+              console.log('⏸️ Video paused:', post.id);
+            }}
             onLoadedData={() => {
-              // Ensure autoplay when video loads and is active
-              if (isActive && videoRef.current) {
-                videoRef.current.muted = true;
-                if (videoRef.current.paused) {
-                  videoRef.current.play().catch(() => {
-                    console.log('Autoplay blocked for post:', post.id);
+              console.log('📱 Video loaded:', post.id);
+              // Ensure mobile-friendly settings
+              if (videoRef.current) {
+                const video = videoRef.current;
+                video.muted = true;
+                video.playsInline = true;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('webkit-playsinline', 'true');
+                
+                // Try to play if active
+                if (isActive && video.paused) {
+                  video.play().catch((error) => {
+                    console.log('⚠️ Autoplay blocked for post:', post.id, error);
+                    setIsPlaying(false);
                   });
                 }
               }
             }}
-
-            onError={(e) => {
-              console.error('Video error for post:', post.id, e);
+            onLoadedMetadata={() => {
+              console.log('📊 Video metadata loaded:', post.id);
             }}
-            onCanPlayThrough={() => {
-              console.log('📹 Video can play through:', post.id);
+            onCanPlay={() => {
+              console.log('▶️ Video can play:', post.id);
+              // Additional attempt to play when ready
+              if (isActive && videoRef.current?.paused) {
+                videoRef.current.play().catch(() => {
+                  console.log('⚠️ Play attempt failed:', post.id);
+                });
+              }
+            }}
+            onError={(e) => {
+              console.error('❌ Video error for post:', post.id, e);
+              setIsPlaying(false);
+              setVideoError(true);
+            }}
+            onStalled={() => {
+              console.log('🔄 Video stalled:', post.id);
             }}
             onWaiting={() => {
               console.log('⏳ Video buffering:', post.id);
             }}
+            onSuspend={() => {
+              console.log('⏸️ Video suspended:', post.id);
+            }}
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'cover',
+              backgroundColor: '#000'
             }}
           />
         ) : (
@@ -347,34 +496,67 @@ const VideoFeedItem = ({
       {/* Video Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
 
-      {/* Play/Pause Overlay - Only show for videos, more subtle like TikTok */}
+      {/* Play/Pause Overlay - Mobile optimized */}
       {isVideo() && !isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="absolute inset-0 flex items-center justify-center z-10 video-overlay">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
               const video = videoRef.current;
               if (video) {
-                video.play().catch(console.error);
+                try {
+                  video.muted = true;
+                  video.playsInline = true;
+                  video.setAttribute('playsinline', 'true');
+                  video.setAttribute('webkit-playsinline', 'true');
+                  await video.play();
+                  setIsPlaying(true);
+                  console.log('▶️ Manual play triggered:', post.id);
+                } catch (error) {
+                  console.error('❌ Manual play failed:', post.id, error);
+                  setIsPlaying(false);
+                  // Show user-friendly message on mobile
+                  if (isMobile) {
+                    toast({
+                      title: "Video Playback",
+                      description: "Tap the video to play",
+                      duration: 2000,
+                    });
+                  }
+                }
               }
             }}
-            className="w-20 h-20 rounded-full bg-black/40 hover:bg-black/60 text-white hover:text-white backdrop-blur-md transition-all duration-300 border border-white/20"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="w-20 h-20 rounded-full bg-black/40 hover:bg-black/60 text-white hover:text-white backdrop-blur-md transition-all duration-300 border border-white/20 touch-manipulation video-controls"
           >
             <Play className="w-10 h-10 ml-1" />
           </Button>
         </div>
       )}
       
-      {/* Tap to pause (invisible overlay) */}
+      {/* Tap to pause (invisible overlay) - Mobile optimized */}
       {isVideo() && isPlaying && (
         <div 
-          className="absolute inset-0 z-5"
-          onClick={() => {
+          className="absolute inset-0 z-5 touch-manipulation video-overlay"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const video = videoRef.current;
-            if (video) {
+            if (video && !video.paused) {
               video.pause();
+              setIsPlaying(false);
+              console.log('⏸️ Manual pause triggered:', post.id);
             }
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
           }}
         />
       )}

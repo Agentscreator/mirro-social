@@ -214,6 +214,52 @@ body, html {
     * {
       -webkit-tap-highlight-color: transparent;
     }
+    
+    /* iOS video fixes */
+    video {
+      -webkit-playsinline: true !important;
+      -webkit-appearance: none !important;
+      background-color: #000000 !important;
+    }
+  }
+}
+
+/* Mobile video optimization */
+@media (max-width: 768px) {
+  video {
+    /* Ensure proper mobile video playback */
+    -webkit-playsinline: true !important;
+    
+    /* Prevent video controls from showing */
+    -webkit-media-controls: none !important;
+    -webkit-media-controls-panel: none !important;
+    -webkit-media-controls-play-button: none !important;
+    -webkit-media-controls-start-playback-button: none !important;
+    
+    /* Ensure proper sizing */
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    
+    /* Prevent user interaction with video element directly */
+    pointer-events: none !important;
+    
+    /* Ensure black background */
+    background-color: #000000 !important;
+  }
+  
+  /* Re-enable pointer events for our custom controls */
+  .video-controls,
+  .video-overlay {
+    pointer-events: auto !important;
+  }
+  
+  /* Touch optimization */
+  .touch-manipulation {
+    touch-action: manipulation !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
   }
 }
 
