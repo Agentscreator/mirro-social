@@ -83,9 +83,7 @@ export default function EventsPage() {
     router.push(`/events/${eventId}`)
   }
 
-  const handleCreateEvent = () => {
-    router.push('/create-invite')
-  }
+
 
   const filteredEvents = events.filter(event =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,13 +114,6 @@ export default function EventsPage() {
             </h1>
             <p className="text-gray-400">Discover and join exciting events in your community</p>
           </div>
-          <Button
-            onClick={handleCreateEvent}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Event
-          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -162,7 +153,6 @@ export default function EventsPage() {
               events={filteredEvents} 
               loading={loading} 
               onEventClick={handleEventClick}
-              onCreateEvent={handleCreateEvent}
             />
           </TabsContent>
           <TabsContent value="upcoming" className="mt-0">
@@ -170,7 +160,6 @@ export default function EventsPage() {
               events={filteredEvents} 
               loading={loading} 
               onEventClick={handleEventClick}
-              onCreateEvent={handleCreateEvent}
             />
           </TabsContent>
           <TabsContent value="attending" className="mt-0">
@@ -178,7 +167,6 @@ export default function EventsPage() {
               events={filteredEvents.filter(e => e.isAttending)} 
               loading={loading} 
               onEventClick={handleEventClick}
-              onCreateEvent={handleCreateEvent}
             />
           </TabsContent>
           <TabsContent value="hosting" className="mt-0">
@@ -186,7 +174,6 @@ export default function EventsPage() {
               events={filteredEvents.filter(e => e.host.id === session?.user?.id)} 
               loading={loading} 
               onEventClick={handleEventClick}
-              onCreateEvent={handleCreateEvent}
             />
           </TabsContent>
         </Tabs>
@@ -199,10 +186,9 @@ interface EventsListProps {
   events: Event[]
   loading: boolean
   onEventClick: (eventId: string) => void
-  onCreateEvent: () => void
 }
 
-function EventsList({ events, loading, onEventClick, onCreateEvent }: EventsListProps) {
+function EventsList({ events, loading, onEventClick }: EventsListProps) {
   const formatEventDate = (dateStr?: string) => {
     if (!dateStr) return null
     
@@ -236,13 +222,9 @@ function EventsList({ events, loading, onEventClick, onCreateEvent }: EventsList
         </div>
         <h3 className="text-xl font-semibold mb-2">No events found</h3>
         <p className="text-gray-400 mb-6">Be the first to create an event in your community!</p>
-        <Button
-          onClick={onCreateEvent}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Your First Event
-        </Button>
+        <p className="text-sm text-gray-500">
+          Use the <span className="text-blue-400 font-medium">Create</span> button in the navigation bar to get started
+        </p>
       </div>
     )
   }
