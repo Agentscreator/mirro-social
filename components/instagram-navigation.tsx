@@ -19,11 +19,12 @@ export function InstagramNavigation() {
     setIsMobile(isMobileDevice())
   }, [])
 
-  // Hide navigation during active conversations but show on main messages page
+  // Only hide navigation in active conversations on mobile, always show on desktop
   const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
   const isMainMessagesPage = pathname === "/messages"
   
-  if (isInActiveConversation && !isMainMessagesPage) {
+  // Only hide on mobile devices in active conversations
+  if (isInActiveConversation && !isMainMessagesPage && isMobile) {
     return null
   }
 

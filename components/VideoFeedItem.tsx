@@ -59,7 +59,7 @@ const VideoFeedItem = ({
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Detect device type and initialize
+  // Simplified device detection
   useEffect(() => {
     const mobile = isMobileDevice();
     const ios = isIOSDevice();
@@ -69,62 +69,25 @@ const VideoFeedItem = ({
     setIsIOS(ios);
     setIsNative(native);
     
-    console.log('🔍 Device detection:', { mobile, ios, native, postId: post.id });
-    
-    // Capacitor/Native app specific initialization
-    if (native) {
-      console.log('📱 Initializing for Capacitor native app');
-      
-      // Enable video playback on first user interaction for native apps
-      const enableVideo = () => {
-        const video = videoRef.current;
-        if (video) {
-          video.muted = true;
-          video.playsInline = true;
-          video.load();
-          console.log('🎬 Video enabled for native app interaction');
-        }
-      };
-      
-      // Listen for any user interaction to enable video
-      document.addEventListener('touchstart', enableVideo, { once: true, passive: true });
-      document.addEventListener('click', enableVideo, { once: true, passive: true });
-      
-      return () => {
-        document.removeEventListener('touchstart', enableVideo);
-        document.removeEventListener('click', enableVideo);
-      };
-    }
+    console.log('🔍 Device detection for post', post.id, ':', { mobile, ios, native });
   }, [post.id]);
 
-  // Capacitor-optimized video setup
+  // Simplified video setup for all platforms
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
 
-    // Configure video for Capacitor WebView
+    // Basic video configuration that works everywhere
     video.muted = true;
     video.playsInline = true;
     video.controls = false;
     video.disablePictureInPicture = true;
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('muted', 'true');
     
-    // Capacitor-specific attributes
-    if (isNative) {
-      video.setAttribute('webkit-playsinline', 'true');
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('muted', 'true');
-      
-      // iOS WebView specific
-      if (isIOS) {
-        video.setAttribute('x-webkit-airplay', 'deny');
-        video.setAttribute('webkit-playsinline', 'true');
-      }
-      
-      console.log('🎬 Capacitor video configured:', post.id);
-    } else {
-      console.log('🌐 Web video configured:', post.id);
-    }
-  }, [post.id, isNative, isIOS]);
+    console.log('🎬 Video configured for post:', post.id, 'URL:', video.src);
+  }, [post.id]);
 
   // Sync comment count when post prop changes
   useEffect(() => {
@@ -147,7 +110,7 @@ const VideoFeedItem = ({
     }
   }, [post.id, post.hasPrivateLocation]);
 
-  // Capacitor-optimized autoplay effect
+  // Simplified autoplay effect that works on all platforms
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -155,36 +118,18 @@ const VideoFeedItem = ({
     const handleAutoplay = async () => {
       if (isActive && video.paused) {
         try {
-          // Ensure proper configuration for Capacitor
+          // Ensure proper configuration
           video.muted = true;
           video.playsInline = true;
           
-          // Different approach for native vs web
-          if (isNative) {
-            // For Capacitor apps, be more aggressive with play attempts
-            console.log('🎬 Attempting Capacitor video play:', post.id);
-            
-            // Ensure video is loaded first
-            if (video.readyState < 2) {
-              video.load();
-              await new Promise(resolve => {
-                video.addEventListener('loadeddata', resolve, { once: true });
-                setTimeout(resolve, 1000); // Fallback timeout
-              });
-            }
-            
-            await video.play();
-            setIsPlaying(true);
-            console.log('✅ Capacitor video playing:', post.id);
-          } else {
-            // Standard web approach
-            await video.play();
-            setIsPlaying(true);
-            console.log('✅ Web video playing:', post.id);
-          }
+          console.log('🎬 Attempting video play:', post.id);
+          await video.play();
+          setIsPlaying(true);
+          console.log('✅ Video playing:', post.id);
         } catch (error) {
           console.log('⚠️ Autoplay failed:', post.id, error);
           setIsPlaying(false);
+          // Don't show error toast for autoplay failures, it's expected
         }
       } else if (!isActive && !video.paused) {
         video.pause();
@@ -192,11 +137,10 @@ const VideoFeedItem = ({
       }
     };
 
-    // Longer delay for Capacitor apps to ensure WebView is ready
-    const delay = isNative ? 500 : 200;
-    const timer = setTimeout(handleAutoplay, delay);
+    // Small delay to ensure video is ready
+    const timer = setTimeout(handleAutoplay, 100);
     return () => clearTimeout(timer);
-  }, [isActive, post.id, isNative]);
+  }, [isActive, post.id]);
 
   // Simple video event handling
   useEffect(() => {
@@ -225,7 +169,7 @@ const VideoFeedItem = ({
 
 
 
-  // Intersection Observer for better autoplay control and performance
+  // Simplified intersection observer for better performance
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -233,44 +177,27 @@ const VideoFeedItem = ({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const ratio = entry.intersectionRatio;
-            
-            if (ratio > 0.7) {
-              // Video is mostly visible - play if active
-              if (isActive && video.paused) {
-                video.play().then(() => {
-                  setIsPlaying(true);
-                  console.log('🎥 Video started playing (intersection):', post.id);
-                }).catch(console.error);
-              }
-            } else if (ratio > 0.3) {
-              // Video is partially visible - preload but don't play
-              if (video.readyState < 2) {
-                video.load(); // Preload video
-                console.log('📱 Video preloading:', post.id);
-              }
-            } else {
-              // Video is barely visible - pause if playing
-              if (!video.paused) {
-                video.pause();
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            // Video is visible - try to play if active
+            if (isActive && video.paused) {
+              video.play().then(() => {
+                setIsPlaying(true);
+              }).catch(() => {
                 setIsPlaying(false);
-                console.log('⏸️ Video paused (not visible enough):', post.id);
-              }
+              });
             }
           } else {
-            // Video is not visible - pause and reset
+            // Video is not visible enough - pause
             if (!video.paused) {
               video.pause();
               setIsPlaying(false);
-              console.log('⏸️ Video paused (not intersecting):', post.id);
             }
           }
         });
       },
       { 
-        threshold: [0, 0.3, 0.7, 1.0],
-        rootMargin: '20px' 
+        threshold: [0.5],
+        rootMargin: '10px' 
       }
     );
 
@@ -350,7 +277,9 @@ const VideoFeedItem = ({
   };
 
   const getMediaUrl = () => {
-    return post.video || post.image || '/placeholder-video.jpg';
+    const url = post.video || post.image || '/placeholder-video.jpg';
+    console.log('Media URL for post', post.id, ':', url);
+    return url;
   };
   
   const isVideo = () => {
@@ -386,6 +315,14 @@ const VideoFeedItem = ({
   };
 
 
+
+  // Debug post data
+  console.log('Rendering VideoFeedItem for post:', post.id, {
+    hasVideo: !!post.video,
+    hasImage: !!post.image,
+    mediaUrl: getMediaUrl(),
+    isActive
+  });
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
@@ -423,21 +360,34 @@ const VideoFeedItem = ({
             playsInline
             webkit-playsinline="true"
             preload="metadata"
-            poster={getMediaUrl()}
+            poster={post.image || getMediaUrl()}
             controls={false}
             disablePictureInPicture
             crossOrigin="anonymous"
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            onPlay={() => {
+              console.log('Video playing for post:', post.id);
+              setIsPlaying(true);
+            }}
+            onPause={() => {
+              console.log('Video paused for post:', post.id);
+              setIsPlaying(false);
+            }}
             onLoadedData={() => {
+              console.log('Video loaded for post:', post.id);
               // Try to play if active
               if (isActive && videoRef.current?.paused) {
-                videoRef.current.play().catch(() => {
+                videoRef.current.play().then(() => {
+                  setIsPlaying(true);
+                }).catch(() => {
                   setIsPlaying(false);
                 });
               }
             }}
-            onError={() => {
+            onCanPlay={() => {
+              console.log('Video can play for post:', post.id);
+            }}
+            onError={(e) => {
+              console.error('Video error for post:', post.id, e);
               setIsPlaying(false);
               setVideoError(true);
             }}
@@ -478,49 +428,27 @@ const VideoFeedItem = ({
                 const video = videoRef.current;
                 if (video) {
                   try {
-                    console.log('🎬 Attempting to play video:', post.id);
-                    console.log('Video state:', {
-                      paused: video.paused,
-                      muted: video.muted,
-                      readyState: video.readyState,
-                      src: video.src
-                    });
+                    console.log('🎬 Manual play button clicked:', post.id);
                     
+                    // Ensure video is properly configured
                     video.muted = true;
-                    const playPromise = video.play();
+                    video.playsInline = true;
                     
-                    if (playPromise !== undefined) {
-                      await playPromise;
-                      setIsPlaying(true);
-                      console.log('✅ Video playing successfully:', post.id);
-                    }
+                    // Try to play
+                    await video.play();
+                    setIsPlaying(true);
+                    console.log('✅ Video playing from button click:', post.id);
                   } catch (error) {
-                    console.error('❌ Video play failed:', post.id, error);
+                    console.error('❌ Manual video play failed:', post.id, error);
                     setIsPlaying(false);
                     
-                    // Show error to user on mobile/native
-                    if (isMobile || isNative) {
-                      const errorMsg = isNative 
-                        ? `Capacitor video error: ${error.message}` 
-                        : `Mobile video error: ${error.message}`;
-                      
-                      toast({
-                        title: "Video Playback Issue",
-                        description: errorMsg,
-                        variant: "destructive",
-                        duration: 5000,
-                      });
-                      
-                      console.error('🚨 Video playback error details:', {
-                        error,
-                        isNative,
-                        isMobile,
-                        isIOS,
-                        videoSrc: videoRef.current?.src,
-                        videoReadyState: videoRef.current?.readyState,
-                        postId: post.id
-                      });
-                    }
+                    // Show user-friendly error message
+                    toast({
+                      title: "Video Playback Issue",
+                      description: "Unable to play video. Please try again.",
+                      variant: "destructive",
+                      duration: 3000,
+                    });
                   }
                 }
               }}
@@ -528,18 +456,7 @@ const VideoFeedItem = ({
             >
               <Play className="w-10 h-10 ml-1" />
             </Button>
-            
-            {/* Debug info for mobile */}
-            {(isMobile || isNative) && (
-              <div className="text-xs text-white/60 text-center bg-black/50 rounded p-2">
-                <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
-                <div>iOS: {isIOS ? 'Yes' : 'No'}</div>
-                <div>Native: {isNative ? 'Yes' : 'No'}</div>
-                <div>Post: {post.id}</div>
-                <div>Video Ready: {videoRef.current?.readyState || 'N/A'}</div>
-                <div>Video Src: {videoRef.current?.src ? 'Set' : 'None'}</div>
-              </div>
-            )}
+
           </div>
         </div>
       )}

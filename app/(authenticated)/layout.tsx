@@ -26,6 +26,11 @@ export default function AuthenticatedLayout({
   const isFeedPage = pathname === '/feed'
   const isMessagesPage = pathname.startsWith('/messages')
   const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
+  
+  // Debug layout detection
+  useEffect(() => {
+    console.log('Layout debug:', { pathname, isFeedPage, isMessagesPage, isInActiveConversation, isNative, isMobile })
+  }, [pathname, isFeedPage, isMessagesPage, isInActiveConversation, isNative, isMobile])
 
   // Request notification permission on mount
   useEffect(() => {
@@ -97,7 +102,7 @@ export default function AuthenticatedLayout({
               
               {/* Native app main content - no extra padding/margins */}
               <main className={`flex-1 bg-black ${isInActiveConversation ? 'pb-0' : 'pb-20'}`}>
-                <div className="h-full">
+                <div className="h-full min-h-screen bg-black">
                   {children}
                 </div>
               </main>
@@ -134,7 +139,7 @@ export default function AuthenticatedLayout({
             <main className={`flex-1 ${isInActiveConversation ? 'pb-0' : 'pb-20'} lg:ml-16 lg:pb-0 ${!isNative && !isFeedPage ? 'pt-16' : ''} lg:pt-safe-top px-safe-left px-safe-right bg-black`}>
               {isFeedPage ? (
                 // Feed page gets full screen treatment
-                <div className="h-full">
+                <div className="h-full min-h-screen bg-black">
                   {children}
                 </div>
               ) : (
