@@ -269,7 +269,10 @@ export default function FeedPage() {
       } else {
         try {
           const data = await fetchPosts(activeTab)
-          console.log(`Loaded ${activeTab} posts:`, data.posts?.length || 0, data.posts)
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Loaded ${activeTab} posts:`, data.posts?.length || 0)
+          }
 
           if (activeTab === "explore") {
             setExplorePosts(data.posts || [])
@@ -300,12 +303,12 @@ export default function FeedPage() {
 
   const currentPosts = getCurrentPosts()
 
-  // Debug current posts
+  // Debug current posts (can be removed in production)
   useEffect(() => {
-    console.log(`Current posts for ${activeTab}:`, currentPosts.length, currentPosts)
-    console.log('Explore posts:', explorePosts.length)
-    console.log('Following posts:', followingPosts.length)
-  }, [currentPosts, activeTab, explorePosts, followingPosts])
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Current posts for ${activeTab}:`, currentPosts.length, currentPosts)
+    }
+  }, [currentPosts, activeTab])
 
   // Navigation functions
   const goToNextVideo = () => {
@@ -479,10 +482,7 @@ export default function FeedPage() {
 
         {/* Explore/For You Tab */}
         <TabsContent value="explore" className="h-full mt-0">
-          {/* Debug info */}
-          <div className="fixed top-20 left-4 z-50 bg-black/80 text-white p-2 rounded text-xs">
-            Posts: {currentPosts.length} | Loading: {loading.toString()} | Active: {activeTab}
-          </div>
+
 
           {currentPosts.length === 0 && !loading ? (
             <div className="h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">

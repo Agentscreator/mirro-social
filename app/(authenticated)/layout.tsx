@@ -27,9 +27,11 @@ export default function AuthenticatedLayout({
   const isMessagesPage = pathname.startsWith('/messages')
   const isInActiveConversation = pathname.match(/^\/messages\/[^\/]+$/) || pathname.match(/^\/groups\/[^\/]+$/)
   
-  // Debug layout detection
+  // Debug layout detection (development only)
   useEffect(() => {
-    console.log('Layout debug:', { pathname, isFeedPage, isMessagesPage, isInActiveConversation, isNative, isMobile })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Layout debug:', { pathname, isFeedPage, isMessagesPage, isInActiveConversation, isNative, isMobile })
+    }
   }, [pathname, isFeedPage, isMessagesPage, isInActiveConversation, isNative, isMobile])
 
   // Request notification permission on mount

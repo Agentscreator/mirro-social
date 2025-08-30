@@ -69,7 +69,9 @@ const VideoFeedItem = ({
     setIsIOS(ios);
     setIsNative(native);
     
-    console.log('🔍 Device detection for post', post.id, ':', { mobile, ios, native });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Device detection for post', post.id, ':', { mobile, ios, native });
+    }
   }, [post.id]);
 
   // Simplified video setup for all platforms
@@ -86,7 +88,9 @@ const VideoFeedItem = ({
     video.setAttribute('playsinline', 'true');
     video.setAttribute('muted', 'true');
     
-    console.log('🎬 Video configured for post:', post.id, 'URL:', video.src);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎬 Video configured for post:', post.id, 'URL:', video.src);
+    }
   }, [post.id]);
 
   // Sync comment count when post prop changes
@@ -278,7 +282,9 @@ const VideoFeedItem = ({
 
   const getMediaUrl = () => {
     const url = post.video || post.image || '/placeholder-video.jpg';
-    console.log('Media URL for post', post.id, ':', url);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Media URL for post', post.id, ':', url);
+    }
     return url;
   };
   
@@ -316,13 +322,15 @@ const VideoFeedItem = ({
 
 
 
-  // Debug post data
-  console.log('Rendering VideoFeedItem for post:', post.id, {
-    hasVideo: !!post.video,
-    hasImage: !!post.image,
-    mediaUrl: getMediaUrl(),
-    isActive
-  });
+  // Debug post data (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Rendering VideoFeedItem for post:', post.id, {
+      hasVideo: !!post.video,
+      hasImage: !!post.image,
+      mediaUrl: getMediaUrl(),
+      isActive
+    });
+  }
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
