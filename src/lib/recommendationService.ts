@@ -72,8 +72,8 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
   try {
     console.log(`=== STARTING getRecommendations for user ${userId}, page ${page}, pageSize ${pageSize} ===`)
     
-    // SIMPLE FALLBACK: Just return database users directly for now
-    console.log('Using simple database fallback to bypass Pinecone issues')
+    // ENHANCED FALLBACK: Return only users with embeddings for AI narrative generation
+    console.log('Using enhanced database fallback - filtering for users with embeddings only')
     const simpleUsers = await db
       .select({
         id: usersTable.id,
@@ -83,6 +83,11 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
         profileImage: usersTable.profileImage,
         dob: usersTable.dob,
         metro_area: usersTable.metro_area,
+        thoughtCount: sql<number>`(
+          SELECT COUNT(*) FROM ${thoughtsTable}
+          WHERE ${thoughtsTable.userId} = ${usersTable.id}
+          AND ${thoughtsTable.embedding} IS NOT NULL
+        )`,
       })
       .from(usersTable)
       .where(
@@ -92,11 +97,13 @@ export async function getRecommendations(userId: string, page = 1, pageSize = 5)
             SELECT 1 FROM ${thoughtsTable}
             WHERE ${thoughtsTable.userId} = ${usersTable.id}
             AND ${thoughtsTable.embedding} IS NOT NULL
+            AND ${thoughtsTable.content} IS NOT NULL
+            AND LENGTH(${thoughtsTable.content}) > 10
             LIMIT 1
           )`
         )
       )
-      .limit(pageSize * 2) // Get more than needed
+      .limit(pageSize * 3) // Get more than needed for better variety
     
     console.log(`Simple database query found ${simpleUsers.length} users`)
     

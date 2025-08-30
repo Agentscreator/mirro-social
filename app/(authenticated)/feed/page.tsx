@@ -62,53 +62,80 @@ export default function FeedPage() {
     }
   }
 
-  // Simplified fetch discover stories - bypass complex AI APIs for now
+  // Fetch discover stories - only users with embeddings for AI narratives
   const fetchDiscoverStories = async () => {
     try {
       setDiscoverLoading(true)
-      console.log('Starting simplified fetchDiscoverStories...')
+      console.log('Fetching discover stories (users with embeddings only)...')
 
-      // Use a much shorter timeout
+      // Fetch recommendations with a reasonable timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 3000) // 3 seconds max
+        setTimeout(() => reject(new Error('Request timeout')), 8000) // 8 seconds for better reliability
       })
 
-      // Try the recommendations API with a very short timeout
-      const recommendationsPromise = fetchRecommendations(1, 5) // Smaller page size
+      const recommendationsPromise = fetchRecommendations(1, 10) // Get more users for better variety
 
       let recommendedUsers: any[] = []
       try {
         const result = await Promise.race([recommendationsPromise, timeoutPromise]) as any
         recommendedUsers = result?.users || []
-        console.log('Got recommendations:', recommendedUsers.length)
+        console.log('Got recommendations:', recommendedUsers.length, 'users')
+        
+        // Log user details for debugging
+        recommendedUsers.forEach((user, index) => {
+          console.log(`User ${index + 1}: ${user.username} (ID: ${user.id})`)
+        })
       } catch (error) {
-        console.log('Recommendations API failed, using fallback:', (error as Error).message)
-        // Fallback: create some mock users for testing
+        console.log('Recommendations API failed:', (error as Error).message)
         recommendedUsers = []
       }
 
-      // If no users from API, show empty state immediately
-      if (recommendedUsers.length === 0) {
-        console.log('No recommended users found, showing empty state')
+      // Filter to ensure we only show users with embeddings (the API should already do this)
+      const usersWithEmbeddings = recommendedUsers.filter(user => {
+        // The recommendation service already filters for users with embeddings
+        // but we can add additional validation here if needed
+        return user.id && user.username
+      })
+
+      console.log(`Filtered to ${usersWithEmbeddings.length} users with embeddings`)
+
+      if (usersWithEmbeddings.length === 0) {
+        console.log('No users with embeddings found, showing empty state')
         setDiscoverStories([])
         setDiscoverLoading(false)
         return
       }
 
-      // Convert users to stories format with simple narratives (no AI generation)
-      const usersWithBasicData = recommendedUsers.map((user: any) => ({
-        id: user.id,
-        username: user.username,
-        nickname: user.nickname || user.username,
-        narrative: "A kindred spirit whose thoughts might resonate with yours...",
-        tags: user.tags || [],
-        score: user.score || 0,
-        profileImage: user.profileImage || user.image
-      }))
+      // Convert users to stories format with enhanced narratives
+      const storiesWithNarratives = usersWithEmbeddings.map((user: any, index: number) => {
+        // Create varied narrative templates for better user experience
+        const narratives = [
+          "A kindred spirit whose thoughts might resonate deeply with yours...",
+          "Someone who shares your curiosity about life's deeper questions...",
+          "A thoughtful soul who might understand your perspective...",
+          "Another dreamer walking a similar path of self-discovery...",
+          "A reflective mind that could spark meaningful conversations...",
+          "Someone whose inner world might beautifully complement yours..."
+        ]
+        
+        const selectedNarrative = narratives[index % narratives.length]
 
-      setDiscoverStories(usersWithBasicData)
+        return {
+          id: user.id,
+          username: user.username,
+          nickname: user.nickname || user.username,
+          narrative: selectedNarrative,
+          tags: user.tags || [],
+          score: user.score || 0,
+          profileImage: user.profileImage || user.image,
+          similarity: user.similarity || 0
+        }
+      })
+
+      setDiscoverStories(storiesWithNarratives)
+      setCurrentStoryIndex(0) // Reset to first story
       setDiscoverLoading(false)
-      console.log('Set discover stories complete:', usersWithBasicData.length)
+      console.log('Set discover stories complete:', storiesWithNarratives.length, 'stories')
 
     } catch (error) {
       console.error('Error fetching discover stories:', error)
@@ -356,6 +383,24 @@ export default function FeedPage() {
     container.addEventListener('scroll', handleScroll, { passive: true })
     return () => container.removeEventListener('scroll', handleScroll)
   }, [currentPosts.length, currentVideoIndex])
+
+  // Keyboard navigation for discover stories (chapter-like experience)
+  useEffect(() => {
+    if (activeTab !== "discover") return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && currentStoryIndex > 0) {
+        e.preventDefault()
+        setCurrentStoryIndex(currentStoryIndex - 1)
+      } else if (e.key === 'ArrowRight' && currentStoryIndex < discoverStories.length - 1) {
+        e.preventDefault()
+        setCurrentStoryIndex(currentStoryIndex + 1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, currentStoryIndex, discoverStories.length])
 
   // Show loading if no session
   if (!session) {
@@ -658,6 +703,56 @@ export default function FeedPage() {
               </div>
             ) : (
               <div className="h-full relative">
+                {/* Chapter Navigation Buttons */}
+                {discoverStories.length > 1 && (
+                  <>
+                    {/* Previous Chapter Button */}
+                    <Button
+                      onClick={() => {
+                        if (currentStoryIndex > 0) {
+                          setCurrentStoryIndex(currentStoryIndex - 1)
+                        }
+                      }}
+                      disabled={currentStoryIndex === 0}
+                      className="fixed left-4 top-1/2 -translate-y-1/2 z-40 bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-white/20 text-white rounded-full w-12 h-12 p-0 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronUp className="h-5 w-5 rotate-[-90deg]" />
+                    </Button>
+
+                    {/* Next Chapter Button */}
+                    <Button
+                      onClick={() => {
+                        if (currentStoryIndex < discoverStories.length - 1) {
+                          setCurrentStoryIndex(currentStoryIndex + 1)
+                        }
+                      }}
+                      disabled={currentStoryIndex >= discoverStories.length - 1}
+                      className="fixed right-4 top-1/2 -translate-y-1/2 z-40 bg-black/40 hover:bg-black/60 backdrop-blur-sm border border-white/20 text-white rounded-full w-12 h-12 p-0 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronUp className="h-5 w-5 rotate-90" />
+                    </Button>
+                  </>
+                )}
+
+                {/* Chapter Progress Indicator */}
+                {discoverStories.length > 0 && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+                    <div className="flex items-center gap-1 px-4 py-2 bg-black/40 backdrop-blur-sm rounded-full border border-white/20">
+                      {discoverStories.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentStoryIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            index === currentStoryIndex
+                              ? 'bg-white/80 w-6'
+                              : 'bg-white/30 hover:bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Journal Pages */}
                 <div className="h-full overflow-hidden">
                   <div
@@ -710,11 +805,13 @@ export default function FeedPage() {
                               </div>
                             </div>
 
-                            {/* Page Number */}
+                            {/* Chapter Number */}
                             <div className="text-center mt-6">
-                              <span className="text-white/30 text-xs font-light">
-                                {index + 1} of {discoverStories.length}
-                              </span>
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10">
+                                <span className="text-white/60 text-xs font-light">Chapter</span>
+                                <span className="text-white/90 text-sm font-medium">{index + 1}</span>
+                                <span className="text-white/40 text-xs">of {discoverStories.length}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
