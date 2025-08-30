@@ -734,6 +734,12 @@ export default function ProfilePage() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    console.log("Profile image upload started:", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    })
+
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Error",
@@ -757,13 +763,18 @@ export default function ProfilePage() {
       const formData = new FormData()
       formData.append("profileImage", file)
 
+      console.log("Sending upload request...")
       const response = await fetch("/api/users/profile-image", {
         method: "POST",
         body: formData,
       })
 
+      console.log("Upload response status:", response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("Upload successful:", data)
+        
         setUser((prev) =>
           prev
             ? {
@@ -779,13 +790,16 @@ export default function ProfilePage() {
           description: "Profile picture updated successfully!",
         })
       } else {
-        throw new Error("Failed to upload image")
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }))
+        console.error("Upload failed:", response.status, errorData)
+        throw new Error(errorData.message || "Failed to upload image")
       }
     } catch (error: any) {
       console.error("Error uploading profile image:", error)
       toast({
         title: "Error",
-        description: "Failed to upload profile picture. Please try again.",
+        description: error.message || "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
       })
     } finally {
       setProfileImageUploading(false)

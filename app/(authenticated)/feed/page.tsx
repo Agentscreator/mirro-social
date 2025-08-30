@@ -50,6 +50,8 @@ export default function FeedPage() {
   const [newThought, setNewThought] = useState("")
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [userThoughts, setUserThoughts] = useState<any[]>([])
+  const [showThoughts, setShowThoughts] = useState(false)
   // Get current posts based on active tab
   const getCurrentPosts = () => {
     switch (activeTab) {
@@ -80,7 +82,7 @@ export default function FeedPage() {
         const result = await Promise.race([recommendationsPromise, timeoutPromise]) as any
         recommendedUsers = result?.users || []
         console.log('Got recommendations:', recommendedUsers.length, 'users')
-        
+
         // Log user details for debugging
         recommendedUsers.forEach((user, index) => {
           console.log(`User ${index + 1}: ${user.username} (ID: ${user.id})`)
@@ -117,7 +119,7 @@ export default function FeedPage() {
           "A reflective mind that could spark meaningful conversations...",
           "Someone whose inner world might beautifully complement yours..."
         ]
-        
+
         const selectedNarrative = narratives[index % narratives.length]
 
         return {
@@ -166,13 +168,16 @@ export default function FeedPage() {
       if (response.ok) {
         const thoughtsData = await response.json()
         console.log(`Loaded ${thoughtsData.length} thoughts`)
+        setUserThoughts(thoughtsData)
         return thoughtsData
       } else {
         console.error('Thoughts API error:', response.statusText)
+        setUserThoughts([])
         return []
       }
     } catch (error) {
       console.error('Error loading thoughts:', error)
+      setUserThoughts([])
       return []
     }
   }
@@ -200,7 +205,8 @@ export default function FeedPage() {
           title: "Success",
           description: "Your thought has been added to the journal",
         })
-        // Refresh stories to include new connections
+        // Refresh thoughts and stories
+        loadThoughts()
         fetchDiscoverStories()
       }
     } catch (error) {
@@ -276,7 +282,10 @@ export default function FeedPage() {
         try {
           console.log('Loading discover content...')
 
-          // Simplified approach: always try to fetch recommendations first
+          // Load user's thoughts first
+          await loadThoughts()
+
+          // Then fetch recommendations
           console.log('Fetching recommendations directly')
           await fetchDiscoverStories()
           setLoading(false)
@@ -625,6 +634,14 @@ export default function FeedPage() {
 
             {/* Add Thoughts Button - Top Right */}
             <div className="fixed top-20 right-4 z-50 flex gap-2">
+              {userThoughts.length > 0 && (
+                <Button
+                  onClick={() => setShowThoughts(!showThoughts)}
+                  className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white rounded-full px-4 py-2 text-sm font-medium transition-all"
+                >
+                  {showThoughts ? 'Hide' : 'View'} Thoughts ({userThoughts.length})
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   const textarea = document.getElementById('thought-input') as HTMLTextAreaElement
@@ -659,16 +676,89 @@ export default function FeedPage() {
                   </Button>
                 </div>
               </div>
+            ) : showThoughts ? (
+              <div className="h-screen overflow-y-auto px-6 pt-32 pb-20">
+                <div className="max-w-2xl mx-auto">
+                  <div className="mb-8 text-center">
+                    <h2 className="text-2xl font-light text-white mb-2">Your Thoughts</h2>
+                    <p className="text-white/60 text-sm">
+                      {userThoughts.length} thought{userThoughts.length !== 1 ? 's' : ''} in your journal
+                    </p>
+                  </div>
+
+                  {/* Thoughts List */}
+                  <div className="space-y-4">
+                    {userThoughts.map((thought, index) => (
+                      <div
+                        key={thought.id}
+                        className="bg-black/30 backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:bg-black/40 transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-white font-medium text-sm">{thought.title}</h3>
+                          <span className="text-white/40 text-xs">
+                            {new Date(thought.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-white/80 text-sm leading-relaxed">
+                          {thought.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add New Thought */}
+                  <div className="mt-8 bg-black/30 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                    <textarea
+                      id="thought-input"
+                      value={newThought}
+                      onChange={(e) => setNewThought(e.target.value)}
+                      placeholder="Add another thought..."
+                      className="w-full h-24 bg-transparent border-none outline-none text-white placeholder:text-white/40 resize-none text-sm leading-relaxed"
+                      maxLength={1000}
+                    />
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-xs text-white/40">{newThought.length}/1000</span>
+                      <Button
+                        onClick={addThought}
+                        disabled={!newThought.trim()}
+                        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2 text-sm disabled:opacity-50 transition-all"
+                      >
+                        Add Thought
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : discoverStories.length === 0 ? (
               <div className="h-screen flex items-center justify-center px-8">
                 <div className="max-w-md text-center">
                   <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
                     <Search className="w-10 h-10 text-white/40" />
                   </div>
-                  <h2 className="text-2xl font-light text-white mb-4">Your Journal Awaits</h2>
+                  <h2 className="text-2xl font-light text-white mb-4">
+                    {userThoughts.length > 0 ? 'Discover Connections' : 'Your Journal Awaits'}
+                  </h2>
                   <p className="text-white/60 text-sm mb-8 leading-relaxed">
-                    Share your thoughts and discover meaningful connections through AI-crafted narratives.
+                    {userThoughts.length > 0
+                      ? 'Based on your thoughts, discover meaningful connections with others.'
+                      : 'Share your thoughts and discover meaningful connections through AI-crafted narratives.'
+                    }
                   </p>
+
+                  {/* Show existing thoughts count if any */}
+                  {userThoughts.length > 0 && (
+                    <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-white/80 text-sm">
+                        You have {userThoughts.length} thought{userThoughts.length !== 1 ? 's' : ''} in your journal
+                      </p>
+                      <Button
+                        onClick={() => setShowThoughts(true)}
+                        className="mt-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-4 py-2 text-sm transition-all"
+                      >
+                        View Your Thoughts
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Thought Input */}
                   <div className="bg-black/30 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
@@ -688,7 +778,7 @@ export default function FeedPage() {
                           disabled={!newThought.trim()}
                           className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2 text-sm disabled:opacity-50 transition-all flex-1"
                         >
-                          Begin Journey
+                          {userThoughts.length > 0 ? 'Add Thought' : 'Begin Journey'}
                         </Button>
                         <Button
                           onClick={fetchDiscoverStories}
@@ -742,11 +832,10 @@ export default function FeedPage() {
                         <button
                           key={index}
                           onClick={() => setCurrentStoryIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            index === currentStoryIndex
-                              ? 'bg-white/80 w-6'
-                              : 'bg-white/30 hover:bg-white/50'
-                          }`}
+                          className={`w-2 h-2 rounded-full transition-all ${index === currentStoryIndex
+                            ? 'bg-white/80 w-6'
+                            : 'bg-white/30 hover:bg-white/50'
+                            }`}
                         />
                       ))}
                     </div>
