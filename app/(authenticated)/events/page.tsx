@@ -37,6 +37,21 @@ interface Event {
   }>
 }
 
+interface MutualFriend {
+  id: string
+  username: string
+  nickname?: string
+  profileImage?: string
+  image?: string
+  events: Event[]
+  isOnline?: boolean
+}
+
+interface FriendCalendarData {
+  friends: MutualFriend[]
+  totalEvents: number
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
@@ -129,7 +144,7 @@ export default function EventsPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 bg-gray-800/50">
+            <TabsList className="grid w-full grid-cols-5 bg-gray-800/50">
               <TabsTrigger value="all" className="text-white data-[state=active]:bg-blue-600">
                 All Events
               </TabsTrigger>
@@ -141,6 +156,9 @@ export default function EventsPage() {
               </TabsTrigger>
               <TabsTrigger value="hosting" className="text-white data-[state=active]:bg-blue-600">
                 Hosting
+              </TabsTrigger>
+              <TabsTrigger value="friends" className="text-white data-[state=active]:bg-blue-600">
+                Friends
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -176,7 +194,238 @@ export default function EventsPage() {
               onEventClick={handleEventClick}
             />
           </TabsContent>
+          <TabsContent value="friends" className="mt-0">
+            <FriendsCalendarView />
+          </TabsContent>
         </Tabs>
+      </div>
+    </div>
+  )
+}
+
+function FriendsCalendarView() {
+  const [friendsData, setFriendsData] = useState<FriendCalendarData>({ friends: [], totalEvents: 0 })
+  const [loading, setLoading] = useState(true)
+  const [selectedFriend, setSelectedFriend] = useState<string | null>(null)
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    fetchMutualFriendsEvents()
+  }, [])
+
+  const fetchMutualFriendsEvents = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/events/mutual-friends')
+      if (response.ok) {
+        const data = await response.json()
+        setFriendsData(data)
+      } else {
+        console.error('Failed to fetch mutual friends events:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error fetching mutual friends events:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatEventDate = (dateStr?: string) => {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    if (isToday(date)) return 'Today'
+    if (isTomorrow(date)) return 'Tomorrow'
+    if (isThisWeek(date)) return format(date, 'EEEE')
+    return format(date, 'MMM d')
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-gray-800/50 rounded-xl p-6 animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gray-700 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-700 rounded w-full"></div>
+                <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (friendsData.friends.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gray-800/50 rounded-full flex items-center justify-center">
+          <Users className="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">No mutual friends with events</h3>
+        <p className="text-gray-400 mb-6">
+          Connect with more people to see their upcoming events here!
+        </p>
+        <p className="text-sm text-gray-500">
+          This shows events from people who follow you back
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-1">Friends' Events</h2>
+          <p className="text-gray-400 text-sm">
+            {friendsData.totalEvents} upcoming events from {friendsData.friends.length} mutual friends
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {friendsData.friends.map((friend, index) => (
+          <motion.div
+            key={friend.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="bg-gradient-to-br from-gray-800/40 to-gray-800/20 border-gray-700/50 backdrop-blur-sm hover:from-gray-800/60 hover:to-gray-800/40 transition-all duration-200 h-full">
+              <CardContent className="p-6">
+                {/* Friend Header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative">
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={friend.profileImage || friend.image} />
+                      <AvatarFallback className="bg-blue-600 text-white">
+                        {friend.username[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {friend.isOnline && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-gray-800 rounded-full"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white truncate">
+                      {friend.nickname || friend.username}
+                    </h3>
+                    <p className="text-gray-400 text-sm truncate">@{friend.username}</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-blue-600/20 text-blue-400 text-xs">
+                    {friend.events.length} events
+                  </Badge>
+                </div>
+
+                {/* Events Preview */}
+                <div className="space-y-3">
+                  {friend.events.slice(0, 3).map((event) => (
+                    <div
+                      key={event.id}
+                      className="bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = `/events/${event.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-white text-sm line-clamp-1">
+                          {event.title}
+                        </h4>
+                        {event.date && (
+                          <span className="text-xs text-blue-400 ml-2 whitespace-nowrap">
+                            {formatEventDate(event.date)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        {event.time && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{event.time}</span>
+                          </div>
+                        )}
+                        {event.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate">{event.location}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>{event.attendees}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {friend.events.length > 3 && (
+                    <button
+                      className="w-full text-center text-blue-400 hover:text-blue-300 text-sm py-2 transition-colors"
+                      onClick={() => setSelectedFriend(selectedFriend === friend.id ? null : friend.id)}
+                    >
+                      {selectedFriend === friend.id ? 'Show less' : `+${friend.events.length - 3} more events`}
+                    </button>
+                  )}
+
+                  {/* Expanded Events */}
+                  {selectedFriend === friend.id && friend.events.length > 3 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 border-t border-gray-700/50 pt-3"
+                    >
+                      {friend.events.slice(3).map((event) => (
+                        <div
+                          key={event.id}
+                          className="bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors cursor-pointer"
+                          onClick={() => window.location.href = `/events/${event.id}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-medium text-white text-sm line-clamp-1">
+                              {event.title}
+                            </h4>
+                            {event.date && (
+                              <span className="text-xs text-blue-400 ml-2 whitespace-nowrap">
+                                {formatEventDate(event.date)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs text-gray-400">
+                            {event.time && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{event.time}</span>
+                              </div>
+                            )}
+                            {event.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="truncate">{event.location}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              <span>{event.attendees}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
     </div>
   )
