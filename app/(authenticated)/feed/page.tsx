@@ -686,22 +686,55 @@ export default function FeedPage() {
                     </p>
                   </div>
 
-                  {/* Thoughts List */}
-                  <div className="space-y-4">
+                  {/* Thoughts List - Notebook Style */}
+                  <div className="space-y-6">
                     {userThoughts.map((thought, index) => (
                       <div
                         key={thought.id}
-                        className="bg-black/30 backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:bg-black/40 transition-all"
+                        className="relative bg-gradient-to-br from-amber-50/5 to-yellow-50/5 backdrop-blur-sm rounded-lg border-l-4 border-amber-400/30 p-6 shadow-lg"
+                        style={{
+                          backgroundImage: `
+                            linear-gradient(to right, rgba(251, 191, 36, 0.03) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(251, 191, 36, 0.03) 1px, transparent 1px)
+                          `,
+                          backgroundSize: '20px 24px'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-white font-medium text-sm">{thought.title}</h3>
-                          <span className="text-white/40 text-xs">
-                            {new Date(thought.createdAt).toLocaleDateString()}
+                        {/* Notebook holes */}
+                        <div className="absolute left-2 top-0 bottom-0 flex flex-col justify-evenly">
+                          {[...Array(Math.ceil(120 / 24))].map((_, i) => (
+                            <div key={i} className="w-2 h-2 rounded-full bg-white/10 border border-white/20"></div>
+                          ))}
+                        </div>
+
+                        {/* Date in top right corner */}
+                        <div className="absolute top-4 right-6">
+                          <span className="text-amber-200/60 text-xs font-mono">
+                            {new Date(thought.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
                           </span>
                         </div>
-                        <p className="text-white/80 text-sm leading-relaxed">
-                          {thought.content}
-                        </p>
+
+                        {/* Thought content */}
+                        <div className="ml-6 pt-2">
+                          <p className="text-white/90 text-sm leading-relaxed font-light tracking-wide"
+                            style={{
+                              fontFamily: 'Georgia, serif',
+                              lineHeight: '24px'
+                            }}>
+                            {thought.content}
+                          </p>
+                        </div>
+
+                        {/* Subtle page number */}
+                        <div className="absolute bottom-2 right-6">
+                          <span className="text-white/20 text-xs font-mono">
+                            {String(index + 1).padStart(3, '0')}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -865,9 +898,37 @@ export default function FeedPage() {
 
                               {/* AI Narrative */}
                               <div className="space-y-4">
-                                <p className="text-white/80 text-sm leading-relaxed font-light">
-                                  {story.narrative || story.reason || "A kindred spirit whose thoughts resonate with yours..."}
-                                </p>
+                                {/* AI Narrative - Notebook Style */}
+                                <div className="relative bg-gradient-to-br from-amber-50/3 to-yellow-50/3 backdrop-blur-sm rounded-lg border-l-4 border-amber-400/20 p-4 shadow-sm"
+                                  style={{
+                                    backgroundImage: `
+                                         linear-gradient(to right, rgba(251, 191, 36, 0.02) 1px, transparent 1px),
+                                         linear-gradient(to bottom, rgba(251, 191, 36, 0.02) 1px, transparent 1px)
+                                       `,
+                                    backgroundSize: '16px 20px'
+                                  }}>
+                                  {/* Small notebook holes */}
+                                  <div className="absolute left-1 top-0 bottom-0 flex flex-col justify-evenly">
+                                    {[...Array(3)].map((_, i) => (
+                                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/8 border border-white/15"></div>
+                                    ))}
+                                  </div>
+
+                                  <div className="ml-4">
+                                    <p className="text-amber-100/90 text-sm leading-relaxed font-light italic tracking-wide"
+                                      style={{
+                                        fontFamily: 'Georgia, serif',
+                                        lineHeight: '20px'
+                                      }}>
+                                      "{story.narrative || story.reason || "A kindred spirit whose thoughts resonate with yours..."}"
+                                    </p>
+
+                                    {/* AI signature */}
+                                    <div className="mt-2 text-right">
+                                      <span className="text-amber-200/40 text-xs font-mono">— AI Narrative</span>
+                                    </div>
+                                  </div>
+                                </div>
 
                                 {story.tags && story.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mt-6">
