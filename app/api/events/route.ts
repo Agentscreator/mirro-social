@@ -1,108 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/src/lib/auth'
-
-// Mock data for demonstration - replace with actual database queries
-const mockEvents = [
-  {
-    id: '1',
-    title: 'Weekend Hiking Adventure',
-    description: 'Join us for a scenic hike through the mountains. We\'ll explore beautiful trails, enjoy nature, and have a great time together!',
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '09:00',
-    location: 'Blue Ridge Mountains',
-    attendees: 12,
-    maxAttendees: 20,
-    isAttending: true,
-    host: {
-      id: 'user1',
-      username: 'adventurer_alex',
-      profileImage: null,
-      image: null
-    },
-    invitedUsers: [
-      { id: 'user2', username: 'hiker_jane', profileImage: null, image: null },
-      { id: 'user3', username: 'mountain_mike', profileImage: null, image: null }
-    ]
-  },
-  {
-    id: '2',
-    title: 'Coffee & Code Meetup',
-    description: 'Casual coding session with fellow developers. Bring your laptop and let\'s work on some projects together!',
-    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '14:00',
-    location: 'Downtown Coffee Shop',
-    attendees: 8,
-    maxAttendees: 15,
-    isAttending: false,
-    host: {
-      id: 'user4',
-      username: 'dev_sarah',
-      profileImage: null,
-      image: null
-    },
-    invitedUsers: [
-      { id: 'user5', username: 'code_ninja', profileImage: null, image: null }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Photography Walk',
-    description: 'Explore the city and capture beautiful moments. Perfect for beginners and experienced photographers alike!',
-    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '16:00',
-    location: 'City Center',
-    attendees: 5,
-    maxAttendees: 999999,
-    isAttending: true,
-    host: {
-      id: 'user6',
-      username: 'photo_pro',
-      profileImage: null,
-      image: null
-    },
-    invitedUsers: []
-  },
-  {
-    id: '4',
-    title: 'Book Club Discussion',
-    description: 'Monthly book club meeting to discuss our latest read. This month we\'re covering "The Midnight Library".',
-    date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '19:00',
-    location: 'Local Library',
-    attendees: 15,
-    maxAttendees: 25,
-    isAttending: false,
-    host: {
-      id: 'user7',
-      username: 'bookworm_betty',
-      profileImage: null,
-      image: null
-    },
-    invitedUsers: [
-      { id: 'user8', username: 'reader_rick', profileImage: null, image: null },
-      { id: 'user9', username: 'novel_nancy', profileImage: null, image: null }
-    ]
-  },
-  {
-    id: '5',
-    title: 'Yoga in the Park',
-    description: 'Start your weekend with a relaxing yoga session in the park. All levels welcome!',
-    date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '08:00',
-    location: 'Central Park',
-    attendees: 20,
-    maxAttendees: 30,
-    isAttending: true,
-    host: {
-      id: 'user10',
-      username: 'zen_master',
-      profileImage: null,
-      image: null
-    },
-    invitedUsers: []
-  }
-]
+import { db } from '@/src/db'
+import { liveEventsTable, liveEventParticipantsTable, usersTable } from '@/src/db/schema'
+import { desc, eq, sql, and, gte, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -115,40 +16,131 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'all'
     const userId = session.user.id
+    const now = new Date()
 
-    let filteredEvents = [...mockEvents]
+    // Base query to get events with host information
+    let query = db
+      .select({
+        id: liveEventsTable.id,
+        title: liveEventsTable.title,
+        description: liveEventsTable.description,
+        scheduledStartTime: liveEventsTable.scheduledStartTime,
+        scheduledEndTime: liveEventsTable.scheduledEndTime,
+        status: liveEventsTable.status,
+        currentParticipants: liveEventsTable.currentParticipants,
+        maxParticipants: liveEventsTable.maxParticipants,
+        location: liveEventsTable.location,
+        createdAt: liveEventsTable.createdAt,
+        host: {
+          id: usersTable.id,
+          username: usersTable.username,
+          profileImage: usersTable.profileImage,
+          image: usersTable.image,
+        },
+      })
+      .from(liveEventsTable)
+      .leftJoin(usersTable, eq(liveEventsTable.userId, usersTable.id))
 
-    // Filter based on type
+    // Apply filters based on type
     switch (type) {
       case 'upcoming':
-        const now = new Date()
-        filteredEvents = filteredEvents.filter(event => 
-          event.date && new Date(event.date) > now
+        query = query.where(
+          and(
+            gte(liveEventsTable.scheduledStartTime, now),
+            sql`${liveEventsTable.status} IN ('scheduled', 'live')`
+          )
         )
         break
       case 'attending':
-        filteredEvents = filteredEvents.filter(event => event.isAttending)
+        // Get events where user is a participant
+        query = query
+          .leftJoin(liveEventParticipantsTable, eq(liveEventParticipantsTable.eventId, liveEventsTable.id))
+          .where(
+            and(
+              eq(liveEventParticipantsTable.userId, userId),
+              sql`${liveEventsTable.status} IN ('scheduled', 'live', 'ended')`
+            )
+          )
         break
       case 'hosting':
-        filteredEvents = filteredEvents.filter(event => event.host.id === userId)
+        query = query.where(eq(liveEventsTable.userId, userId))
         break
       case 'all':
       default:
-        // Show all events
+        // Show all events (scheduled, live, and recently ended)
+        query = query.where(
+          sql`${liveEventsTable.status} IN ('scheduled', 'live', 'ended')`
+        )
         break
     }
 
-    // Sort by date (upcoming first, then by date)
-    filteredEvents.sort((a, b) => {
-      if (!a.date && !b.date) return 0
-      if (!a.date) return 1
-      if (!b.date) return -1
-      return new Date(a.date).getTime() - new Date(b.date).getTime()
-    })
+    // Execute query and get events
+    const rawEvents = await query
+      .orderBy(desc(liveEventsTable.scheduledStartTime))
+      .limit(50)
+
+    // For each event, check if current user is attending and get invited users
+    const eventsWithAttendance = await Promise.all(
+      rawEvents.map(async (event) => {
+        // Check if current user is attending
+        const [userParticipation] = await db
+          .select()
+          .from(liveEventParticipantsTable)
+          .where(
+            and(
+              eq(liveEventParticipantsTable.eventId, event.id),
+              eq(liveEventParticipantsTable.userId, userId)
+            )
+          )
+          .limit(1)
+
+        // Get some invited users (participants)
+        const invitedUsers = await db
+          .select({
+            id: usersTable.id,
+            username: usersTable.username,
+            profileImage: usersTable.profileImage,
+            image: usersTable.image,
+          })
+          .from(liveEventParticipantsTable)
+          .leftJoin(usersTable, eq(liveEventParticipantsTable.userId, usersTable.id))
+          .where(eq(liveEventParticipantsTable.eventId, event.id))
+          .limit(5)
+
+        return {
+          id: event.id.toString(),
+          title: event.title,
+          description: event.description || '',
+          date: event.scheduledStartTime?.toISOString(),
+          time: event.scheduledStartTime ? 
+            event.scheduledStartTime.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            }) : undefined,
+          location: event.location || undefined,
+          attendees: event.currentParticipants || 0,
+          maxAttendees: event.maxParticipants || undefined,
+          isAttending: !!userParticipation,
+          host: {
+            id: event.host?.id || '',
+            username: event.host?.username || 'Unknown',
+            profileImage: event.host?.profileImage,
+            image: event.host?.image,
+          },
+          invitedUsers: invitedUsers.map(user => ({
+            id: user.id || '',
+            username: user.username || 'Unknown',
+            profileImage: user.profileImage,
+            image: user.image,
+          })),
+        }
+      })
+    )
 
     return NextResponse.json({
-      events: filteredEvents,
-      total: filteredEvents.length
+      events: eventsWithAttendance,
+      total: eventsWithAttendance.length
     })
   } catch (error) {
     console.error('Error fetching events:', error)

@@ -56,9 +56,13 @@ export default function EventsPage() {
       if (response.ok) {
         const data = await response.json()
         setEvents(data.events || [])
+      } else {
+        console.error('Failed to fetch events:', response.statusText)
+        setEvents([])
       }
     } catch (error) {
       console.error('Error fetching events:', error)
+      setEvents([])
     } finally {
       setLoading(false)
     }
