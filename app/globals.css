@@ -248,6 +248,53 @@ body, html {
   }
 }
 
+/* Capacitor native app video optimization */
+.native-app video {
+  /* Capacitor WebView specific video settings */
+  -webkit-playsinline: true !important;
+  webkit-playsinline: true !important;
+  playsinline: true !important;
+  
+  /* Prevent video controls in WebView */
+  -webkit-media-controls: none !important;
+  -webkit-media-controls-panel: none !important;
+  -webkit-media-controls-play-button: none !important;
+  -webkit-media-controls-start-playback-button: none !important;
+  
+  /* Ensure proper rendering in WebView */
+  transform: translateZ(0) !important;
+  -webkit-transform: translateZ(0) !important;
+  
+  /* Force hardware acceleration */
+  will-change: transform !important;
+  
+  /* Ensure proper sizing in WebView */
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  
+  /* Prevent WebView scrolling issues */
+  position: relative !important;
+  
+  /* Ensure black background */
+  background-color: #000000 !important;
+}
+
+/* Capacitor iOS specific fixes */
+.native-app.ios-device video {
+  /* iOS WebView specific settings */
+  -webkit-playsinline: true !important;
+  -webkit-appearance: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Capacitor Android specific fixes */
+.native-app.android-device video {
+  /* Android WebView specific settings */
+  -webkit-transform: translateZ(0) !important;
+  transform: translateZ(0) !important;
+}
+
 /* Hide navigation text on mobile */
 @media (max-width: 768px) {
   /* Hide all navigation text labels on mobile */

@@ -7,16 +7,8 @@ import { ShareButton } from "@/components/share-button";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
-// Mobile detection utility
-const isMobileDevice = () => {
-  if (typeof window === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-const isIOSDevice = () => {
-  if (typeof window === 'undefined') return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-};
+// Import mobile utilities
+import { isMobileDevice, isNativeApp, isIOSDevice } from '@/lib/mobile-utils';
 
 interface VideoFeedItemProps {
   post: {
@@ -63,21 +55,34 @@ const VideoFeedItem = ({
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isNative, setIsNative] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Detect mobile device and initialize
+  // Detect device type and initialize
   useEffect(() => {
-    setIsMobile(isMobileDevice());
-    setIsIOS(isIOSDevice());
+    const mobile = isMobileDevice();
+    const ios = isIOSDevice();
+    const native = isNativeApp();
     
-    // Enable video playback on mobile with first user interaction
-    if (isMobileDevice()) {
+    setIsMobile(mobile);
+    setIsIOS(ios);
+    setIsNative(native);
+    
+    console.log('🔍 Device detection:', { mobile, ios, native, postId: post.id });
+    
+    // Capacitor/Native app specific initialization
+    if (native) {
+      console.log('📱 Initializing for Capacitor native app');
+      
+      // Enable video playback on first user interaction for native apps
       const enableVideo = () => {
         const video = videoRef.current;
         if (video) {
           video.muted = true;
-          video.load(); // Preload video
+          video.playsInline = true;
+          video.load();
+          console.log('🎬 Video enabled for native app interaction');
         }
       };
       
@@ -90,21 +95,36 @@ const VideoFeedItem = ({
         document.removeEventListener('click', enableVideo);
       };
     }
-  }, []);
+  }, [post.id]);
 
-  // Simple video setup for all devices
+  // Capacitor-optimized video setup
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
 
-    // Basic video configuration
+    // Configure video for Capacitor WebView
     video.muted = true;
     video.playsInline = true;
     video.controls = false;
     video.disablePictureInPicture = true;
     
-    console.log('📱 Video configured:', post.id);
-  }, [post.id]);
+    // Capacitor-specific attributes
+    if (isNative) {
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('muted', 'true');
+      
+      // iOS WebView specific
+      if (isIOS) {
+        video.setAttribute('x-webkit-airplay', 'deny');
+        video.setAttribute('webkit-playsinline', 'true');
+      }
+      
+      console.log('🎬 Capacitor video configured:', post.id);
+    } else {
+      console.log('🌐 Web video configured:', post.id);
+    }
+  }, [post.id, isNative, isIOS]);
 
   // Sync comment count when post prop changes
   useEffect(() => {
@@ -127,7 +147,7 @@ const VideoFeedItem = ({
     }
   }, [post.id, post.hasPrivateLocation]);
 
-  // Simplified mobile-first autoplay effect
+  // Capacitor-optimized autoplay effect
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo()) return;
@@ -135,13 +155,35 @@ const VideoFeedItem = ({
     const handleAutoplay = async () => {
       if (isActive && video.paused) {
         try {
-          // Always ensure muted for autoplay
+          // Ensure proper configuration for Capacitor
           video.muted = true;
-          await video.play();
-          setIsPlaying(true);
-          console.log('✅ Video playing:', post.id);
+          video.playsInline = true;
+          
+          // Different approach for native vs web
+          if (isNative) {
+            // For Capacitor apps, be more aggressive with play attempts
+            console.log('🎬 Attempting Capacitor video play:', post.id);
+            
+            // Ensure video is loaded first
+            if (video.readyState < 2) {
+              video.load();
+              await new Promise(resolve => {
+                video.addEventListener('loadeddata', resolve, { once: true });
+                setTimeout(resolve, 1000); // Fallback timeout
+              });
+            }
+            
+            await video.play();
+            setIsPlaying(true);
+            console.log('✅ Capacitor video playing:', post.id);
+          } else {
+            // Standard web approach
+            await video.play();
+            setIsPlaying(true);
+            console.log('✅ Web video playing:', post.id);
+          }
         } catch (error) {
-          console.log('⚠️ Autoplay failed, showing play button:', post.id);
+          console.log('⚠️ Autoplay failed:', post.id, error);
           setIsPlaying(false);
         }
       } else if (!isActive && !video.paused) {
@@ -150,10 +192,11 @@ const VideoFeedItem = ({
       }
     };
 
-    // Small delay to ensure video element is ready
-    const timer = setTimeout(handleAutoplay, 200);
+    // Longer delay for Capacitor apps to ensure WebView is ready
+    const delay = isNative ? 500 : 200;
+    const timer = setTimeout(handleAutoplay, delay);
     return () => clearTimeout(timer);
-  }, [isActive, post.id]);
+  }, [isActive, post.id, isNative]);
 
   // Simple video event handling
   useEffect(() => {
@@ -378,10 +421,12 @@ const VideoFeedItem = ({
             muted
             loop
             playsInline
+            webkit-playsinline="true"
             preload="metadata"
             poster={getMediaUrl()}
             controls={false}
             disablePictureInPicture
+            crossOrigin="anonymous"
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
@@ -453,13 +498,27 @@ const VideoFeedItem = ({
                     console.error('❌ Video play failed:', post.id, error);
                     setIsPlaying(false);
                     
-                    // Show error to user on mobile
-                    if (isMobile) {
+                    // Show error to user on mobile/native
+                    if (isMobile || isNative) {
+                      const errorMsg = isNative 
+                        ? `Capacitor video error: ${error.message}` 
+                        : `Mobile video error: ${error.message}`;
+                      
                       toast({
-                        title: "Video Error",
-                        description: `Cannot play video: ${error.message}`,
+                        title: "Video Playback Issue",
+                        description: errorMsg,
                         variant: "destructive",
-                        duration: 3000,
+                        duration: 5000,
+                      });
+                      
+                      console.error('🚨 Video playback error details:', {
+                        error,
+                        isNative,
+                        isMobile,
+                        isIOS,
+                        videoSrc: videoRef.current?.src,
+                        videoReadyState: videoRef.current?.readyState,
+                        postId: post.id
                       });
                     }
                   }
@@ -471,11 +530,14 @@ const VideoFeedItem = ({
             </Button>
             
             {/* Debug info for mobile */}
-            {isMobile && (
-              <div className="text-xs text-white/60 text-center">
+            {(isMobile || isNative) && (
+              <div className="text-xs text-white/60 text-center bg-black/50 rounded p-2">
                 <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
                 <div>iOS: {isIOS ? 'Yes' : 'No'}</div>
+                <div>Native: {isNative ? 'Yes' : 'No'}</div>
                 <div>Post: {post.id}</div>
+                <div>Video Ready: {videoRef.current?.readyState || 'N/A'}</div>
+                <div>Video Src: {videoRef.current?.src ? 'Set' : 'None'}</div>
               </div>
             )}
           </div>
