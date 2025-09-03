@@ -29,10 +29,10 @@ export function Navigation() {
       active: pathname === "/discover",
     },
     {
-      href: "/messages",
+      href: "/inbox",
       icon: MessageSquare,
-      label: "Messages",
-      active: pathname === "/messages",
+      label: "Inbox",
+      active: pathname === "/inbox",
     },
     {
       href: "/profile",
@@ -103,7 +103,7 @@ export function Navigation() {
             >
               <route.icon className={cn("h-5 w-5", route.active ? "text-white" : "text-gray-400")} />
               <span className="sr-only">{route.label}</span>
-              {route.href === "/messages" && <MessageBadge />}
+              {route.href === "/inbox" && <MessageBadge />}
             </Link>
           ))}
         </div>
@@ -161,7 +161,7 @@ export function Navigation() {
                 )}
               >
                 <route.icon className="h-5 w-5" />
-                {route.href === "/messages" && <MessageBadge />}
+                {route.href === "/inbox" && <MessageBadge />}
               </div>
               <span className="mt-0.5 text-[10px] font-medium">{route.label}</span>
             </Link>

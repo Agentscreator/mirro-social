@@ -237,7 +237,7 @@ export default function DiscoverPage() {
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to create channel")
       }
-      router.push(`/messages/${userId}`)
+      router.push(`/inbox/${userId}`)
     } catch (error) {
       console.error("Error creating channel:", error)
       toast({

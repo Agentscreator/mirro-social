@@ -60,7 +60,7 @@ export function UserCard({ user, onMessage, onViewProfile, isMessaging = false, 
       // Ensure we're using the correct user ID
       const targetUserId = user.id
       console.log("Navigating to message page with userId:", targetUserId)
-      router.push(`/messages/${targetUserId}`)
+      router.push(`/inbox/${targetUserId}`)
     }
   }
 

@@ -44,9 +44,14 @@ interface CommunityStories {
   hasUnviewed: boolean
 }
 
-export function StoriesFeed() {
+interface StoriesFeedProps {
+  showPersonalOnly?: boolean
+}
+
+export function StoriesFeed({ showPersonalOnly = false }: StoriesFeedProps) {
   const { data: session } = useSession()
   const [communityStories, setCommunityStories] = useState<CommunityStories[]>([])
+  const [personalStories, setPersonalStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStories, setSelectedStories] = useState<Story[]>([])
   const [showViewer, setShowViewer] = useState(false)
@@ -66,9 +71,17 @@ export function StoriesFeed() {
       if (response.ok) {
         const data = await response.json()
         
-        // Group stories by community
-        const groupedStories = groupStoriesByCommunity(data.stories || [])
-        setCommunityStories(groupedStories)
+        if (showPersonalOnly) {
+          // Filter for personal stories only (not community stories)
+          const personal = (data.stories || []).filter((story: Story) => 
+            story.type === 'personal' || (!story.type && !story.communityId)
+          )
+          setPersonalStories(personal)
+        } else {
+          // Group stories by community
+          const groupedStories = groupStoriesByCommunity(data.stories || [])
+          setCommunityStories(groupedStories)
+        }
       }
     } catch (error) {
       console.error('Error fetching stories:', error)
@@ -124,6 +137,12 @@ export function StoriesFeed() {
     setShowViewer(true)
   }
 
+  const handlePersonalStoryClick = (story: Story) => {
+    setSelectedStories([story])
+    setInitialStoryIndex(0)
+    setShowViewer(true)
+  }
+
 
   if (loading) {
     return (
@@ -140,7 +159,18 @@ export function StoriesFeed() {
     )
   }
 
-  if (communityStories.length === 0) {
+  if (showPersonalOnly && personalStories.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <div className="text-center">
+          <p className="text-gray-500 text-sm">No personal stories to show</p>
+          <p className="text-gray-600 text-xs mt-1">Stories from people you follow will appear here</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!showPersonalOnly && communityStories.length === 0) {
     return (
       <div className="px-6 py-4 bg-gray-950">
         <div className="flex items-center justify-center py-4">
@@ -155,10 +185,32 @@ export function StoriesFeed() {
 
   return (
     <>
-      <div className="px-6 py-4 bg-gray-950 border-b border-gray-800/50">
+      <div className={`${showPersonalOnly ? 'px-0 py-2' : 'px-6 py-4'} bg-gray-950 ${!showPersonalOnly ? 'border-b border-gray-800/50' : ''}`}>
         <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide pb-2">
+          {/* Personal Stories */}
+          {showPersonalOnly && personalStories.map((story) => (
+            <div key={story.id} className="flex-shrink-0 flex flex-col items-center gap-2">
+              <div 
+                className="relative cursor-pointer group"
+                onClick={() => handlePersonalStoryClick(story)}
+              >
+                <div className={`p-0.5 rounded-full ${!story.isViewed ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-gray-600'} group-hover:scale-105 transition-transform`}>
+                  <Avatar className="w-16 h-16 border-2 border-gray-950">
+                    <AvatarImage src={story.user.profileImage} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                      {(story.user.nickname || story.user.username)[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+              <span className="text-xs text-gray-300 text-center max-w-[60px] truncate">
+                {story.user.nickname || story.user.username}
+              </span>
+            </div>
+          ))}
+          
           {/* Community Stories */}
-          {communityStories.map((communityStory) => (
+          {!showPersonalOnly && communityStories.map((communityStory) => (
             <div key={communityStory.communityId} className="flex-shrink-0 flex flex-col items-center gap-2">
               <div 
                 className="relative cursor-pointer group"

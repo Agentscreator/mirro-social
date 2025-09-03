@@ -16,7 +16,7 @@ import { CommunityStories } from "@/components/messages/CommunityStories"
 import { StoriesFeed } from "@/components/stories/StoriesFeed"
 import { toast } from "@/hooks/use-toast"
 
-export default function MessagesPage() {
+export default function InboxPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -38,7 +38,7 @@ export default function MessagesPage() {
   )
 
   const handleConversationClick = (userId: string) => {
-    router.push(`/messages/${userId}`)
+    router.push(`/inbox/${userId}`)
   }
 
   const handleCreateGroup = async () => {
@@ -121,7 +121,7 @@ export default function MessagesPage() {
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
-            placeholder="Search conversations..."
+            placeholder="Search inbox..."
             className="pl-12 h-12 rounded-xl border border-gray-700 bg-gray-900/50 backdrop-blur-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -129,10 +129,11 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Community Stories */}
-      {!groupsLoading && groups.length > 0 && (
-        <CommunityStories groups={groups} onRefresh={refetchGroups} />
-      )}
+      {/* Personal Stories Section */}
+      <div className="px-6 py-2">
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Your Stories</h2>
+        <StoriesFeed showPersonalOnly={true} />
+      </div>
 
       {/* Conversations List */}
       <div className="flex-1">
@@ -246,12 +247,12 @@ export default function MessagesPage() {
               <MessageCircle className="h-12 w-12 text-gray-400" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">
-              {searchQuery ? 'No chats found' : 'No messages yet'}
+              {searchQuery ? 'No conversations found' : 'Your inbox is empty'}
             </h3>
             <p className="text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
               {searchQuery
                 ? 'Try searching for a different name or username.'
-                : 'Start a conversation by discovering new people, messaging someone from your feed, or creating a group.'}
+                : 'Start conversations with people you meet, respond to invitations, or create group chats with friends.'}
             </p>
             {!searchQuery && (
               <div className="flex gap-3">
@@ -259,7 +260,7 @@ export default function MessagesPage() {
                   onClick={() => router.push('/discover')}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium"
                 >
-                  Start Chatting
+                  Discover People
                 </Button>
                 <Button
                   onClick={() => setShowCreateGroup(true)}

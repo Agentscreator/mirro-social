@@ -113,8 +113,8 @@ export default function ChatPage() {
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
         <h2 className="text-xl font-semibold text-white mb-2">User not found</h2>
         <p className="text-gray-400 mb-4">This conversation doesn't exist or has been deleted.</p>
-        <Button onClick={() => router.push('/messages')}>
-          Back to Messages
+        <Button onClick={() => router.push('/inbox')}>
+          Back to Inbox
         </Button>
       </div>
     )
@@ -128,7 +128,7 @@ export default function ChatPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push('/messages')}
+            onClick={() => router.push('/inbox')}
             className="-ml-2"
           >
             <ArrowLeft className="h-5 w-5" />

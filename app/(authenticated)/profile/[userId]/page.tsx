@@ -759,9 +759,9 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json()
-        router.push(`/messages/${user.id}`)
+        router.push(`/inbox/${user.id}`)
       } else {
-        router.push(`/messages/${user.id}`)
+        router.push(`/inbox/${user.id}`)
       }
     } catch (error) {
       console.error("Error creating channel:", error)
