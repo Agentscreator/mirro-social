@@ -50,12 +50,14 @@ const VideoFeedItem = ({
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [mediaError, setMediaError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Sync comment count when post prop changes
   useEffect(() => {
     setCurrentComments(post.comments);
-  }, [post.comments]);
+    setMediaError(false); // Reset media error when post changes
+  }, [post.id, post.comments]);
 
   // Fetch location data if post has private location
   useEffect(() => {
@@ -226,15 +228,20 @@ const VideoFeedItem = ({
   };
 
   const getMediaUrl = () => {
-    return post.video || post.image || '/placeholder-video.jpg';
+    const mediaUrl = post.video || post.image;
+    if (!mediaUrl || mediaUrl.trim() === '') {
+      return '/placeholder.jpg';
+    }
+    return mediaUrl;
   };
   
   const isVideo = () => {
-    return !!post.video;
+    return !!post.video && post.video.trim() !== '';
   };
   
   const hasMedia = () => {
-    return !!(post.video || post.image);
+    const mediaUrl = post.video || post.image;
+    return !!(mediaUrl && mediaUrl.trim() !== '');
   };
   
   const formatDuration = (seconds?: number): string => {
@@ -401,18 +408,19 @@ const VideoFeedItem = ({
             loop
             playsInline
             preload="metadata"
-            poster={getMediaUrl()}
+            poster={post.image || '/placeholder.jpg'}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onLoadedData={() => {
+              console.log('📹 Video loaded for post:', post.id, 'URL:', getMediaUrl());
               // Attempt autoplay when video is loaded and active
               if (isActive && videoRef.current) {
                 videoRef.current.play().catch(console.error);
               }
             }}
-
             onError={(e) => {
-              console.error('Video error for post:', post.id, e);
+              console.error('❌ Video error for post:', post.id, 'URL:', getMediaUrl(), e);
+              setMediaError(true);
             }}
             onCanPlayThrough={() => {
               console.log('📹 Video can play through:', post.id);
@@ -431,12 +439,31 @@ const VideoFeedItem = ({
             className="w-full h-full object-cover"
             src={getMediaUrl()}
             alt="Post content"
+            onError={(e) => {
+              console.error('❌ Image error for post:', post.id, 'URL:', getMediaUrl(), e);
+              setMediaError(true);
+            }}
+            onLoad={() => {
+              console.log('📷 Image loaded for post:', post.id, 'URL:', getMediaUrl());
+            }}
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover'
             }}
           />
+        )}
+        
+        {/* Fallback for media errors */}
+        {mediaError && (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+            <div className="text-center text-white/70">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                <Play className="w-8 h-8" />
+              </div>
+              <p className="text-sm">Media unavailable</p>
+            </div>
+          </div>
         )}
       </div>
       
