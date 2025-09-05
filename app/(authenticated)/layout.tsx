@@ -41,7 +41,7 @@ export default function AuthenticatedLayout({
                 {children}
               </div>
             </main>
-            
+
             {/* Message Notifications */}
             <MessageNotifications />
           </div>
