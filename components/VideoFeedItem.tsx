@@ -230,9 +230,21 @@ const VideoFeedItem = ({
   const getMediaUrl = () => {
     const mediaUrl = post.video || post.image;
     if (!mediaUrl || mediaUrl.trim() === '') {
+      console.log('⚠️ No media URL for post:', post.id);
       return '/placeholder.jpg';
     }
-    return mediaUrl;
+    
+    // Log the media URL for debugging
+    console.log('🔗 Media URL for post', post.id, ':', mediaUrl);
+    
+    // Check if it's a valid URL
+    try {
+      new URL(mediaUrl);
+      return mediaUrl;
+    } catch (urlError) {
+      console.error('❌ Invalid URL for post', post.id, ':', mediaUrl, urlError);
+      return '/placeholder.jpg';
+    }
   };
   
   const isVideo = () => {
@@ -419,7 +431,21 @@ const VideoFeedItem = ({
               }
             }}
             onError={(e) => {
-              console.error('❌ Video error for post:', post.id, 'URL:', getMediaUrl(), e);
+              const url = getMediaUrl();
+              console.error('❌ Video error for post:', post.id, 'URL:', url);
+              console.error('Error details:', e.currentTarget.error);
+              
+              // Try to validate the URL
+              fetch('/api/validate-media', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+              }).then(res => res.json()).then(result => {
+                console.log('🔍 URL validation result:', result);
+              }).catch(err => {
+                console.error('Failed to validate URL:', err);
+              });
+              
               setMediaError(true);
             }}
             onCanPlayThrough={() => {
@@ -440,7 +466,21 @@ const VideoFeedItem = ({
             src={getMediaUrl()}
             alt="Post content"
             onError={(e) => {
-              console.error('❌ Image error for post:', post.id, 'URL:', getMediaUrl(), e);
+              const url = getMediaUrl();
+              console.error('❌ Image error for post:', post.id, 'URL:', url);
+              console.error('Error details:', e.currentTarget.error);
+              
+              // Try to validate the URL
+              fetch('/api/validate-media', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+              }).then(res => res.json()).then(result => {
+                console.log('🔍 URL validation result:', result);
+              }).catch(err => {
+                console.error('Failed to validate URL:', err);
+              });
+              
               setMediaError(true);
             }}
             onLoad={() => {
