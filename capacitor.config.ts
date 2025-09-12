@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     // Use environment variable for URL, fallback to production
-    url: process.env.CAPACITOR_SERVER_URL || 'https://www.mirro2.com',
+    url: process.env.CAPACITOR_SERVER_URL || 'https://celestial-rouge-one.vercel.app',
     cleartext: process.env.NODE_ENV === 'development'
   },
   android: {
@@ -39,13 +39,9 @@ const config: CapacitorConfig = {
       watchHaptics: true
     }
   },
-  // Apple Watch specific settings
+  // iOS specific settings
   ios: {
-    scheme: "MirroSocial",
-    watchApp: {
-      bundleId: "com.mirro2.app.watchkitapp",
-      displayName: "Mirro Watch"
-    }
+    scheme: "MirroSocial"
   }
 };
 
