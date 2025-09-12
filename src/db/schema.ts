@@ -124,6 +124,7 @@ export const postsTable = pgTable("posts", {
   duration: integer("duration"), // Video duration in seconds (optional)
   editedVideoData: text("edited_video_data"), // JSON data for video editor projects
   hasPrivateLocation: integer("has_private_location").notNull().default(0), // 0 = no, 1 = yes
+  autoAcceptInvites: integer("auto_accept_invites").notNull().default(0), // 0 = no, 1 = yes
   communityName: varchar("community_name", { length: 100 }), // Name for auto-created community
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

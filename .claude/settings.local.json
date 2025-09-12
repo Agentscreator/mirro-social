@@ -22,7 +22,10 @@
       "Bash(yarn run build)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(xcode-select:*)"
+      "Bash(xcode-select:*)",
+      "Bash(psql:*)",
+      "Bash(node:*)",
+      "Bash(timeout 30 npx tsc --noEmit --skipLibCheck --strict false app/api/invites/[id]/request/route.ts)"
     ],
     "deny": []
   }
